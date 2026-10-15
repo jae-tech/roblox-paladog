@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-**P4 기준선(`67549f3`)에서 P0~P4 full gate PASS. P5 구현 체크포인트(`51d08a7`→main `ec778ec`)는 CLI/Studio 서버/Studio 클라이언트 동일613개 PASS였으며, 실제 입력·화면·renderer 교체·멀티터치 증거가 부족해 P5 full gate BLOCKED다. 2026-10-16에는 Windows 로컬 재현만 복구·재검증했고 P5 완료로 표시하지 않는다. P6~P9는 미착수다.** 현재 P5 빌드에서 P0 로컬/P1 PASS 및 이전 세션의 P0/P2/P3/P4 Studio 원시 suite PASS를 확인했지만 기존 단계의 full evidence 재수집은 끝내지 않았다. P0.1 Git 정책 보류와 기존 production runtime 검사 WAIVED는 유지하고 새 승인은 추가하지 않았다.
+**P4 기준선(`67549f3`)에서 P0~P4 full gate PASS. P5 구현 체크포인트(`51d08a7`→main `ec778ec`)는 CLI/Studio 서버/Studio 클라이언트 동일613개 PASS였다. 2026-10-16 Windows 로컬 재현과 Studio 동일 suite를 재검증했고, 장치 화면5종·renderer 교체/cleanup·카메라 복원도 PASS다. 실제 PC 지속 입력·Q·GUI 소환·focus 정지도 PASS이며 독립 멀티터치 증거가 부족해 P5 full gate는 BLOCKED이며 완료로 표시하지 않는다. P6~P9는 미착수다.** 현재 P5 빌드에서 P0 로컬/P1 PASS 및 P0/P2/P3/P4 Studio 원시 suite PASS를 확인했지만 기존 단계의 full evidence 재수집은 끝내지 않았다. P0.1 Git 정책 보류와 기존 production runtime 검사 WAIVED는 유지하고 새 승인은 추가하지 않았다.
 
 기준 문서는 기존 설계 6개(`PRD`, `ARCHITECTURE`, `DATA_MODELS`, `ASSET_PIPELINE`, `IMPLEMENTATION_PLAN`, `TEST_PLAN`)와 REA Markdown 7개다. 이 13개 원문은 변경하지 않았다. REA 원본 SHA256은 `tools/reference-hashes.json`으로 검사한다.
 
@@ -150,10 +150,24 @@ P0의 GameId0 guard 음성 대조는 **1052Z 결과를 이월**했다. Guard/Tes
 
 **커밋된 clean checkout 재현**: `e48f7b2`를 `git clone --no-hardlinks --config core.autocrlf=true --branch p5-windows-verification`으로 `.tools/windows-reproduction/`에 새로 복제했다. SHA 고정 다운로드 캐시만 복사하고 bootstrap으로 실행파일을 다시 추출했다. 원문7개 SHA 일치, P0 local PASS(`artifacts/P0/20261015T221319853335Z/report.json`), P1 PASS(`artifacts/P1/20261015T221330421003Z/report.json`), P5 CLI613 PASS/full BLOCKED(`artifacts/P5/20261015T221333404814Z/report.json`), 검증 후 `git status --short` 빈 출력을 확인했다. 이 세 증거 경로는 재현 checkout 내부 기준이다. 새 네트워크 다운로드·Studio·macOS 재현을 뜻하지 않으며 P0 report의 자동 `cleanCheckoutReproduction` 필드는 여전히 NOT_RUN이다.
 
+## Windows Studio 재검증 (2026-10-16 KST / 22:20Z~22:47Z)
+
+- 설치와 연결을 구분해 실제 `@chrrxs/robloxstudio-mcp` 3.2.1 도구·연결을 확인했다. 승인 GameId `10771015944`, PlaceId `86482422738722`, Studio `0.743.0.7431133`. edit 피어에서 수집한 스크립트72개의 바이트 길이가 로컬 sourcemap과 전부 일치했고 최종 edit 재수집도 동일했다. 코드·생성물·TestPolicy는 변경하지 않았다.
+- **2-client suite**: server T-TOOL10 PASS, 의도적 실패는 `intentional-failure`1건만 FAIL, 미지원 suite 거부, P2/P3/P4/P5는132/123/134/613 PASS. client-1 P5도613 PASS이며 gate가 fresh CLI seed12345와 전체 ordered assertion을 비교했다. boot marker·캐릭터 nil·Mock rig 종료도 관측했다. P0 guard GameId0와 P2/P3/P4 full scenario 재수집은 아직 아니다.
+- **화면/장치 PASS**: solo 실제 Running HUD를 1280×720, 1920×1080, 844×390, 740×360, 390×844에서 PNG로 캡처했다. 이 검증의 경기 시작은 서버 Mock fixture + 정상 client bootstrap 재연결이며 실제 입력 증거로 세지 않는다. `ActualResolution`과 `GuiService:GetInsetArea(None/CoreUISafeInsets)` 원시값을 기록해 notch·상단 inset 및 안전 영역 상대 버튼 좌표를 검증했다. portrait·48px/8px 조건도 gate PASS다. iPhone portrait의 resolution 인수는 preset 기본 가로 순서844×390으로 전달해야 실제390×844가 된다. 앞선 잘못된 방향/scale 시도는 raw로 남기고 최종5종만 사용했다.
+- **renderer PASS**: 실제 client VM에서 EntityView Placeholder→등록된 Model fixture→Placeholder 교체, 미등록 Sprite fallback, 부분 생성 후 오류를 내는 adapter fallback, 비어 있는 snapshot 뒤 자손0을 확인했다. CameraController는 Scriptable 적용 뒤 type/subject/CFrame/Focus/FOV/mode 전부 복원했다. 별도 서버 World fixture는 step하지 않고 같은 snapshot만 사용했으며 digest `e093cbce`→`e093cbce`다. 고품질 Model/Sprite 에셋이나 live 경기 tick 진행의 검증을 뜻하지 않는다.
+- **PC 실제 입력 PASS**: 실제 GUI 시작 클릭으로 Running/snapshot 수신을 확인했다. 최종 입력 시나리오는 Mock Running fixture + 정상 client bootstrap 뒤 실제 D/Q press/release와 GUI 클릭을 썼다. D hold 동안 서버 영웅X10→14.8·axis1·client held1을 관측했고, releaseX18.4→stopped18.4→추가 대기18.4로 정지했다. Q는 commandSeq1, Pending→Accepted와 마나10000→0, GUI Summon은 별도 requestId의 Pending→Accepted와 식량40000→30000이다. 비용 측정 중 서버 Mock World 재생률만0으로 고정했다. 실제 OS foreground를 Studio→영속 VS Code 창으로 전환한 UTC1792104371076ms부터 서버 Heartbeat가 axis0을 관측한1792104371153ms까지 **77ms**다. 초기 Q tap/짧은 hold·focus 실패 raw도 보존했다. foreground 전환 뒤 focus 이벤트가 안정되길 기다리고, 이미 사라진 임시 콘솔 HWND가 아닌 VS Code HWND66992를 쓰는 최종 절차로 해소했다. 제품 코드는 바꾸지 않았다.
+- **환경 경계**: place가 반복 재열리며 instance id가 바뀌었다. 사용자는 Rojo 연결 팝업만 승인했고 검증 계속을 요청했다. 소유한 Rojo serve를 중지한 뒤에도 재열림을 관측했으므로 Rojo 탓으로 단정하지 않는다. multiplayer 임시 client의 screenshot/device matrix는 MCP가 명시적으로 지원하지 않아 solo로 대체했고 solo CaptureService 캡처는 성공했다. 독립 touch injection은 도구에 없어 touch BLOCKED다.
+- 최종 renderer/device/PC playtest는 직접 stop했고 각 rig와 focus 관측 연결을 종료했다. device simulator는 reset했다. 최종 연결 목록은 edit만 남고 multiplayer group0이다. 소유한 Rojo 서버도 종료했다. 저장/publish·실제 DataStore·API/security toggle·allowlist 변경은 하지 않았다.
+
+원시/부분 증거(모두 gitignore): `artifacts/P5/studio/20261015T222057Z-windows/`. `server-suites{,-raw}.json`, `client-suite.json`, `edit-meta.json`, `final-edit-meta.json`, `render-engine.json`, `render-digest.json`, `device-final-observations.json`, `device-final-{0..4}-1.png`, `pc-attempt-trace.json`, `pc-final-attempt-trace.json`, `p5-partial.json`을 보존했다. 최종 gate `artifacts/P5/20261015T224658673634Z/report.json`은 **BLOCKED(exit2)**: CLI/input/network/view/Studio suite/pcInput/device/render PASS, touch만 BLOCKED다. 과거 macOS 증거를 재사용하지 않았다.
+
+최신 로컬 재검증: P0 local `artifacts/P0/20261015T224343489427Z/report.json` PASS, P1 `artifacts/P1/20261015T224354286360Z/report.json` PASS, Python96 PASS, 타입/lint/format/build/production 정적 격리 PASS. P2/P3/P4 gate는 CLI132/123/134 PASS지만 full scenario 증거를 전달하지 않아 BLOCKED다. 독립 touch injection 도구는 없고 공식 VirtualInput 문서도 touch pointer ID 입력을 제공하지 않는다. mouse나 simulator의 pinch를 멀티터치로 대체하지 않는다.
+
 ## 다음 작업
 
 1. 검토자가 P0/P1 증거와 overlay 결정(`data/overlay/mvp-proto-001.json`)을 확인한다.
-2. P5 실제 키/GUI·focus·장치 화면·renderer 교체/cleanup/camera 복원·멀티터치 증거를 수집한다. `verify_p5.py --studio-evidence`는 누락/명시 보류를 BLOCKED로 유지한다. 현재 체크포인트는 P5 완료가 아니므로 P6 완료 게이트 선행으로 삼지 않는다.
+2. P5 독립 멀티터치 증거를 수집한다. Windows PC 실제 입력/Q/GUI/focus·장치5종·renderer/cleanup/camera는 위 증거로 PASS다. `verify_p5.py --studio-evidence`는 남은 touch BLOCKED를 유지한다. 현재 체크포인트는 P5 완료가 아니므로 P6 완료 게이트 선행으로 삼지 않는다.
 3. P0·P2·P3·P4 full 증거를 현재 소스에서 재수집한다. ClientHarness도 바뀌었으므로 과거 GameId0 guard 음성 대조를 바이트 동일이라고 이월하지 않는다. 별도 미게시 place에서 다시 확인해야 한다.
 4. P5 full gate 이후 P6 순서로 진행한다. P7 순수 성장은 독립 가능하지만 정산 연결은 P6 이후다.
 

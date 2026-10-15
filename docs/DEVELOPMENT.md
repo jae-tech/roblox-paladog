@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-P0~P4 gate PASS는 P4 기준선 기록이다. 현재 P5는 입력·네트워크·뷰 구현과 CLI/Studio 서버/클라이언트613개 PASS 체크포인트이며, 실제 입력/장치 화면/renderer 교체/멀티터치 증거가 부족하여 full gate BLOCKED다. production 서버는 boot만 하고 client UI는 server remote를 기다린다. 테스트 저장은 Mock/InMemory이며 P6~P9는 미착수다. 기존 production runtime WAIVED·P0.1 보류·overlay 미승인은 유지한다. 연구/설계 정본13개는 수정하지 않는다.
+P0~P4 gate PASS는 P4 기준선 기록이다. 현재 P5는 CLI/Studio 서버/클라이언트613개와 Windows 장치 화면5종·renderer 교체/cleanup/카메라 복원 PASS 체크포인트이며, 독립 멀티터치 증거가 부족하여 full gate BLOCKED다. production 서버는 boot만 하고 client UI는 server remote를 기다린다. 테스트 저장은 Mock/InMemory이며 P6~P9는 미착수다. 기존 production runtime WAIVED·P0.1 보류·overlay 미승인은 유지한다. 연구/설계 정본13개는 수정하지 않는다.
 
 최초 검증 호스트는 **macOS Darwin ARM64**였으며 2026-10-16 재개 호스트는 **Windows AMD64 / Python 3.14.2**다. 두 호스트의 같은 도구 버전을 고정했고 Windows 로컬 gate를 새로 검증했다(아래 참조). macOS에서 변경된 bootstrap을 재실행한 것은 아니다. 초기 P0 Git 기준선은 `f36bf2a`였고 당시 팀 branch 정책은 미합의였다. 현재는 AGENTS.md에 따라 단계별 로컬 feature branch에서 소스/문서/도구만 커밋하고 main에 fast-forward 병합한다(P4: `p4-projectiles-and-hero-skill`). `.omx/`, `artifacts/`, `.tools/`, 연구 바이너리와 키는 제외한다. push/publish는 하지 않는다.
 
@@ -19,8 +19,17 @@ python tools/verify_p5.py  # Studio 증거 없으면 exit 2/BLOCKED
 - Windows ZIP SHA256은 각 공식 release의 GitHub API digest와 실제 다운로드를 비교했다: [Luau](https://github.com/luau-lang/luau/releases/tag/0.742), [StyLua](https://github.com/JohnnyMorganz/StyLua/releases/tag/v2.6.0), [Rojo](https://github.com/rojo-rbx/rojo/releases/tag/v7.7.1), [selene](https://github.com/Kampfkarren/selene/releases/tag/0.32.0), [luau-lsp](https://github.com/JohnnyMorganz/luau-lsp/releases/tag/1.70.1). macOS 자산/타입 정의 URL·SHA는 보존했다.
 - 최초 checkout의 `core.autocrlf=true`가 원문 2개의 SHA와 생성물 바이트 비교를 깨뜨렸다. `.gitattributes`에 LF checkout 정책을 추가하고, 줄바꿈만 달라진 파일을 기존 Git blob의 정확한 바이트로 복원했다. 원문/생성물/밸런스 값은 바꾸지 않았다. 검사에서 CRLF를 정규화해 허용하거나 SHA를 갱신하지 않는다.
 - 검증 도구의 파일·subprocess 텍스트는 UTF-8을 명시해 Windows CP949에 의존하지 않는다. 실행파일 경로 선택을 공유하며 검사 assertion/Studio 증거 요구사항은 유지했다.
-- 호스트 선택/기존 버전 보존/명시적 `.exe`/미지원 BLOCKED/체크섬 선검증/경로 탈출 거부/캐시·타입 정의 설치/실제 Git autocrlf clone 회귀10개를 추가했다. 전체 Python96개, P0 local/P1, P2/P3/P4/P5 CLI132/123/134/613개, 타입/lint/format/build PASS다. full gates는 Studio MCP가 이 세션에 노출되지 않아 BLOCKED다. Windows Studio 실행·화면·touch 또는 macOS 재실행 PASS를 뜻하지 않는다.
+- 호스트 선택/기존 버전 보존/명시적 `.exe`/미지원 BLOCKED/체크섬 선검증/경로 탈출 거부/캐시·타입 정의 설치/실제 Git autocrlf clone 회귀10개를 추가했다. 전체 Python96개, P0 local/P1, P2/P3/P4/P5 CLI132/123/134/613개, 타입/lint/format/build PASS다. 이 로컬 재개 시점에는 Studio MCP 도구가 노출되지 않아 full gates BLOCKED였으며 Studio 검증을 주장하지 않았다. 이후 Studio 연결·재검증 결과는 다음 절에 따로 기록한다. macOS 재실행 PASS는 주장하지 않는다.
 - 커밋 `e48f7b2`의 새 Windows clone(`core.autocrlf=true`, 다운로드 캐시만 공유)에서도 bootstrap·원문 SHA·P0 local/P1 PASS, P5 CLI613 PASS/full BLOCKED와 clean 작업 트리를 확인했다. 상세 증거 경로는 HANDOFF에 있다. 로컬 gate 재현이지 Studio 완료 재현이 아니다.
+
+## Windows Studio 증거 재개 (2026-10-16)
+
+- MCP 3.2.1 연결 뒤 승인된 universe에서 서버/클라이언트 P5 동일613개를 새로 수집했다. 스크립트72개 길이는 시작/종료 edit 수집 모두 로컬과 일치한다. Windows solo CaptureService PNG가 성공해 과거 macOS 캡처 차단과 구분한다. multiplayer 임시 client의 캡처는 MCP 자체 제한으로 지원되지 않는다.
+- 장치5종은 실제 engine Running UI·PNG·안전 영역을 기록했다. simulator는 preset deviceId를 먼저 선택하고 `ActualResolution`을 사용해야 한다. 휴대폰 resolution 인수는 기본 가로 순서이며 Portrait orientation이 회전하므로390×844를 원하면844×390을 전달한다. `GuiService:GetInsetArea(None)`의 음수 원점으로 물리 화면 좌표를 복원하고 버튼은 safe content 상대 좌표로 유지한다. 순수 Layout 수치를 engine 측정인 것처럼 쓰지 않았다.
+- EntityView 교체/실패 fallback/부분 생성 정리와 CameraController 전체 복원을 실제 client VM에서 확인했다. 렌더 비교용 서버 World는 step하지 않는 별도 fixture로 digest `e093cbce`가 같았다. 모델 factory도 engine Part fixture이며 출시 에셋 승인이 아니다.
+- PC는 최종 실제 D hold/release·Q press/release·GUI Summon 모두 서버 상태/최종 Accepted로 확인했다. 이동X10→14.8·axis1, release18.4 이후 정지, 마나10000→0, 식량40000→30000이다. 실제 Studio→VS Code OS focus 상실 뒤 서버 중립까지77ms를 관측했다. 임시 콘솔 HWND를 대상으로 삼았던 초기 focus 실패와 focus 미안정 상태의 Q tap/짧은 이동은 raw로 보존하고 영속 VS Code HWND·focus settle 후 입력으로 해소했다. 비용 측정에만 Mock World 재생률을0으로 두었고 제품 코드/실제 저장소를 바꾸지 않았다. 반복 place 재열림은 Rojo serve 중지 뒤에도 관측해 근본 원인은 미확정이다. 독립 touch 도구 부재는 그대로다.
+- `verify_p5.py --studio-evidence artifacts/P5/studio/20261015T222057Z-windows/p5-partial.json`: device/render/동일 suite PASS, pcInput도 PASS, touch만 BLOCKED(exit2). 테스트 rig/playtest/관측 연결과 simulator는 종료·복원했고 소유 Rojo 서버는 중지했다. 파일·전체 실행 경계는 HANDOFF에 있다.
+- 노출된 MCP에는 독립 touch 도구가 없다. [공식 VirtualInput 문서](https://create.roblox.com/docs/reference/engine/classes/VirtualInput)는 키·마우스·wheel/pan/pinch 등을 제공하지만 독립 touch pointer ID 입력은 제공하지 않는다. mouse나 pinch 호출을 실제 멀티터치 PASS로 바꾸지 않는다.
 
 ## 새 checkout 재현 (macOS ARM64)
 
@@ -114,17 +123,17 @@ python3 -m unittest discover -s tools/tests
 ```sh
 .tools/luau-0.742/luau tests/cli_p5.luau  # 입력31 + 네트워크163 + 뷰419 = 613
 python3 tools/verify_p5.py              # runtime 증거 없으면 exit2
-python3 tools/verify_p5.py --studio-evidence artifacts/P5/studio/20261015T125703Z/p5-partial.json
+python3 tools/verify_p5.py --studio-evidence artifacts/P5/studio/20261015T222057Z-windows/p5-partial.json
 ```
 
 - 표현 정본은 `DESIGN.md`다. `Presentation/Layout`는 safe-area 내부 offset을 사용하고 실제 세로 여부와 좁은 가로 compact 배치를 분리한다. 10개 viewport의 최소48px·간격8px·HUD 비중첩을 순수 테스트했다. P5 추가 핵/탄/지면5개도 Original placeholder로 manifest에 선언하고 `asset_audit`가 ViewDefinitions의 literal presentationId를 함께 검사한다.
 - `ActionRouter`는 순수 입력 상태, `DeviceAdapter`는 CAS/GUI/UIS 경계다. CAS Cancel은 KeyCode.Unknown일 수 있어 action의 모든 alias를 정리한다. movement는 InputObject별 hold/global release, GUI discrete는 Activated 하나만 사용한다. 숨김·focus·text·menu blockers는 서로 독립이고 재활성 시 키를 자동 복원하지 않는다.
 - snapshot은 현재 match·증가 seq·비감소 tick·동일 balance와 유한값을 검증해 복사한다. 비영웅은0.1초 지연 보간/최신 밖 최대0.15초 시각 외삽, 영웅만 최대0.15초 입력 예측과 clamp를 한다. 0.1stud 이하 오차는0.1초 보정, 큰 오차와 종결은 snap한다. HP/자원/피해를 로컬에서 확정하지 않는다.
 - 완전 snapshot에 표시용 bounds/속도/상한/잠정 보상과 `commandAckSeq`를 추가했다. `inputAckSeq`/`commandAckSeq`는 재연결 후 서버 high-watermark 이하 seq를 재사용하지 않기 위한 값이고 최종 Accepted/Rejected는 기존 ServerMessage를 따른다. bootstrap은 동시1개·최소1초 간격이며3초 UI timeout도 호출 취소로 취급하지 않는다. Preparing의 승인 누락과1초 stale snapshot은 bootstrap으로 복구한다. 오래된 bootstrap/StartStage ack는 최신 terminal phase를 덮지 못한다.
-- EntityView의 renderer 시도는 각자 Folder를 소유한다. 미지원 Sprite/Model은 예상된 Placeholder fallback이고, 등록된 factory/update/play/destroy 결함은 원래 문맥을 경고한다. 부분 생성물과 실패한 handle은 정리하며 Placeholder 자체 결함은 다시 던진다. renderer 생명주기/카메라 실제 복원과 digest 동일성의 엔진 검증은 아직 남아 있다.
+- EntityView의 renderer 시도는 각자 Folder를 소유한다. 미지원 Sprite/Model은 예상된 Placeholder fallback이고, 등록된 factory/update/play/destroy 결함은 원래 문맥을 경고한다. 부분 생성물과 실패한 handle은 정리하며 Placeholder 자체 결함은 다시 던진다. renderer 교체/정리·카메라 실제 복원·고정 서버 fixture digest 동일성은2026-10-16 Windows engine 검증으로 PASS다.
 - Runtime은 production remote를 새로 만들지 않고 서버가 제공할 때만 구독한다. remote 제거/재연결 시 controller/입력 상태를 정리한다. production 서버 bootstrap은 boot만 하므로 실제 플레이 서버 연결은 이후 단계 범위다. 로비에 Mock으로 위장한 진행을 만들지 않는다.
 - 공식 API는 Context7 `/websites/create_roblox`와 Roblox docs(ContextActionService, GuiButton, UserInputService, GuiService, ScreenGui, Camera)를2026-10-15 확인했다. ScreenInsets=CoreUISafeInsets와 IgnoreGuiInset을 섞지 않으며 Scriptable camera는 Focus도 갱신한다.
-- 검증: P0 local/P1 gate PASS, P2/P3/P4 CLI132/123/134 PASS, 전체 Python86 PASS, 타입 분석·lint·format·production/test build PASS. Studio 서버/클라이언트613개도 PASS이나 실제 키/GUI·장치 화면·renderer 교체·실제 touch는 BLOCKED다. 캡처 실패/터치 도구 부재 및 raw 경로는 [HANDOFF](HANDOFF.md)에 있다. P5 partial gate는 의도적으로 exit2이며 P6 선행 PASS로 쓰지 않는다.
+- 검증: P0 local/P1 gate PASS, P2/P3/P4 CLI132/123/134 PASS, Windows 도구 회귀 포함 전체 Python96 PASS, 타입 분석·lint·format·production/test build PASS. Studio 서버/클라이언트613개·장치 화면5종·renderer도 PASS이나 PC 실제 입력/Q/GUI 소환/focus도 PASS이며 독립 touch만 BLOCKED다. 원시 증거와 남은 환경 경계는 [HANDOFF](HANDOFF.md)에 있다. P5 partial gate는 의도적으로 exit2이며 P6 선행 PASS로 쓰지 않는다.
 
 ## production / test 경계
 

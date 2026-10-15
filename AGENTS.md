@@ -8,7 +8,7 @@ Codex·Claude 등 코딩 에이전트용 작업 안내. 상세 근거는 아래 
 2. `docs/DEVELOPMENT.md`: 단계별 설계 결정과 알려진 한계
 3. 다음 단계 범위: `docs/IMPLEMENTATION_PLAN.md`의 해당 P절, 테스트 기준은 `docs/TEST_PLAN.md`, 수치·타입은 `docs/DATA_MODELS.md`, 처리 순서·권한·저장은 `docs/ARCHITECTURE.md`
 
-## 현재 상태 (2026-10-15)
+## 현재 상태 (2026-10-16)
 
 | 단계 | 상태 |
 |---|---|
@@ -17,7 +17,7 @@ Codex·Claude 등 코딩 에이전트용 작업 안내. 상세 근거는 아래 
 | P2 원격 프로토콜·세션·프로필 골격 | gate PASS (Luau 132 cases, Studio 2-client 격리) |
 | P3 헤드리스 전투 시뮬레이션 | gate PASS (Luau 123 cases, Studio suite + 라이브 경기) |
 | P4 탄·영웅 무기 스킬 | gate PASS (Luau 134 cases, Studio 동일 suite + 실제 Remote 시전·이동·피해) |
-| **진행 중: P5 입력·뷰·카메라** | 구현 + CLI/Studio 서버/클라이언트 동일613 cases PASS. 실제 입력·장치 화면·renderer 런타임 교체·멀티터치 미검증으로 full gate BLOCKED. 다음은 이 검증 재개 |
+| **진행 중: P5 입력·뷰·카메라** | CLI/Studio 서버/클라이언트 동일613 cases PASS. 2026-10-16 장치 화면5종·renderer 교체/cleanup/카메라 복원 PASS. 실제 PC 입력·Q·GUI 소환·focus77ms 정지 PASS. 독립 멀티터치 증거 부족으로 full gate BLOCKED. 다음은 touch 검증 재개 |
 
 P0~P4 full PASS는 P4 기준선 기록이다. 현재 P5 브랜치에서는 P0 로컬 gate와 P1 PASS, Studio의 P0/P2/P3/P4 원시 suite PASS를 확인했지만 full evidence 재수집은 끝내지 않았다. 이전 P4 소스 길이 증거를 현재 빌드의 PASS로 재사용하지 않는다.
 
