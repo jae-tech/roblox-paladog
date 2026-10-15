@@ -1,0 +1,1257 @@
+[
+  {
+    "canonicalId": "vanguard",
+    "field": "foodCostMilli",
+    "sourceIds": [
+      "db.allyBase:#1:iMana_"
+    ],
+    "status": "confirmed",
+    "transformId": "count-to-milli-v1",
+    "unit": "milli",
+    "value": 10000
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "summonCooldownTicks",
+    "sourceIds": [
+      "db.allyBase:#1:iCltm_"
+    ],
+    "status": "confirmed",
+    "transformId": "seconds-to-ticks-ceil-v1",
+    "unit": "tick",
+    "value": 20
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "moveSpeed",
+    "sourceIds": [
+      "db.allyBase:#1:iMvSpd"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud/s",
+    "value": 3
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "attackRange",
+    "sourceIds": [
+      "db.allyBase:#1:iAtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 3.5
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "hitRadius",
+    "sourceIds": [
+      "db.allyBase:#1:iHtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 1.2
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "attack.cooldownTicks",
+    "sourceIds": [
+      "db.allyBase:#1:fAtDly"
+    ],
+    "status": "confirmed",
+    "transformId": "seconds-to-ticks-ceil-v1",
+    "unit": "tick",
+    "value": 66
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[1].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=1;L1:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 100
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[1].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=1;L1:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 20
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[1].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=1;L1:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 0
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[2].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=1;L2:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 105
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[2].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=1;L2:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 21
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[2].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=1;L2:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 250
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[3].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=1;L3:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 110
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[3].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=1;L3:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 22
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[3].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=1;L3:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 500
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[4].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=1;L4:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 115
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[4].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=1;L4:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 23
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[4].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=1;L4:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 750
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[5].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=1;L5:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 120
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[5].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=1;L5:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 24
+  },
+  {
+    "canonicalId": "vanguard",
+    "field": "levels[5].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=1;L5:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 1000
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "foodCostMilli",
+    "sourceIds": [
+      "db.allyBase:#2:iMana_"
+    ],
+    "status": "confirmed",
+    "transformId": "count-to-milli-v1",
+    "unit": "milli",
+    "value": 20000
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "summonCooldownTicks",
+    "sourceIds": [
+      "db.allyBase:#2:iCltm_"
+    ],
+    "status": "confirmed",
+    "transformId": "seconds-to-ticks-ceil-v1",
+    "unit": "tick",
+    "value": 40
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "moveSpeed",
+    "sourceIds": [
+      "db.allyBase:#2:iMvSpd"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud/s",
+    "value": 2.2
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "attackRange",
+    "sourceIds": [
+      "db.allyBase:#2:iAtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 20
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "hitRadius",
+    "sourceIds": [
+      "db.allyBase:#2:iHtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 1.2
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "attack.cooldownTicks",
+    "sourceIds": [
+      "db.allyBase:#2:fAtDly"
+    ],
+    "status": "confirmed",
+    "transformId": "seconds-to-ticks-ceil-v1",
+    "unit": "tick",
+    "value": 100
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[1].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=2;L1:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 100
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[1].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=2;L1:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 40
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[1].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=2;L1:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 2000
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[2].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=2;L2:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 105
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[2].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=2;L2:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 42
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[2].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=2;L2:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 500
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[3].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=2;L3:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 110
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[3].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=2;L3:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 44
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[3].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=2;L3:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 1000
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[4].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=2;L4:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 115
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[4].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=2;L4:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 46
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[4].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=2;L4:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 1500
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[5].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=2;L5:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 120
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[5].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=2;L5:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 48
+  },
+  {
+    "canonicalId": "slinger",
+    "field": "levels[5].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=2;L5:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 2000
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "foodCostMilli",
+    "sourceIds": [
+      "db.allyBase:#3:iMana_"
+    ],
+    "status": "confirmed",
+    "transformId": "count-to-milli-v1",
+    "unit": "milli",
+    "value": 30000
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "summonCooldownTicks",
+    "sourceIds": [
+      "db.allyBase:#3:iCltm_"
+    ],
+    "status": "confirmed",
+    "transformId": "seconds-to-ticks-ceil-v1",
+    "unit": "tick",
+    "value": 80
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "moveSpeed",
+    "sourceIds": [
+      "db.allyBase:#3:iMvSpd"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud/s",
+    "value": 2.3
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "attackRange",
+    "sourceIds": [
+      "db.allyBase:#3:iAtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 5
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "hitRadius",
+    "sourceIds": [
+      "db.allyBase:#3:iHtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 1.6
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "attack.cooldownTicks",
+    "sourceIds": [
+      "db.allyBase:#3:fAtDly"
+    ],
+    "status": "confirmed",
+    "transformId": "seconds-to-ticks-ceil-v1",
+    "unit": "tick",
+    "value": 40
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[1].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=3;L1:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 1200
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[1].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=3;L1:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 40
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[1].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=3;L1:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 10000
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[2].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=3;L2:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 1260
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[2].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=3;L2:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 42
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[2].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=3;L2:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 1000
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[3].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=3;L3:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 1320
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[3].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=3;L3:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 44
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[3].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=3;L3:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 2000
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[4].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=3;L4:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 1380
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[4].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=3;L4:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 46
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[4].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=3;L4:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 3000
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[5].maxHp",
+    "sourceIds": [
+      "db.unitLevel:N=3;L5:iNewHP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "hp",
+    "value": 1440
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[5].attackPower",
+    "sourceIds": [
+      "db.unitLevel:N=3;L5:iNewAP"
+    ],
+    "status": "confirmed",
+    "transformId": "campaign-level-replaces-base-v1",
+    "unit": "ap",
+    "value": 48
+  },
+  {
+    "canonicalId": "bulwark",
+    "field": "levels[5].referenceCostGold",
+    "sourceIds": [
+      "db.unitLevel:N=3;L5:iCost_"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 4000
+  },
+  {
+    "canonicalId": "scrapper",
+    "field": "stats.maxHp",
+    "sourceIds": [
+      "db.enemyBase:#10:iMaxHP"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "hp",
+    "value": 130
+  },
+  {
+    "canonicalId": "scrapper",
+    "field": "stats.attackPower",
+    "sourceIds": [
+      "db.enemyBase:#10:iAtPwr"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "ap",
+    "value": 20
+  },
+  {
+    "canonicalId": "scrapper",
+    "field": "stats.moveSpeed",
+    "sourceIds": [
+      "db.enemyBase:#10:iMvSpd"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud/s",
+    "value": 3
+  },
+  {
+    "canonicalId": "scrapper",
+    "field": "stats.attackRange",
+    "sourceIds": [
+      "db.enemyBase:#10:iAtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 2
+  },
+  {
+    "canonicalId": "scrapper",
+    "field": "stats.hitRadius",
+    "sourceIds": [
+      "db.enemyBase:#10:iHtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 1.2
+  },
+  {
+    "canonicalId": "scrapper",
+    "field": "attack.cooldownTicks",
+    "sourceIds": [
+      "db.enemyBase:#10:fAtDly"
+    ],
+    "status": "confirmed",
+    "transformId": "seconds-to-ticks-ceil-v1",
+    "unit": "tick",
+    "value": 30
+  },
+  {
+    "canonicalId": "scrapper",
+    "field": "killGold",
+    "sourceIds": [
+      "db.enemyBase:#10:iRwGld"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 18
+  },
+  {
+    "canonicalId": "scrapper",
+    "field": "killXp",
+    "sourceIds": [
+      "db.enemyBase:#10:iRwExp"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "xp",
+    "value": 12
+  },
+  {
+    "canonicalId": "spitter",
+    "field": "stats.maxHp",
+    "sourceIds": [
+      "db.enemyBase:#11:iMaxHP"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "hp",
+    "value": 80
+  },
+  {
+    "canonicalId": "spitter",
+    "field": "stats.attackPower",
+    "sourceIds": [
+      "db.enemyBase:#11:iAtPwr"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "ap",
+    "value": 30
+  },
+  {
+    "canonicalId": "spitter",
+    "field": "stats.moveSpeed",
+    "sourceIds": [
+      "db.enemyBase:#11:iMvSpd"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud/s",
+    "value": 2
+  },
+  {
+    "canonicalId": "spitter",
+    "field": "stats.attackRange",
+    "sourceIds": [
+      "db.enemyBase:#11:iAtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 10
+  },
+  {
+    "canonicalId": "spitter",
+    "field": "stats.hitRadius",
+    "sourceIds": [
+      "db.enemyBase:#11:iHtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 1.2
+  },
+  {
+    "canonicalId": "spitter",
+    "field": "attack.cooldownTicks",
+    "sourceIds": [
+      "db.enemyBase:#11:fAtDly"
+    ],
+    "status": "confirmed",
+    "transformId": "seconds-to-ticks-ceil-v1",
+    "unit": "tick",
+    "value": 54
+  },
+  {
+    "canonicalId": "spitter",
+    "field": "killGold",
+    "sourceIds": [
+      "db.enemyBase:#11:iRwGld"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 20
+  },
+  {
+    "canonicalId": "spitter",
+    "field": "killXp",
+    "sourceIds": [
+      "db.enemyBase:#11:iRwExp"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "xp",
+    "value": 13
+  },
+  {
+    "canonicalId": "brute",
+    "field": "stats.maxHp",
+    "sourceIds": [
+      "db.enemyBase:#17:iMaxHP"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "hp",
+    "value": 830
+  },
+  {
+    "canonicalId": "brute",
+    "field": "stats.attackPower",
+    "sourceIds": [
+      "db.enemyBase:#17:iAtPwr"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "ap",
+    "value": 330
+  },
+  {
+    "canonicalId": "brute",
+    "field": "stats.moveSpeed",
+    "sourceIds": [
+      "db.enemyBase:#17:iMvSpd"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud/s",
+    "value": 1.9
+  },
+  {
+    "canonicalId": "brute",
+    "field": "stats.attackRange",
+    "sourceIds": [
+      "db.enemyBase:#17:iAtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 5
+  },
+  {
+    "canonicalId": "brute",
+    "field": "stats.hitRadius",
+    "sourceIds": [
+      "db.enemyBase:#17:iHtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 1.5
+  },
+  {
+    "canonicalId": "brute",
+    "field": "attack.cooldownTicks",
+    "sourceIds": [
+      "db.enemyBase:#17:fAtDly"
+    ],
+    "status": "confirmed",
+    "transformId": "seconds-to-ticks-ceil-v1",
+    "unit": "tick",
+    "value": 40
+  },
+  {
+    "canonicalId": "brute",
+    "field": "killGold",
+    "sourceIds": [
+      "db.enemyBase:#17:iRwGld"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "gold",
+    "value": 45
+  },
+  {
+    "canonicalId": "brute",
+    "field": "killXp",
+    "sourceIds": [
+      "db.enemyBase:#17:iRwExp"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "xp",
+    "value": 19
+  },
+  {
+    "canonicalId": "wayfinder",
+    "field": "baseMaxHp",
+    "sourceIds": [
+      "db.hero:#0:iMaxHP"
+    ],
+    "status": "confirmed",
+    "transformId": "identity-v1",
+    "unit": "hp",
+    "value": 2000
+  },
+  {
+    "canonicalId": "wayfinder",
+    "field": "moveSpeed",
+    "sourceIds": [
+      "db.hero:#0:iMvSpd"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud/s",
+    "value": 6
+  },
+  {
+    "canonicalId": "wayfinder",
+    "field": "hitRadius",
+    "sourceIds": [
+      "db.hero:#0:iHtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 5
+  },
+  {
+    "canonicalId": "wayfinder",
+    "field": "supportRadius",
+    "sourceIds": [
+      "code.aura:paladog:radiusBase"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 7.5
+  },
+  {
+    "canonicalId": "pulse",
+    "field": "damage",
+    "sourceIds": [
+      "code.mace:#1:damageA",
+      "code.mace:#1:damageB"
+    ],
+    "status": "confirmed",
+    "transformId": "mace-damage-at-grade-1-v1",
+    "unit": "damage",
+    "value": 100
+  },
+  {
+    "canonicalId": "resources",
+    "field": "foodMaxMilli",
+    "sourceIds": [
+      "code.resource:paladog:foodBaseMax"
+    ],
+    "status": "confirmed",
+    "transformId": "count-to-milli-v1",
+    "unit": "milli",
+    "value": 40000
+  },
+  {
+    "canonicalId": "resources",
+    "field": "manaMaxMilli",
+    "sourceIds": [
+      "code.resource:paladog:manaBaseMax"
+    ],
+    "status": "confirmed",
+    "transformId": "count-to-milli-v1",
+    "unit": "milli",
+    "value": 100000
+  },
+  {
+    "canonicalId": "resources",
+    "field": "foodRegenMilliPerSec",
+    "sourceIds": [
+      "db.common:#4:fBigSc"
+    ],
+    "status": "confirmed",
+    "transformId": "regen-per-tenth-to-milli-per-sec-v1",
+    "unit": "milli/s",
+    "value": 2000
+  },
+  {
+    "canonicalId": "resources",
+    "field": "manaRegenMilliPerSec",
+    "sourceIds": [
+      "db.common:#4:fSkPct"
+    ],
+    "status": "confirmed",
+    "transformId": "regen-per-tenth-to-milli-per-sec-v1",
+    "unit": "milli/s",
+    "value": 2000
+  },
+  {
+    "canonicalId": "s01",
+    "field": "length",
+    "sourceIds": [
+      "code.map:normal:mapWidth"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 102.4
+  },
+  {
+    "canonicalId": "s01",
+    "field": "heroStartX",
+    "sourceIds": [
+      "code.map:normal:heroStartX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 10
+  },
+  {
+    "canonicalId": "s01",
+    "field": "enemySpawnX",
+    "sourceIds": [
+      "code.map:normal:enemySpawnX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 102.4
+  },
+  {
+    "canonicalId": "s01",
+    "field": "coreX",
+    "sourceIds": [
+      "code.map:normal:coreX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 90.4
+  },
+  {
+    "canonicalId": "s01",
+    "field": "advanceLimitX",
+    "sourceIds": [
+      "code.map:normal:advanceLimitX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 86.4
+  },
+  {
+    "canonicalId": "s01",
+    "field": "coreHitRadius",
+    "sourceIds": [
+      "db.hero:#255:iHtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 2.5
+  },
+  {
+    "canonicalId": "s02",
+    "field": "length",
+    "sourceIds": [
+      "code.map:normal:mapWidth"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 102.4
+  },
+  {
+    "canonicalId": "s02",
+    "field": "heroStartX",
+    "sourceIds": [
+      "code.map:normal:heroStartX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 10
+  },
+  {
+    "canonicalId": "s02",
+    "field": "enemySpawnX",
+    "sourceIds": [
+      "code.map:normal:enemySpawnX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 102.4
+  },
+  {
+    "canonicalId": "s02",
+    "field": "coreX",
+    "sourceIds": [
+      "code.map:normal:coreX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 90.4
+  },
+  {
+    "canonicalId": "s02",
+    "field": "advanceLimitX",
+    "sourceIds": [
+      "code.map:normal:advanceLimitX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 86.4
+  },
+  {
+    "canonicalId": "s02",
+    "field": "coreHitRadius",
+    "sourceIds": [
+      "db.hero:#255:iHtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 2.5
+  },
+  {
+    "canonicalId": "s03",
+    "field": "length",
+    "sourceIds": [
+      "code.map:normal:mapWidth"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 102.4
+  },
+  {
+    "canonicalId": "s03",
+    "field": "heroStartX",
+    "sourceIds": [
+      "code.map:normal:heroStartX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 10
+  },
+  {
+    "canonicalId": "s03",
+    "field": "enemySpawnX",
+    "sourceIds": [
+      "code.map:normal:enemySpawnX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 102.4
+  },
+  {
+    "canonicalId": "s03",
+    "field": "coreX",
+    "sourceIds": [
+      "code.map:normal:coreX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 90.4
+  },
+  {
+    "canonicalId": "s03",
+    "field": "advanceLimitX",
+    "sourceIds": [
+      "code.map:normal:advanceLimitX"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 86.4
+  },
+  {
+    "canonicalId": "s03",
+    "field": "coreHitRadius",
+    "sourceIds": [
+      "db.hero:#255:iHtDst"
+    ],
+    "status": "confirmed",
+    "transformId": "px-to-stud-v1",
+    "unit": "stud",
+    "value": 2.5
+  }
+]

@@ -1,0 +1,1201 @@
+{
+  "ally_bolt.maxDistance": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "ally_bolt.pierce": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "ally_bolt.radius": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "ally_bolt.speed": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "ally_bolt.ttlTicks": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "brute.attack.cooldownTicks": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#17:fAtDly"
+    ],
+    "transformId": "seconds-to-ticks-ceil-v1"
+  },
+  "brute.attack.kind": {
+    "decisionId": "MVP-ENEMY-01",
+    "kind": "decision"
+  },
+  "brute.attack.recoveryTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "brute.attack.windupTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "brute.killGold": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#17:iRwGld"
+    ],
+    "transformId": "identity-v1"
+  },
+  "brute.killXp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#17:iRwExp"
+    ],
+    "transformId": "identity-v1"
+  },
+  "brute.presentationId": {
+    "decisionId": "MVP-ENEMY-01",
+    "kind": "decision"
+  },
+  "brute.stats.attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#17:iAtPwr"
+    ],
+    "transformId": "identity-v1"
+  },
+  "brute.stats.attackRange": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#17:iAtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "brute.stats.hitRadius": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#17:iHtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "brute.stats.maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#17:iMaxHP"
+    ],
+    "transformId": "identity-v1"
+  },
+  "brute.stats.moveSpeed": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#17:iMvSpd"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "bulwark.attack.cooldownTicks": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#3:fAtDly"
+    ],
+    "transformId": "seconds-to-ticks-ceil-v1"
+  },
+  "bulwark.attack.kind": {
+    "decisionId": "MVP-UNIT-01",
+    "kind": "decision"
+  },
+  "bulwark.attack.recoveryTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "bulwark.attack.windupTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "bulwark.attackRange": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#3:iAtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "bulwark.foodCostMilli": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#3:iMana_"
+    ],
+    "transformId": "count-to-milli-v1"
+  },
+  "bulwark.hitRadius": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#3:iHtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "bulwark.levels[1].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=3;L1:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "bulwark.levels[1].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=3;L1:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "bulwark.levels[1].purchaseCostGold": {
+    "decisionId": "MVP-ECON-02",
+    "kind": "decision"
+  },
+  "bulwark.levels[2].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=3;L2:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "bulwark.levels[2].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=3;L2:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "bulwark.levels[2].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=3;L2:iCost_"
+    ]
+  },
+  "bulwark.levels[3].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=3;L3:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "bulwark.levels[3].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=3;L3:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "bulwark.levels[3].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=3;L3:iCost_"
+    ]
+  },
+  "bulwark.levels[4].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=3;L4:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "bulwark.levels[4].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=3;L4:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "bulwark.levels[4].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=3;L4:iCost_"
+    ]
+  },
+  "bulwark.levels[5].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=3;L5:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "bulwark.levels[5].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=3;L5:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "bulwark.levels[5].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=3;L5:iCost_"
+    ]
+  },
+  "bulwark.moveSpeed": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#3:iMvSpd"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "bulwark.presentationId": {
+    "decisionId": "MVP-UNIT-01",
+    "kind": "decision"
+  },
+  "bulwark.summonCooldownTicks": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#3:iCltm_"
+    ],
+    "transformId": "seconds-to-ticks-ceil-v1"
+  },
+  "enemy_bolt.maxDistance": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "enemy_bolt.pierce": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "enemy_bolt.radius": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "enemy_bolt.speed": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "enemy_bolt.ttlTicks": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "limits.allyCap": {
+    "decisionId": "MVP-LIMIT-01",
+    "kind": "decision"
+  },
+  "limits.enemyCap": {
+    "decisionId": "MVP-LIMIT-01",
+    "kind": "decision"
+  },
+  "limits.projectileCap": {
+    "decisionId": "MVP-LIMIT-01",
+    "kind": "decision"
+  },
+  "progression.goldMax": {
+    "decisionId": "MVP-GROWTH-01",
+    "kind": "decision"
+  },
+  "progression.heroLevelCap": {
+    "decisionId": "MVP-GROWTH-01",
+    "kind": "decision"
+  },
+  "progression.startGold": {
+    "decisionId": "MVP-GROWTH-01",
+    "kind": "decision"
+  },
+  "progression.totalXpMax": {
+    "decisionId": "MVP-GROWTH-01",
+    "kind": "decision"
+  },
+  "progression.traits": {
+    "decisionId": "MVP-GROWTH-01",
+    "kind": "decision"
+  },
+  "progression.unitMaxLevel": {
+    "decisionId": "MVP-GROWTH-01",
+    "kind": "decision"
+  },
+  "progression.xpCurveBase": {
+    "decisionId": "MVP-GROWTH-01",
+    "kind": "decision"
+  },
+  "pulse.cooldownTicks": {
+    "decisionId": "MVP-SKILL-01",
+    "kind": "decision"
+  },
+  "pulse.damage": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.mace:#1:damageA",
+      "code.mace:#1:damageB"
+    ],
+    "transformId": "mace-damage-at-grade-1-v1"
+  },
+  "pulse.manaCostMilli": {
+    "decisionId": "MVP-SKILL-01",
+    "kind": "decision"
+  },
+  "pulse.projectileId": {
+    "decisionId": "MVP-SKILL-01",
+    "kind": "decision"
+  },
+  "pulse.recoveryTicks": {
+    "decisionId": "MVP-SKILL-01",
+    "kind": "decision"
+  },
+  "pulse.windupTicks": {
+    "decisionId": "MVP-SKILL-01",
+    "kind": "decision"
+  },
+  "pulse_bolt.maxDistance": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "pulse_bolt.pierce": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "pulse_bolt.radius": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "pulse_bolt.speed": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "pulse_bolt.ttlTicks": {
+    "decisionId": "MVP-PROJ-01",
+    "kind": "decision"
+  },
+  "resources.foodMaxMilli": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.resource:paladog:foodBaseMax"
+    ],
+    "transformId": "count-to-milli-v1"
+  },
+  "resources.foodRegenMilliPerSec": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.common:#4:fBigSc"
+    ],
+    "transformId": "regen-per-tenth-to-milli-per-sec-v1"
+  },
+  "resources.foodStartMilli": {
+    "decisionId": "MVP-RES-01",
+    "kind": "decision"
+  },
+  "resources.manaMaxMilli": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.resource:paladog:manaBaseMax"
+    ],
+    "transformId": "count-to-milli-v1"
+  },
+  "resources.manaRegenMilliPerSec": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.common:#4:fSkPct"
+    ],
+    "transformId": "regen-per-tenth-to-milli-per-sec-v1"
+  },
+  "resources.manaStartMilli": {
+    "decisionId": "MVP-RES-01",
+    "kind": "decision"
+  },
+  "s01.advanceLimitX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:advanceLimitX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s01.allySpawnX": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s01.blockCount": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s01.choices": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s01.coreHitRadius": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.hero:#255:iHtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s01.coreMaxHp": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s01.coreX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:coreX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s01.enemySpawnX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:enemySpawnX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s01.fastMaxTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s01.fastMinTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s01.firstWinGold": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s01.heroStartX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:heroStartX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s01.length": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:mapWidth"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s01.slowMaxTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s01.slowMinTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s01.timeLimitTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s01.winGold": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s01.winXp": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.advanceLimitX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:advanceLimitX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s02.allySpawnX": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.blockCount": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.choices": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.coreHitRadius": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.hero:#255:iHtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s02.coreMaxHp": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.coreX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:coreX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s02.enemySpawnX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:enemySpawnX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s02.fastMaxTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.fastMinTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.firstWinGold": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.heroStartX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:heroStartX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s02.length": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:mapWidth"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s02.prerequisiteId": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.slowMaxTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.slowMinTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.timeLimitTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.winGold": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s02.winXp": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.advanceLimitX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:advanceLimitX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s03.allySpawnX": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.blockCount": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.choices": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.coreHitRadius": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.hero:#255:iHtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s03.coreMaxHp": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.coreX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:coreX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s03.enemySpawnX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:enemySpawnX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s03.fastMaxTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.fastMinTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.firstWinGold": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.heroStartX": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:heroStartX"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s03.length": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.map:normal:mapWidth"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "s03.prerequisiteId": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.slowMaxTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.slowMinTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.timeLimitTicks": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.winGold": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "s03.winXp": {
+    "decisionId": "MVP-STAGE-01",
+    "kind": "decision"
+  },
+  "scrapper.attack.cooldownTicks": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#10:fAtDly"
+    ],
+    "transformId": "seconds-to-ticks-ceil-v1"
+  },
+  "scrapper.attack.kind": {
+    "decisionId": "MVP-ENEMY-01",
+    "kind": "decision"
+  },
+  "scrapper.attack.recoveryTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "scrapper.attack.windupTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "scrapper.killGold": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#10:iRwGld"
+    ],
+    "transformId": "identity-v1"
+  },
+  "scrapper.killXp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#10:iRwExp"
+    ],
+    "transformId": "identity-v1"
+  },
+  "scrapper.presentationId": {
+    "decisionId": "MVP-ENEMY-01",
+    "kind": "decision"
+  },
+  "scrapper.stats.attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#10:iAtPwr"
+    ],
+    "transformId": "identity-v1"
+  },
+  "scrapper.stats.attackRange": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#10:iAtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "scrapper.stats.hitRadius": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#10:iHtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "scrapper.stats.maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#10:iMaxHP"
+    ],
+    "transformId": "identity-v1"
+  },
+  "scrapper.stats.moveSpeed": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#10:iMvSpd"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "slinger.attack.cooldownTicks": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#2:fAtDly"
+    ],
+    "transformId": "seconds-to-ticks-ceil-v1"
+  },
+  "slinger.attack.kind": {
+    "decisionId": "MVP-UNIT-01",
+    "kind": "decision"
+  },
+  "slinger.attack.projectileId": {
+    "decisionId": "MVP-UNIT-01",
+    "kind": "decision"
+  },
+  "slinger.attack.recoveryTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "slinger.attack.windupTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "slinger.attackRange": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#2:iAtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "slinger.foodCostMilli": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#2:iMana_"
+    ],
+    "transformId": "count-to-milli-v1"
+  },
+  "slinger.hitRadius": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#2:iHtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "slinger.levels[1].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=2;L1:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "slinger.levels[1].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=2;L1:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "slinger.levels[1].purchaseCostGold": {
+    "decisionId": "MVP-ECON-02",
+    "kind": "decision"
+  },
+  "slinger.levels[2].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=2;L2:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "slinger.levels[2].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=2;L2:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "slinger.levels[2].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=2;L2:iCost_"
+    ]
+  },
+  "slinger.levels[3].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=2;L3:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "slinger.levels[3].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=2;L3:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "slinger.levels[3].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=2;L3:iCost_"
+    ]
+  },
+  "slinger.levels[4].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=2;L4:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "slinger.levels[4].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=2;L4:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "slinger.levels[4].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=2;L4:iCost_"
+    ]
+  },
+  "slinger.levels[5].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=2;L5:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "slinger.levels[5].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=2;L5:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "slinger.levels[5].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=2;L5:iCost_"
+    ]
+  },
+  "slinger.moveSpeed": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#2:iMvSpd"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "slinger.presentationId": {
+    "decisionId": "MVP-UNIT-01",
+    "kind": "decision"
+  },
+  "slinger.summonCooldownTicks": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#2:iCltm_"
+    ],
+    "transformId": "seconds-to-ticks-ceil-v1"
+  },
+  "spitter.attack.cooldownTicks": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#11:fAtDly"
+    ],
+    "transformId": "seconds-to-ticks-ceil-v1"
+  },
+  "spitter.attack.kind": {
+    "decisionId": "MVP-ENEMY-01",
+    "kind": "decision"
+  },
+  "spitter.attack.projectileId": {
+    "decisionId": "MVP-ENEMY-01",
+    "kind": "decision"
+  },
+  "spitter.attack.recoveryTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "spitter.attack.windupTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "spitter.killGold": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#11:iRwGld"
+    ],
+    "transformId": "identity-v1"
+  },
+  "spitter.killXp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#11:iRwExp"
+    ],
+    "transformId": "identity-v1"
+  },
+  "spitter.presentationId": {
+    "decisionId": "MVP-ENEMY-01",
+    "kind": "decision"
+  },
+  "spitter.stats.attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#11:iAtPwr"
+    ],
+    "transformId": "identity-v1"
+  },
+  "spitter.stats.attackRange": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#11:iAtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "spitter.stats.hitRadius": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#11:iHtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "spitter.stats.maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#11:iMaxHP"
+    ],
+    "transformId": "identity-v1"
+  },
+  "spitter.stats.moveSpeed": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.enemyBase:#11:iMvSpd"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "vanguard.attack.cooldownTicks": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#1:fAtDly"
+    ],
+    "transformId": "seconds-to-ticks-ceil-v1"
+  },
+  "vanguard.attack.kind": {
+    "decisionId": "MVP-UNIT-01",
+    "kind": "decision"
+  },
+  "vanguard.attack.recoveryTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "vanguard.attack.windupTicks": {
+    "decisionId": "MVP-TIMING-01",
+    "kind": "decision"
+  },
+  "vanguard.attackRange": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#1:iAtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "vanguard.foodCostMilli": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#1:iMana_"
+    ],
+    "transformId": "count-to-milli-v1"
+  },
+  "vanguard.hitRadius": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#1:iHtDst"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "vanguard.levels[1].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=1;L1:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "vanguard.levels[1].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=1;L1:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "vanguard.levels[1].purchaseCostGold": {
+    "decisionId": "MVP-ECON-02",
+    "kind": "decision"
+  },
+  "vanguard.levels[2].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=1;L2:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "vanguard.levels[2].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=1;L2:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "vanguard.levels[2].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=1;L2:iCost_"
+    ]
+  },
+  "vanguard.levels[3].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=1;L3:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "vanguard.levels[3].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=1;L3:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "vanguard.levels[3].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=1;L3:iCost_"
+    ]
+  },
+  "vanguard.levels[4].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=1;L4:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "vanguard.levels[4].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=1;L4:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "vanguard.levels[4].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=1;L4:iCost_"
+    ]
+  },
+  "vanguard.levels[5].attackPower": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=1;L5:iNewAP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "vanguard.levels[5].maxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.unitLevel:N=1;L5:iNewHP"
+    ],
+    "transformId": "campaign-level-replaces-base-v1"
+  },
+  "vanguard.levels[5].purchaseCostGold": {
+    "decisionId": "MVP-ECON-01",
+    "kind": "scaled",
+    "scale": "0.1",
+    "sourceIds": [
+      "db.unitLevel:N=1;L5:iCost_"
+    ]
+  },
+  "vanguard.moveSpeed": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#1:iMvSpd"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "vanguard.presentationId": {
+    "decisionId": "MVP-UNIT-01",
+    "kind": "decision"
+  },
+  "vanguard.summonCooldownTicks": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.allyBase:#1:iCltm_"
+    ],
+    "transformId": "seconds-to-ticks-ceil-v1"
+  },
+  "wayfinder.baseMaxHp": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.hero:#0:iMaxHP"
+    ],
+    "transformId": "identity-v1"
+  },
+  "wayfinder.hitRadius": {
+    "decisionId": "MVP-HERO-01",
+    "kind": "override",
+    "referenceValue": 5,
+    "sourceIds": [
+      "db.hero:#0:iHtDst"
+    ]
+  },
+  "wayfinder.moveSpeed": {
+    "kind": "reference",
+    "sourceIds": [
+      "db.hero:#0:iMvSpd"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "wayfinder.presentationId": {
+    "decisionId": "MVP-UNIT-01",
+    "kind": "decision"
+  },
+  "wayfinder.supportDamageNumerator": {
+    "decisionId": "MVP-HERO-02",
+    "kind": "decision"
+  },
+  "wayfinder.supportRadius": {
+    "kind": "reference",
+    "sourceIds": [
+      "code.aura:paladog:radiusBase"
+    ],
+    "transformId": "px-to-stud-v1"
+  },
+  "wayfinder.weaponSkillId": {
+    "decisionId": "MVP-UNIT-01",
+    "kind": "decision"
+  }
+}

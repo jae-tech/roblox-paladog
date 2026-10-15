@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "presentationId": "wayfinder_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+    },
+    {
+      "presentationId": "vanguard_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+    },
+    {
+      "presentationId": "slinger_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+    },
+    {
+      "presentationId": "bulwark_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+    },
+    {
+      "presentationId": "scrapper_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+    },
+    {
+      "presentationId": "spitter_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+    },
+    {
+      "presentationId": "brute_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+    }
+  ]
+}

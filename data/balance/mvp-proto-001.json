@@ -1,0 +1,386 @@
+{
+  "balanceHash": "1575c6baae84eda23d82204542ee10ac70b75c680561d1046e732e5df34951fa",
+  "balanceVersion": "mvp-proto-001",
+  "configSchemaVersion": 1,
+  "enemies": {
+    "brute": {
+      "attack": {
+        "cooldownTicks": 40,
+        "kind": "Melee",
+        "recoveryTicks": 8,
+        "windupTicks": 6
+      },
+      "id": "brute",
+      "killGold": 45,
+      "killXp": 19,
+      "presentationId": "brute_placeholder",
+      "stats": {
+        "attackPower": 330,
+        "attackRange": 5,
+        "hitRadius": 1.5,
+        "maxHp": 830,
+        "moveSpeed": 1.9
+      }
+    },
+    "scrapper": {
+      "attack": {
+        "cooldownTicks": 30,
+        "kind": "Melee",
+        "recoveryTicks": 5,
+        "windupTicks": 5
+      },
+      "id": "scrapper",
+      "killGold": 18,
+      "killXp": 12,
+      "presentationId": "scrapper_placeholder",
+      "stats": {
+        "attackPower": 20,
+        "attackRange": 2,
+        "hitRadius": 1.2,
+        "maxHp": 130,
+        "moveSpeed": 3
+      }
+    },
+    "spitter": {
+      "attack": {
+        "cooldownTicks": 54,
+        "kind": "Projectile",
+        "projectileId": "enemy_bolt",
+        "recoveryTicks": 5,
+        "windupTicks": 9
+      },
+      "id": "spitter",
+      "killGold": 20,
+      "killXp": 13,
+      "presentationId": "spitter_placeholder",
+      "stats": {
+        "attackPower": 30,
+        "attackRange": 10,
+        "hitRadius": 1.2,
+        "maxHp": 80,
+        "moveSpeed": 2
+      }
+    }
+  },
+  "hero": {
+    "baseMaxHp": 2000,
+    "hitRadius": 1.5,
+    "id": "wayfinder",
+    "moveSpeed": 6,
+    "presentationId": "wayfinder_placeholder",
+    "supportDamageNumerator": 110,
+    "supportRadius": 7.5,
+    "weaponSkillId": "pulse"
+  },
+  "limits": {
+    "allyCap": 30,
+    "enemyCap": 40,
+    "projectileCap": 128
+  },
+  "overlayFileSha256": "518526c7a3072cd5769ba572f0c3def213deffa5b97c7900bbfd3990f23e2f67",
+  "progression": {
+    "goldMax": 999999999,
+    "heroLevelCap": 10,
+    "startGold": 0,
+    "totalXpMax": 1000000000,
+    "traits": {
+      "focus": {
+        "manaRegenMilliPerSecPerPoint": 250,
+        "maxPoints": 3
+      },
+      "provisions": {
+        "foodRegenMilliPerSecPerPoint": 250,
+        "maxPoints": 3
+      },
+      "vitality": {
+        "heroMaxHpPerPoint": 200,
+        "maxPoints": 3
+      }
+    },
+    "unitMaxLevel": 5,
+    "xpCurveBase": 100
+  },
+  "projectiles": {
+    "ally_bolt": {
+      "id": "ally_bolt",
+      "maxDistance": 120,
+      "pierce": 1,
+      "radius": 0.2,
+      "speed": 60,
+      "ttlTicks": 40
+    },
+    "enemy_bolt": {
+      "id": "enemy_bolt",
+      "maxDistance": 45,
+      "pierce": 1,
+      "radius": 0.2,
+      "speed": 15,
+      "ttlTicks": 60
+    },
+    "pulse_bolt": {
+      "id": "pulse_bolt",
+      "maxDistance": 25,
+      "pierce": 1,
+      "radius": 0.3,
+      "speed": 25,
+      "ttlTicks": 20
+    }
+  },
+  "resources": {
+    "foodMaxMilli": 40000,
+    "foodRegenMilliPerSec": 2000,
+    "foodStartMilli": 0,
+    "manaMaxMilli": 100000,
+    "manaRegenMilliPerSec": 2000,
+    "manaStartMilli": 0
+  },
+  "skills": {
+    "pulse": {
+      "cooldownTicks": 30,
+      "damage": 100,
+      "id": "pulse",
+      "manaCostMilli": 10000,
+      "projectileId": "pulse_bolt",
+      "recoveryTicks": 6,
+      "windupTicks": 4
+    }
+  },
+  "stages": {
+    "s01": {
+      "advanceLimitX": 86.4,
+      "allySpawnX": 0,
+      "blockCount": 3,
+      "choices": [
+        {
+          "enemyId": "scrapper",
+          "weight": 100
+        }
+      ],
+      "coreHitRadius": 2.5,
+      "coreMaxHp": 600,
+      "coreX": 90.4,
+      "enemySpawnX": 102.4,
+      "fastMaxTicks": 60,
+      "fastMinTicks": 40,
+      "firstWinGold": 100,
+      "heroStartX": 10,
+      "id": "s01",
+      "length": 102.4,
+      "slowMaxTicks": 120,
+      "slowMinTicks": 100,
+      "timeLimitTicks": 12000,
+      "winGold": 100,
+      "winXp": 60
+    },
+    "s02": {
+      "advanceLimitX": 86.4,
+      "allySpawnX": 0,
+      "blockCount": 5,
+      "choices": [
+        {
+          "enemyId": "scrapper",
+          "weight": 70
+        },
+        {
+          "enemyId": "spitter",
+          "weight": 30
+        }
+      ],
+      "coreHitRadius": 2.5,
+      "coreMaxHp": 900,
+      "coreX": 90.4,
+      "enemySpawnX": 102.4,
+      "fastMaxTicks": 50,
+      "fastMinTicks": 30,
+      "firstWinGold": 100,
+      "heroStartX": 10,
+      "id": "s02",
+      "length": 102.4,
+      "prerequisiteId": "s01",
+      "slowMaxTicks": 100,
+      "slowMinTicks": 80,
+      "timeLimitTicks": 12000,
+      "winGold": 150,
+      "winXp": 100
+    },
+    "s03": {
+      "advanceLimitX": 86.4,
+      "allySpawnX": 0,
+      "blockCount": 6,
+      "choices": [
+        {
+          "enemyId": "scrapper",
+          "weight": 50
+        },
+        {
+          "enemyId": "spitter",
+          "weight": 30
+        },
+        {
+          "enemyId": "brute",
+          "weight": 20
+        }
+      ],
+      "coreHitRadius": 2.5,
+      "coreMaxHp": 1400,
+      "coreX": 90.4,
+      "enemySpawnX": 102.4,
+      "fastMaxTicks": 40,
+      "fastMinTicks": 20,
+      "firstWinGold": 100,
+      "heroStartX": 10,
+      "id": "s03",
+      "length": 102.4,
+      "prerequisiteId": "s02",
+      "slowMaxTicks": 90,
+      "slowMinTicks": 70,
+      "timeLimitTicks": 12000,
+      "winGold": 220,
+      "winXp": 160
+    }
+  },
+  "units": {
+    "bulwark": {
+      "attack": {
+        "cooldownTicks": 40,
+        "kind": "Melee",
+        "recoveryTicks": 9,
+        "windupTicks": 7
+      },
+      "attackRange": 5,
+      "foodCostMilli": 30000,
+      "hitRadius": 1.6,
+      "id": "bulwark",
+      "levels": [
+        {
+          "attackPower": 40,
+          "level": 1,
+          "maxHp": 1200,
+          "purchaseCostGold": 0
+        },
+        {
+          "attackPower": 42,
+          "level": 2,
+          "maxHp": 1260,
+          "purchaseCostGold": 100
+        },
+        {
+          "attackPower": 44,
+          "level": 3,
+          "maxHp": 1320,
+          "purchaseCostGold": 200
+        },
+        {
+          "attackPower": 46,
+          "level": 4,
+          "maxHp": 1380,
+          "purchaseCostGold": 300
+        },
+        {
+          "attackPower": 48,
+          "level": 5,
+          "maxHp": 1440,
+          "purchaseCostGold": 400
+        }
+      ],
+      "moveSpeed": 2.3,
+      "presentationId": "bulwark_placeholder",
+      "summonCooldownTicks": 80
+    },
+    "slinger": {
+      "attack": {
+        "cooldownTicks": 100,
+        "kind": "Projectile",
+        "projectileId": "ally_bolt",
+        "recoveryTicks": 7,
+        "windupTicks": 5
+      },
+      "attackRange": 20,
+      "foodCostMilli": 20000,
+      "hitRadius": 1.2,
+      "id": "slinger",
+      "levels": [
+        {
+          "attackPower": 40,
+          "level": 1,
+          "maxHp": 100,
+          "purchaseCostGold": 0
+        },
+        {
+          "attackPower": 42,
+          "level": 2,
+          "maxHp": 105,
+          "purchaseCostGold": 50
+        },
+        {
+          "attackPower": 44,
+          "level": 3,
+          "maxHp": 110,
+          "purchaseCostGold": 100
+        },
+        {
+          "attackPower": 46,
+          "level": 4,
+          "maxHp": 115,
+          "purchaseCostGold": 150
+        },
+        {
+          "attackPower": 48,
+          "level": 5,
+          "maxHp": 120,
+          "purchaseCostGold": 200
+        }
+      ],
+      "moveSpeed": 2.2,
+      "presentationId": "slinger_placeholder",
+      "summonCooldownTicks": 40
+    },
+    "vanguard": {
+      "attack": {
+        "cooldownTicks": 66,
+        "kind": "Melee",
+        "recoveryTicks": 7,
+        "windupTicks": 3
+      },
+      "attackRange": 3.5,
+      "foodCostMilli": 10000,
+      "hitRadius": 1.2,
+      "id": "vanguard",
+      "levels": [
+        {
+          "attackPower": 20,
+          "level": 1,
+          "maxHp": 100,
+          "purchaseCostGold": 0
+        },
+        {
+          "attackPower": 21,
+          "level": 2,
+          "maxHp": 105,
+          "purchaseCostGold": 25
+        },
+        {
+          "attackPower": 22,
+          "level": 3,
+          "maxHp": 110,
+          "purchaseCostGold": 50
+        },
+        {
+          "attackPower": 23,
+          "level": 4,
+          "maxHp": 115,
+          "purchaseCostGold": 75
+        },
+        {
+          "attackPower": 24,
+          "level": 5,
+          "maxHp": 120,
+          "purchaseCostGold": 100
+        }
+      ],
+      "moveSpeed": 3,
+      "presentationId": "vanguard_placeholder",
+      "summonCooldownTicks": 20
+    }
+  }
+}

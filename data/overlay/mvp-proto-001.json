@@ -1,0 +1,84 @@
+{
+  "balanceVersion": "mvp-proto-001",
+  "decisions": {
+    "MVP-UNIT-01": {"reason": "Original unit identities/presentation; attack kinds per DATA_MODELS §3.2", "approvedBy": null},
+    "MVP-TIMING-01": {"reason": "New windup/recovery timings (not original animation lengths), DATA_MODELS §3.2/§3.3", "approvedBy": null},
+    "MVP-ECON-01": {"reason": "Upgrade cost = reference next-level cost x0.1 (new economy overlay), DATA_MODELS §3.2", "approvedBy": null},
+    "MVP-ECON-02": {"reason": "All units owned at L1 for free; original unlock costs/chain unused, PRD §3.3", "approvedBy": null},
+    "MVP-ENEMY-01": {"reason": "Original enemy identities/presentation; attack kinds per DATA_MODELS §3.3", "approvedBy": null},
+    "MVP-HERO-01": {"reason": "Hero hit radius 1.5 is new; reference iHtDst 50px would make the hero a wide blocker", "approvedBy": null},
+    "MVP-HERO-02": {"reason": "Support field +10% ally damage (new effect; only radius references E03 §5)", "approvedBy": null},
+    "MVP-SKILL-01": {"reason": "pulse mana/cooldown/windup/recovery and projectile are new, DATA_MODELS §3.1", "approvedBy": null},
+    "MVP-PROJ-01": {"reason": "Projectile definitions are new; similar appendix numbers do not imply a mapping", "approvedBy": null},
+    "MVP-RES-01": {"reason": "Battle resources start at 0 (matches E04 §1-2 behaviour, restated as new rule)", "approvedBy": null},
+    "MVP-STAGE-01": {"reason": "Stages s01~s03 are new: spawn tables, core HP, rewards, time limit, DATA_MODELS §3.4", "approvedBy": null},
+    "MVP-GROWTH-01": {"reason": "Hero level curve 100*L^2, traits and caps are new, DATA_MODELS §5", "approvedBy": null},
+    "MVP-LIMIT-01": {"reason": "Entity/projectile caps, DATA_MODELS §3.5", "approvedBy": null}
+  },
+  "values": [
+    {"canonicalId": "vanguard", "decisionId": "MVP-UNIT-01", "fields": {"presentationId": "vanguard_placeholder", "attack.kind": "Melee"}},
+    {"canonicalId": "slinger", "decisionId": "MVP-UNIT-01", "fields": {"presentationId": "slinger_placeholder", "attack.kind": "Projectile", "attack.projectileId": "ally_bolt"}},
+    {"canonicalId": "bulwark", "decisionId": "MVP-UNIT-01", "fields": {"presentationId": "bulwark_placeholder", "attack.kind": "Melee"}},
+    {"canonicalId": "vanguard", "decisionId": "MVP-TIMING-01", "fields": {"attack.windupTicks": 3, "attack.recoveryTicks": 7}},
+    {"canonicalId": "slinger", "decisionId": "MVP-TIMING-01", "fields": {"attack.windupTicks": 5, "attack.recoveryTicks": 7}},
+    {"canonicalId": "bulwark", "decisionId": "MVP-TIMING-01", "fields": {"attack.windupTicks": 7, "attack.recoveryTicks": 9}},
+    {"canonicalId": "vanguard", "decisionId": "MVP-ECON-02", "fields": {"levels[1].purchaseCostGold": 0}},
+    {"canonicalId": "slinger", "decisionId": "MVP-ECON-02", "fields": {"levels[1].purchaseCostGold": 0}},
+    {"canonicalId": "bulwark", "decisionId": "MVP-ECON-02", "fields": {"levels[1].purchaseCostGold": 0}},
+    {"canonicalId": "scrapper", "decisionId": "MVP-ENEMY-01", "fields": {"presentationId": "scrapper_placeholder", "attack.kind": "Melee"}},
+    {"canonicalId": "spitter", "decisionId": "MVP-ENEMY-01", "fields": {"presentationId": "spitter_placeholder", "attack.kind": "Projectile", "attack.projectileId": "enemy_bolt"}},
+    {"canonicalId": "brute", "decisionId": "MVP-ENEMY-01", "fields": {"presentationId": "brute_placeholder", "attack.kind": "Melee"}},
+    {"canonicalId": "scrapper", "decisionId": "MVP-TIMING-01", "fields": {"attack.windupTicks": 5, "attack.recoveryTicks": 5}},
+    {"canonicalId": "spitter", "decisionId": "MVP-TIMING-01", "fields": {"attack.windupTicks": 9, "attack.recoveryTicks": 5}},
+    {"canonicalId": "brute", "decisionId": "MVP-TIMING-01", "fields": {"attack.windupTicks": 6, "attack.recoveryTicks": 8}},
+    {"canonicalId": "wayfinder", "decisionId": "MVP-UNIT-01", "fields": {"presentationId": "wayfinder_placeholder", "weaponSkillId": "pulse"}},
+    {"canonicalId": "wayfinder", "decisionId": "MVP-HERO-02", "fields": {"supportDamageNumerator": 110}},
+    {"canonicalId": "pulse", "decisionId": "MVP-SKILL-01", "fields": {"manaCostMilli": 10000, "cooldownTicks": 30, "windupTicks": 4, "recoveryTicks": 6, "projectileId": "pulse_bolt"}},
+    {"canonicalId": "ally_bolt", "decisionId": "MVP-PROJ-01", "fields": {"speed": 60, "radius": 0.2, "ttlTicks": 40, "maxDistance": 120, "pierce": 1}},
+    {"canonicalId": "enemy_bolt", "decisionId": "MVP-PROJ-01", "fields": {"speed": 15, "radius": 0.2, "ttlTicks": 60, "maxDistance": 45, "pierce": 1}},
+    {"canonicalId": "pulse_bolt", "decisionId": "MVP-PROJ-01", "fields": {"speed": 25, "radius": 0.3, "ttlTicks": 20, "maxDistance": 25, "pierce": 1}},
+    {"canonicalId": "resources", "decisionId": "MVP-RES-01", "fields": {"foodStartMilli": 0, "manaStartMilli": 0}},
+    {"canonicalId": "s01", "decisionId": "MVP-STAGE-01", "fields": {"allySpawnX": 0, "coreMaxHp": 600, "slowMinTicks": 100, "slowMaxTicks": 120, "fastMinTicks": 40, "fastMaxTicks": 60, "blockCount": 3, "choices": [{"enemyId": "scrapper", "weight": 100}], "timeLimitTicks": 12000, "winGold": 100, "winXp": 60, "firstWinGold": 100}},
+    {"canonicalId": "s02", "decisionId": "MVP-STAGE-01", "fields": {"prerequisiteId": "s01", "allySpawnX": 0, "coreMaxHp": 900, "slowMinTicks": 80, "slowMaxTicks": 100, "fastMinTicks": 30, "fastMaxTicks": 50, "blockCount": 5, "choices": [{"enemyId": "scrapper", "weight": 70}, {"enemyId": "spitter", "weight": 30}], "timeLimitTicks": 12000, "winGold": 150, "winXp": 100, "firstWinGold": 100}},
+    {"canonicalId": "s03", "decisionId": "MVP-STAGE-01", "fields": {"prerequisiteId": "s02", "allySpawnX": 0, "coreMaxHp": 1400, "slowMinTicks": 70, "slowMaxTicks": 90, "fastMinTicks": 20, "fastMaxTicks": 40, "blockCount": 6, "choices": [{"enemyId": "scrapper", "weight": 50}, {"enemyId": "spitter", "weight": 30}, {"enemyId": "brute", "weight": 20}], "timeLimitTicks": 12000, "winGold": 220, "winXp": 160, "firstWinGold": 100}},
+    {"canonicalId": "progression", "decisionId": "MVP-GROWTH-01", "fields": {"heroLevelCap": 10, "xpCurveBase": 100, "unitMaxLevel": 5, "startGold": 0, "goldMax": 999999999, "totalXpMax": 1000000000, "traits": {"vitality": {"maxPoints": 3, "heroMaxHpPerPoint": 200}, "provisions": {"maxPoints": 3, "foodRegenMilliPerSecPerPoint": 250}, "focus": {"maxPoints": 3, "manaRegenMilliPerSecPerPoint": 250}}}},
+    {"canonicalId": "limits", "decisionId": "MVP-LIMIT-01", "fields": {"allyCap": 30, "enemyCap": 40, "projectileCap": 128}}
+  ],
+  "overrides": [
+    {"canonicalId": "wayfinder", "field": "hitRadius", "value": 1.5, "decisionId": "MVP-HERO-01"}
+  ],
+  "scaled": [
+    {"canonicalId": "vanguard", "field": "levels[2].purchaseCostGold", "from": "levels[2].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"},
+    {"canonicalId": "vanguard", "field": "levels[3].purchaseCostGold", "from": "levels[3].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"},
+    {"canonicalId": "vanguard", "field": "levels[4].purchaseCostGold", "from": "levels[4].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"},
+    {"canonicalId": "vanguard", "field": "levels[5].purchaseCostGold", "from": "levels[5].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"},
+    {"canonicalId": "slinger", "field": "levels[2].purchaseCostGold", "from": "levels[2].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"},
+    {"canonicalId": "slinger", "field": "levels[3].purchaseCostGold", "from": "levels[3].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"},
+    {"canonicalId": "slinger", "field": "levels[4].purchaseCostGold", "from": "levels[4].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"},
+    {"canonicalId": "slinger", "field": "levels[5].purchaseCostGold", "from": "levels[5].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"},
+    {"canonicalId": "bulwark", "field": "levels[2].purchaseCostGold", "from": "levels[2].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"},
+    {"canonicalId": "bulwark", "field": "levels[3].purchaseCostGold", "from": "levels[3].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"},
+    {"canonicalId": "bulwark", "field": "levels[4].purchaseCostGold", "from": "levels[4].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"},
+    {"canonicalId": "bulwark", "field": "levels[5].purchaseCostGold", "from": "levels[5].referenceCostGold", "scale": "0.1", "decisionId": "MVP-ECON-01"}
+  ],
+  "catalog": {
+    "units": {
+      "vanguard": {"displayName": "선봉 기계", "description": "값싸고 빠른 근접 기계"},
+      "slinger": {"displayName": "투척 기계", "description": "멀리서 볼트를 쏘는 원거리 기계"},
+      "bulwark": {"displayName": "방벽 기계", "description": "튼튼하게 전선을 버티는 근접 기계"}
+    },
+    "skills": {
+      "pulse": {"displayName": "등불 파동", "description": "앞쪽 적 하나에게 빛의 탄을 쏜다"}
+    },
+    "stages": {
+      "s01": {"displayName": "폐허 입구", "description": "고철 무리를 뚫고 첫 신호 핵을 부순다"},
+      "s02": {"displayName": "녹슨 회랑", "description": "원거리 적이 섞여 나오는 좁은 통로"},
+      "s03": {"displayName": "신호탑", "description": "거구가 지키는 마지막 신호 핵"}
+    },
+    "traits": {
+      "vitality": {"displayName": "활력", "descriptionTemplate": "다음 전투부터 영웅 최대 체력 +{amount}"},
+      "provisions": {"displayName": "보급", "descriptionTemplate": "다음 전투부터 식량 재생 +{amount}/초"},
+      "focus": {"displayName": "집중", "descriptionTemplate": "다음 전투부터 마나 재생 +{amount}/초"}
+    }
+  }
+}

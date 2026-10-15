@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-P0 로컬 기반 구현 + Studio runtime 검증(2026-10-15, 테스트 universe 10771015944). full gate는 `--studio-evidence`로 PASS/P0Complete=true다. production Studio 내 TestSupport require 실패는 런타임 미실행이며 사용자 결정으로 정적 XML audit으로 대체(WAIVED)했다. P0.1(Git 정책)은 BLOCKED로 남는다. P1~P9는 시작하지 않는다. 기존 설계 6개는 기준선이며 REA Markdown 7개는 수정하지 않는다. `tools/reference-hashes.json`으로 원본 보존을 검사한다. P0는 밸런스를 생성하지 않아 balanceHash/schema/protocol은 null이다.
+P1 데이터 파이프라인 구현(`tools/verify_p1.py`: T-DATA + 자동 T-ASSET 검사 PASS; 시각·라이선스 검토는 수동이며 미실시). P0 로컬 기반 구현 + Studio runtime 검증(2026-10-15, 테스트 universe 10771015944). full gate는 `--studio-evidence`로 PASS/P0Complete=true다. production Studio 내 TestSupport require 실패는 런타임 미실행이며 사용자 결정으로 정적 XML audit으로 대체(WAIVED)했다. P0.1(팀 합의 Git 정책)은 BLOCKED로 남는다. P2~P9는 시작하지 않는다. 기존 설계 6개는 기준선이며 REA Markdown 7개는 수정하지 않는다. `tools/reference-hashes.json`으로 원본 보존을 검사한다. P0 gate 보고서의 balanceHash/schema/protocol은 null이다(밸런스 hash는 P1 산출물 `data/balance/mvp-proto-001.json`에 있다).
 
 실행 호스트는 계획의 Windows가 아니라 **macOS Darwin ARM64**다. 이 호스트용 로컬 도구 다운로드만 고정했다. Windows 지원/테스트를 주장하지 않는다. Git 기준선은 `f36bf2a`, origin/main과 동일한 이력이며 확인한 원격은 README의 공개 저장소다. 현재 main의 로컬 미커밋 변경으로 작업하며 팀 branch 합의는 없다. 제안 정책: 후속 변경은 `implementation/p0-foundation` 같은 로컬 feature branch, 소스/문서/도구만 커밋; `.omx/`, `artifacts/`, `.tools/`, 연구 바이너리와 키는 제외. 이번 작업은 commit/push/publish하지 않는다.
 
@@ -21,6 +21,24 @@ python3 tools/verify_p0.py --studio-evidence artifacts/P0/studio/<file>.json  # 
 2026-10-15 commit `dea9708`(branch `p0-foundation`)을 새로 clone해 `setup_tools.py`로 도구를 처음부터 받은 뒤 `--local-only` PASS, `--studio-evidence` PASS/P0Complete=true를 재현했다(gate 자체의 `cleanCheckoutReproduction` 필드는 자동 판별하지 않아 NOT_RUN으로 남는다). 이전 기록: 별도로 로컬 fresh clone + 미커밋 P0 소스 snapshot overlay + 공유 pinned tool cache로 로컬 gate PASS를 검증했고 `artifacts/P0/snapshot-reproduction/`에 로그/보고서를 남겼다. 이는 실제 Studio 테스트나 커밋된 checkout 검증을 대신하지 않는다.
 
 실행별 `artifacts/P0/<UTC runId>/`에 report/toolchain/environment, CLI JSON/raw log, 분석/lint/format/build 로그와 `production.rbxlx`, `test.rbxlx`를 남긴다. CLI intentional failure는 JSON FAIL + process exit1이 **기대 동작**이며 상위 gate는 이 둘을 확인한다. 종료코드0=해당 scope 검증 통과, 1=FAIL, 2=BLOCKED. 테스트 개수0은 실패다. gate는 Studio를 직접 구동하지 못한다. MCP로 수집한 `p0-studio-evidence/1` JSON을 `--studio-evidence`로 넘기면 TestPolicy allowlist(GameId≠0), sourcemap 기준 소스 바이트 길이 일치, server/client boot marker, 캐릭터 미생성, `ServerHarness` 정상 PASS·의도적 FAIL·미지원 suite 거부, client oracle을 검사한다. 하나라도 어긋나면 FAIL(exit1)이다.
+
+## P1 데이터 파이프라인 (T-DATA)
+
+```sh
+python3 tools/import_reference.py --source docs --manifest data/reference/manifest.json
+python3 tools/build_balance.py --version mvp-proto-001
+python3 tools/validate_data.py --strict
+python3 tools/verify_p1.py   # golden + --check + validate + 재생성 diff0 → artifacts/P1/<runId>/
+```
+
+- 입력: `tools/reference-hashes.json`으로 고정한 REA 7개. 해시가 바뀌면 import가 실패한다(검토 전 자동 승격 금지). 표는 문서+절 경로+정확한 헤더 서명으로 찾고, 열 개수·헤더 변경·필수 빈 칸은 실패, `\|`는 셀 내부 파이프로 처리한다.
+- MVP allowlist만 반입: A2 #1~3, A4 id____ 10/11/17, A13 N1~3(참조 레벨행 60), A14 #0~2(연구용 의미 모델만), A1 #0/#255, A6 #4/#353, E03 §3.1/§5.1, E04 §1-3/§6. 중복 id____(99879)는 quarantine.
+- 기록 상태: confirmed/inferred/conflicted/unused. 현재 allowlist에는 [추정] 태그 값이 없어 importer는 evidenceLevel을 모두 DocumentConfirmed로 기록한다(inferred는 아직 생성되지 않는다; [추정] 값을 반입하려면 태그 파싱을 먼저 추가한다). production은 confirmed 참조나 overlay 결정만 사용한다. U01(음식 메이스)은 conflicted로 남고, iCrRwd/iCrSec/#353/iTgDst/iCLine/기본행 HP·AP는 unused다.
+- 신규 결정은 `data/overlay/mvp-proto-001.json`에만 둔다(`approvedBy`는 실제 승인 전 null). 참조값을 바꾸는 overlay는 `data/balance/mvp-proto-001.diff.md`에 필드 단위로 나온다.
+- 생성물(직접 수정 금지): `data/reference/*`, `data/normalized/reference.json`, `data/balance/mvp-proto-001.{json,provenance.json,diff.md}`, `src/server/Config/Generated/*.luau`, `src/shared/PublicCatalog.luau`. Luau는 고정 StyLua로 포맷하며 모든 table은 `table.freeze`된다.
+- 검증: 닫힌 필드 집합(DATA_MODELS §2/§5 타입, 누락·미지정 필드 FAIL), 모든 tick/HP/속도 >0, 참조 무결성, 가중치 합100, provenance 양방향 일치, PublicCatalog 텍스트 필드 allowlist(특성 설명 수치는 밸런스에서 생성), overlay 같은 필드 중복 지정 금지, 관리 디렉터리의 orphan 파일 FAIL. T-ASSET 자동 검사는 `data/assets/asset-manifest.json` 커버리지·asset ID/승인 허위 기재 금지·release tree는 `.luau`만·금지 확장자0이다.
+- 증거 위치는 IMPLEMENTATION_PLAN의 `artifacts/P1/<runId>/`를 따른다(ASSET_PIPELINE §2의 `artifacts/data/` 표기와 다름).
+- `src/`가 바뀌면 P0 Studio 증거의 소스 길이가 달라져 full gate가 FAIL한다. 이때 Studio 증거를 다시 수집한다.
 
 ## production / test 경계
 

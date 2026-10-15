@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-**P0 full gate PASS (`P0Complete: true`, 2026-10-15). P1~P9는 시작하지 않았다.** P0.1(Git 이력/파일 정책)은 commit 전이라 BLOCKED이고, production place 안의 런타임 TestSupport require 실패는 사용자 결정으로 정적 audit으로 대체(WAIVED)했다. P1 진행 전 검토자 확인이 필요하다.
+**P0 full gate PASS (`P0Complete: true`), P1 gate(T-DATA + 자동 T-ASSET) PASS (2026-10-15). P2~P9는 시작하지 않았다.** P0.1(팀 합의 Git 정책)은 BLOCKED이고(로컬 main에 병합, push 안 함), production place 안의 런타임 TestSupport require 실패는 사용자 결정으로 정적 audit으로 대체(WAIVED)했다. P0/P1 증거와 overlay 결정은 검토자 확인 전이다.
 
 기준 문서는 기존 설계 6개(`PRD`, `ARCHITECTURE`, `DATA_MODELS`, `ASSET_PIPELINE`, `IMPLEMENTATION_PLAN`, `TEST_PLAN`)와 REA Markdown 7개다. 이 13개 원문은 변경하지 않았다. REA 원본 SHA256은 `tools/reference-hashes.json`으로 검사한다.
 
@@ -21,7 +21,7 @@
 | guard 음성 대조 | GameId 0 place(`instance:l96-gww`)에서 server/client harness 모두 universe 미승인으로 거부 |
 | production 격리 | 빌드 XML 정적 audit PASS. Studio 런타임 require 실패는 WAIVED |
 
-증거: `artifacts/P0/studio/20261015T0933Z-harness.json`. `artifacts/`는 gitignore 대상이라 **이 증거는 원격에 없다**; 다른 checkout에서는 위 절차로 Studio 증거를 새로 수집해야 PASS를 재현할 수 있다. 증거 JSON은 MCP 출력을 옮겨 적은 자기 기록(서명 없음)이며 소스 일치는 바이트 길이 비교다. gate report의 `openTasks`에 P0.1이 남는다. 조작 증거(GameId 0, 빈 player 목록, 개별 case FAIL 등)는 FAIL exit 1.
+증거: `artifacts/P0/studio/20261015T1014Z-harness.json`(P1 생성 Luau 포함 빌드로 재수집; 이전 0933Z 증거는 소스 길이 불일치로 FAIL하는 것이 정상). `artifacts/`는 gitignore 대상이라 **이 증거는 원격에 없다**; 다른 checkout에서는 위 절차로 Studio 증거를 새로 수집해야 PASS를 재현할 수 있다. 증거 JSON은 MCP 출력을 옮겨 적은 자기 기록(서명 없음)이며 소스 일치는 바이트 길이 비교다. gate report의 `openTasks`에 P0.1이 남는다. 조작 증거(GameId 0, 빈 player 목록, 개별 case FAIL 등)는 FAIL exit 1.
 
 ## 실제 실행한 검증
 
@@ -62,11 +62,20 @@ python3 tools/verify_p0.py  # 현재 runtime 미검증은 exit 2
 
 clean checkout 재현: commit `dea9708`을 새로 clone해 도구 설치부터 local PASS, full gate PASS/P0Complete=true 확인.
 
+## P1 데이터 파이프라인 (2026-10-15)
+
+- `tools/balance_lib.py` + CLI 3개(`import_reference`, `build_balance`, `validate_data`) + `tools/verify_p1.py`. 표준 라이브러리만 사용.
+- 산출: hero1/ally3/enemy3/stage3/level15, 참조 레벨행 60, 기록 389개(confirmed 349 / unused 39 / conflicted 1), quarantine 1(id____ 99879).
+- `tools/tests/test_p1.py` 33개 PASS: T-DATA-01~08, DATA_MODELS §3 전체 수치 독립 golden, 리뷰 회귀(스키마·범위·catalog·중복·빈 칸), T-ASSET. 별도로 규칙을 수동으로 깨 보는 mutation 실행(N5/N6 alias, 기본 HP 미사용)에서 테스트가 실패하는 것을 확인했다(저장소에서 자동 재현되지는 않음).
+- 의도적 차이(diff.md): 강화비 ×0.1, 영웅 hitRadius 5→1.5. 나머지 신규값은 overlay 결정 ID로 추적.
+- Studio(테스트 universe) spot check: 생성 모듈 6개 require 성공, vanguard L1 maxHp와 balanceHash 일치, 중첩 freeze 쓰기 거부. 증거 JSON의 `generatedConfigInStudio`에 자기 기록했으며 gate가 검증하는 항목은 아니다.
+- T-ASSET: 자동 검사만(manifest 커버리지·금지 파일). 7개 presentation 모두 `placeholder`이고 asset ID·승인자는 비어 있다. 시각·라이선스 검토는 미실시.
+- 남은 판단: overlay 결정의 실제 승인(`approvedBy`)은 비어 있다. 밸런스는 플레이 검증 전 기준선이다.
+
 ## 다음 작업
 
-1. 검토자가 위 증거로 P0 완료 조건을 확인한다.
-2. P0.1: 미커밋 P0 소스 commit과 Git 정책 확정(사용자 요청 시).
-3. 이후 `docs/IMPLEMENTATION_PLAN.md` 순서대로 P1.
+1. 검토자가 P0/P1 증거와 overlay 결정(`data/overlay/mvp-proto-001.json`)을 확인한다.
+2. P2(권한·DTO·상태·프로필 인터페이스 골격)부터 `docs/IMPLEMENTATION_PLAN.md` 순서대로 진행한다.
 
 Studio 재검증 절차는 [DEVELOPMENT](DEVELOPMENT.md)의 "Studio/MCP T-TOOL 재개"를 따른다.
 
