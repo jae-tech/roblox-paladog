@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-**P0 full gate PASS (`P0Complete: true`), P1 gate(T-DATA + 자동 T-ASSET) PASS, P2 gate(T-SEC 기본 + T-ISOLATION) PASS (2026-10-15). P3는 로컬 검증 PASS, Studio 증거 미수집(BLOCKED). P4~P9는 시작하지 않았다.** P0.1(팀 합의 Git 정책)은 BLOCKED이고(로컬 main에 병합, push 안 함), production place 안의 런타임 TestSupport require 실패는 사용자 결정으로 정적 audit으로 대체(WAIVED)했다. P0/P1 증거와 overlay 결정은 검토자 확인 전이다.
+**P0 full gate PASS (`P0Complete: true`), P1 gate(T-DATA + 자동 T-ASSET) PASS, P2 gate(T-SEC 기본 + T-ISOLATION) PASS, P3 gate(T-RESOURCE/T-COMBAT/T-HERO-01 + Studio 헤드리스) PASS (2026-10-15, P3 커밋 `5e9d7a7` 빌드에서 Studio 증거 재수집). P4~P9는 시작하지 않았다.** P0.1(팀 합의 Git 정책)은 BLOCKED이고(로컬 main에 병합, push 안 함), production place 안의 런타임 TestSupport require 실패는 사용자 결정으로 정적 audit으로 대체(WAIVED)했다. P0/P1 증거와 overlay 결정은 검토자 확인 전이다.
 
 기준 문서는 기존 설계 6개(`PRD`, `ARCHITECTURE`, `DATA_MODELS`, `ASSET_PIPELINE`, `IMPLEMENTATION_PLAN`, `TEST_PLAN`)와 REA Markdown 7개다. 이 13개 원문은 변경하지 않았다. REA 원본 SHA256은 `tools/reference-hashes.json`으로 검사한다.
 
@@ -14,14 +14,14 @@
 |---|---|
 | 환경 | Studio 0.743.0.7431133, `robloxstudio` MCP, `studio_id instance:ffj-1ij`, GameId `10771015944`(사용자 승인 테스트 universe), PlaceId `86482422738722` |
 | 동기화 | `rojo serve test.project.json` → Rojo plugin Connect. 저장·publish 안 함 |
-| 빌드 일치 | test marker, 스크립트 14개 바이트 길이 = 로컬 sourcemap |
+| 빌드 일치 | test marker, 스크립트 43개 바이트 길이 = 로컬 sourcemap(edit 피어에서 읽음. runtime VM은 `Source`를 읽지 못함) |
 | boot | server/client `BootReady`, marker `lantern-p0-foundation-v1`, 캐릭터 nil, Environment 비어 있음 |
 | ServerHarness | `T-TOOL` PASS(10 cases), `T-TOOL-INTENTIONAL-FAIL` FAIL(`intentional-failure`만), 미지원 suite 거부 |
 | ClientHarness | `inspectBoot` 성공 |
-| guard 음성 대조 | GameId 0 place(`instance:l96-gww`)에서 server/client harness 모두 universe 미승인으로 거부 |
+| guard 음성 대조 | GameId 0 place(`instance:l96-gww`)에서 server/client harness 모두 universe 미승인으로 거부. **1052Z 수집분을 이월**: 사용자가 별도 미게시 place를 열어야 해서 재실행하지 않았다. Guard·TestPolicy·ClientHarness는 그때와 바이트 동일, ServerHarness는 바뀜(4479→5093) |
 | production 격리 | 빌드 XML 정적 audit PASS. Studio 런타임 require 실패는 WAIVED |
 
-증거: `artifacts/P0/studio/20261015T1052Z-harness.json`(P2 코드 포함 빌드에서 2-client 플레이테스트로 재수집; 이전 증거는 소스 길이 불일치로 FAIL하는 것이 정상). `artifacts/`는 gitignore 대상이라 **이 증거는 원격에 없다**; 다른 checkout에서는 위 절차로 Studio 증거를 새로 수집해야 PASS를 재현할 수 있다. 증거 JSON은 MCP 출력을 옮겨 적은 자기 기록(서명 없음)이며 소스 일치는 바이트 길이 비교다. gate report의 `openTasks`에 P0.1이 남는다. 조작 증거(GameId 0, 빈 player 목록, 개별 case FAIL 등)는 FAIL exit 1.
+증거: `artifacts/P0/studio/20261015T1219Z-harness.json`(P3 빌드에서 2-client 플레이테스트로 재수집, multiplayerGroup `48b43ba4-…`; 이전 증거는 소스 길이 불일치로 FAIL하는 것이 정상). `artifacts/`는 gitignore 대상이라 **이 증거는 원격에 없다**; 다른 checkout에서는 위 절차로 Studio 증거를 새로 수집해야 PASS를 재현할 수 있다. 증거 JSON은 MCP 출력을 옮겨 적은 자기 기록(서명 없음)이며 소스 일치는 바이트 길이 비교다. gate report의 `openTasks`에 P0.1이 남는다. 조작 증거(GameId 0, 빈 player 목록, 개별 case FAIL 등)는 FAIL exit 1.
 
 ## 실제 실행한 검증
 
@@ -76,7 +76,7 @@ clean checkout 재현: commit `dea9708`을 새로 clone해 도구 설치부터 l
 
 - 원격 입력 검증(`Protocol`), 게이트웨이(토큰 버킷·대기열·no-yield bootstrap), MatchService(소유권·phase·seq/ack·이동 TTL), ProfileService(StoreAdapter 계약·영수증·fenced lease), InMemory 어댑터. production Bootstrap에는 아직 연결하지 않음(저장소 P8, 시뮬레이션 P3).
 - Luau P2 suite 132개 PASS(CLI와 Studio 서버 VM 동일). 리뷰에서 나온 lease 경쟁(늦은 release가 새 세션 lease 삭제), stale writer 후 Preparing 고착, run 식별 미검증, 남은 activeRun 영구 차단, 손상 문서 선기록 등을 고치고 각각 회귀 테스트를 추가했다. 규칙을 수동으로 깨 보는 mutation 실행(허용 필드·소유권·영수증·fence·중복 join)에서 테스트가 실패하는 것을 확인했다(저장소에서 자동 재현되지는 않음).
-- Studio 2-client(테스트 universe, 실제 RemoteEvent, Mock store): 타인 경기 명령 `NotOwner`, 임의 hp 필드·Instance·NaN `InvalidPayload`, 피해자 대기열·이동축·revision 불변, 각자 자기 snapshot만 수신, 1000건 flood에서 20건만 수용·980건 무응답 집계·다른 플레이어 정상. 증거 `artifacts/P2/studio/20261015T1052Z-isolation.json`, gate `tools/verify_p2.py`.
+- Studio 2-client(테스트 universe, 실제 RemoteEvent, Mock store): 타인 경기 명령 `NotOwner`, 임의 hp 필드·Instance·NaN `InvalidPayload`, 피해자 대기열·이동축·revision 불변, 각자 자기 snapshot만 수신, 1000건 flood에서 20건만 수용·980건 무응답 집계·다른 플레이어 정상. 증거 `artifacts/P2/studio/20261015T1219Z-isolation.json`(P3 빌드에서 재수집: T-P2 132 PASS, 980건 RateLimited 무응답, 20건 NotOwner, 피해자 명령 Pending→Accepted), gate `tools/verify_p2.py`.
 - 설계 대비 변경: reason에 `InsufficientGold` 추가. server→shared require는 주입으로 해결(Studio alias·CLI symlink 불가를 실측).
 
 ## P3 헤드리스 시뮬레이션 (2026-10-15)
@@ -84,13 +84,12 @@ clean checkout 재현: commit `dea9708`을 새로 clone해 도구 설치부터 l
 - `src/server/Simulation/*` 8개 모듈 + MatchService 연결. Luau P3 suite 123개 PASS(CLI), seed 재현(600tick 체크포인트 6개 동일), tick 순서 증거는 `tools/verify_p3.py`가 생성한다.
 - 리뷰 반영: 실패할 수 없던 테스트 3개 수정(죽은 표적 → 발사 hit 0 확인, breach 1회 재배치 → 추적·순간이동 금지 확인), MatchService `stepAll` 통합 테스트와 실제 TTL로 T-HERO-01, 행동 기반 tick 순서 테스트, 프레임 1초 급증 시 4tick·피해 상한 추가. 원거리 요청 목록은 tick마다 비움, 피해식 정수화, digest에 facing·maxHp·공격력·처치수·재생률 포함.
 - 수동 mutation 확인(저장소에서 자동 재현되지 않음): 지원장 배율, 공격 주기, breach 처리, 사망 1회 guard, 매 tick 재배치를 각각 깨면 테스트가 실패한다.
-- **Studio 미검증**: Rojo 서버 재시작 후 Studio 플러그인 재연결을 사용자가 나중으로 미뤘다. 지금 Studio에는 P3 이전 빌드와 잘못 동기화된 `.omc` 상태 모듈이 남아 있으며, Connect 시 Rojo가 정리한다.
-- **P0·P2 Studio 증거도 다시 수집해야 한다**: 소스가 바뀌어 `20261015T1052Z` 증거는 이제 FAIL이 정상이다. 다음 Studio 세션에서 2-client 플레이테스트 한 번으로 P0·P2·P3 증거를 함께 수집한다.
+- **Studio 검증 (2026-10-15 12:19Z, 2-client 플레이테스트)**: Studio 서버 VM에서 T-P3 123/123 PASS. `startNetRig` 라이브 경기에서 client-1 Summon `Accepted`, 식량 40000→30700 차감, vanguard x 1.2(tick 423)→10.5(tick 485) `Advancing`, snapshot 키에 `attackPower` 없음, rig 전후 workspace 자손 수 8→8(렌더 인스턴스 생성 0). 증거 `artifacts/P3/studio/20261015T1219Z-studio.json`, `verify_p3.py --studio-evidence` PASS. 증거 JSON은 MCP 출력을 옮겨 적은 자기 기록이다.
 
 ## 다음 작업
 
 1. 검토자가 P0/P1 증거와 overlay 결정(`data/overlay/mvp-proto-001.json`)을 확인한다.
-2. Studio에서 Rojo Connect 후 P0·P2·P3 증거를 재수집한다(`verify_p0.py --studio-evidence`, `verify_p2.py --isolation-evidence`, `verify_p3.py --studio-evidence`).
+2. 코드가 바뀌면 Studio에서 Rojo Connect 후 P0·P2·P3 증거를 재수집한다(`verify_p0.py --studio-evidence`, `verify_p2.py --isolation-evidence`, `verify_p3.py --studio-evidence`). GameId 0 guard 음성 대조는 별도 미게시 place가 필요해 이월 상태다.
 3. P4(탄·영웅 무기 스킬)부터 `docs/IMPLEMENTATION_PLAN.md` 순서대로 진행한다.
 
 Studio 재검증 절차는 [DEVELOPMENT](DEVELOPMENT.md)의 "Studio/MCP T-TOOL 재개"를 따른다.
