@@ -1,12 +1,12 @@
-# Claude 개발 인수인계 — P0 로컬 기반
+# 개발 인수인계 — P4 투사체·영웅 스킬
 
 ## 현재 상태
 
-**P0 full gate PASS (`P0Complete: true`), P1 gate(T-DATA + 자동 T-ASSET) PASS, P2 gate(T-SEC 기본 + T-ISOLATION) PASS, P3 gate(T-RESOURCE/T-COMBAT/T-HERO-01 + Studio 헤드리스) PASS (2026-10-15, P3 커밋 `5e9d7a7` 빌드에서 Studio 증거 재수집). P4~P9는 시작하지 않았다.** P0.1(팀 합의 Git 정책)은 BLOCKED이고(로컬 main에 병합, push 안 함), production place 안의 런타임 TestSupport require 실패는 사용자 결정으로 정적 audit으로 대체(WAIVED)했다. P0/P1 증거와 overlay 결정은 검토자 확인 전이다.
+**P0 full gate PASS (`P0Complete: true`), P1 gate(T-DATA + 자동 T-ASSET) PASS, P2 gate(T-SEC 기본 + T-ISOLATION) PASS, P3 gate(T-RESOURCE/T-COMBAT/T-HERO-01 + Studio 헤드리스) PASS, P4 gate(T-PROJECTILE/T-HERO/T-SEC + Studio 실제 Remote 시전) PASS (2026-10-15, P4 소스에서 P0·P2·P3·P4 Studio 증거 재수집). P5~P9는 시작하지 않았다.** P0.1(팀 합의 Git 정책)은 BLOCKED이고(로컬 feature branch → main fast-forward, push 안 함), production place 안의 런타임 TestSupport require 실패는 기존 사용자 결정으로 정적 audit 대체(WAIVED)를 유지한다. P0/P1 증거와 overlay 결정의 사람 검토는 남아 있다.
 
 기준 문서는 기존 설계 6개(`PRD`, `ARCHITECTURE`, `DATA_MODELS`, `ASSET_PIPELINE`, `IMPLEMENTATION_PLAN`, `TEST_PLAN`)와 REA Markdown 7개다. 이 13개 원문은 변경하지 않았다. REA 원본 SHA256은 `tools/reference-hashes.json`으로 검사한다.
 
-구현: production/test Rojo tree 분리, strict shared/server/client bootstrap, `CharacterAutoLoads=false`, 빈 오리지널 Environment, assert runner, fake Clock/RNG, 명시적 Mock/InMemory fixture, test marker + Studio + 허용 universe guard, 고정 도구와 분석/lint/format/build gate, MCP 수집 Studio 증거 검증(`--studio-evidence`). 게임 플레이·실제 저장 기능은 없다.
+구현: production/test Rojo tree 분리, strict bootstrap, test guard, 고정 도구·품질 gate, 데이터 생성, 원격·프로필 골격, 헤드리스 자원·소환·근접·투사체 전투와 영웅 시전. production bootstrap은 boot만 수행한다. 플레이 입력·렌더링·스테이지 스폰·정산·실제 저장 기능은 없다.
 
 ## Studio 실행 검증 (2026-10-15)
 
@@ -86,11 +86,38 @@ clean checkout 재현: commit `dea9708`을 새로 clone해 도구 설치부터 l
 - 수동 mutation 확인(저장소에서 자동 재현되지 않음): 지원장 배율, 공격 주기, breach 처리, 사망 1회 guard, 매 tick 재배치를 각각 깨면 테스트가 실패한다.
 - **Studio 검증 (2026-10-15 12:19Z, 2-client 플레이테스트)**: Studio 서버 VM에서 T-P3 123/123 PASS. `startNetRig` 라이브 경기에서 client-1 Summon `Accepted`, 식량 40000→30700 차감, vanguard x 1.2(tick 423)→10.5(tick 485) `Advancing`, snapshot 키에 `attackPower` 없음, rig 전후 workspace 자손 수 8→8(렌더 인스턴스 생성 0). 증거 `artifacts/P3/studio/20261015T1219Z-studio.json`, `verify_p3.py --studio-evidence` PASS. 증거 JSON은 MCP 출력을 옮겨 적은 자기 기록이다.
 
+## P4 투사체·영웅 스킬 (2026-10-15)
+
+- `ProjectileSystem`은 아군/적/pulse 탄을 서버 수치로 생성한다. 이전X→새X swept 충돌, 접촉 거리→동률 ID 순서, 진영·레인·생존 필터, 중복 타격 방지, pierce/TTL/거리/맵 경계를 처리한다. 발사 후 owner 사망에도 탄은 유지되고 피해는 근접과 같은 batch에 들어간다.
+- `HeroActionSystem`은 이동과 독립인 windup/recovery를 관리한다. mana10000·쿨30tick·탄 cap128 예약을 원자 처리하고, 시전+4tick에 이동 후 hero.x에서 +X로 피해100 탄을 발사한다. 취소/빗나감은 환급 없고 사망·종결 즉시 예약을 해제한다. 자동 원거리 공격은 예약 슬롯을 빼앗지 못한다.
+- `World.PHASES`는 유지했다. 새 탄은 다음 tick부터 이동하며, 마지막 TTL tick의 잘린 segment까지 판정 후 제거한다. 시전 release와 같은 tick에 영웅이 lethal 피해를 받으면 batch 전 발사까지 성립하지만 종결 후 추가 피해는 없다. 탄/시전/스킬 쿨과 hit ID를 digest에 포함했다.
+- snapshot에는 복사된 탄 궤적·시전 타이밍·스킬 쿨만 추가했다. `damage`·`attackPower`·`hitEntityIds`·예약 여부는 비공개다. 생성 밸런스·13개 연구/설계 정본·TestPolicy는 수정하지 않았다.
+- **독립 회귀 suite 134개 PASS(CLI/Studio 동일)**: sweep·접촉 순서·pierce·TTL·cap128·예약 경쟁, 이동/마나/쿨 경계, 자동 아군/적 발사, owner 사망, 표적 이탈, release tick lethal, 탄+근접 동시 사망/오버킬 보상1회, 중복 Cast·spoof 무효, DTO 분리·digest 재현. 독립 코드 리뷰 지적(Studio assertion identity 비교 부족)은 fresh CLI seed와 전체 순서별 assertion exact 비교 및 Python 음성 대조로 수정했다.
+- **Studio 실제 Remote 검증**: universe `10771015944`, Studio `0.743.0.7431133`, 2client. 서버 fixture로 마나/정지 표적만 준비하고 ClientHarness의 실제 `FireServer`로 Cast·이동 keepalive를 전송했다. Heartbeat로 tick1958 수락/마나10000→0, tick1962 발사, tick1968 표적HP130→30, 영웅X10→13.3, `workspace.DescendantAdded` 생성0을 확인했다. 직접 fast-forward/화면 marker는 사용하지 않았다. playtest·rig·관측 연결은 종료했다.
+- P2 재검증: 각자 자신의 snapshot만 수신(1442/1443건, foreign0). 외부 경기 Cast `NotOwner`, hp/Instance/NaN `InvalidPayload`, 피해자 revision1/axis0/pending0. 1000건 flood에서20건 응답·980건 무응답 rate drop, 다른 client 명령 Pending→Accepted. 첫9건 flood ID가 짧아 InvalidPayload, 다음11건 NotOwner였음을 raw에 기록했다.
+- P3 재검증: 실제 Summon Accepted·food40000→30000·아군X0.15→77.7, workspace 자손8→8. 이 P3 지표는 기존과 같은 **순증가량**이고, P4는 별도의 실제 생성 이벤트 카운터를 썼다. 첫 P4 시도의 순증가량 -1은 관계없는 Studio 자손 제거 때문에 부적합하여, raw를 남기고 생성 이벤트 관측으로 재실행했다.
+
+증거/보고서(모두 로컬 gitignore 대상):
+
+| 항목 | 경로 / 결과 |
+|---|---|
+| raw MCP 입력·출력, Studio evidence 4종 | `artifacts/P4/studio/20261015T123227Z/` |
+| P4 full gate | `artifacts/P4/20261015T123618836662Z/report.json` PASS |
+| P0 full gate | `artifacts/P0/20261015T123619191107Z/report.json` PASS / P0Complete=true |
+| P2 full gate | `artifacts/P2/20261015T123618953367Z/report.json` PASS |
+| P3 full gate | `artifacts/P3/20261015T123619043957Z/report.json` PASS |
+| P1 generation/data/asset gate | `artifacts/P1/20261015T122954439204Z/report.json` PASS |
+| 독립 verifier 재실행 | `artifacts/P4/20261015T123652111038Z/report.json` PASS / 커밋 차단 이슈0 |
+
+전체 Python 도구 테스트73개, 순수/Roblox 타입 분석, selene, StyLua, production/test 빌드, production 격리도 통과했다. P4의 실제 키/GUI 입력·표현 검증은 P5 범위로 미실시다.
+
+P0의 GameId0 guard 음성 대조는 **1052Z 결과를 이월**했다. Guard/TestPolicy/ClientHarness는 그대로이고 바뀐 ServerHarness를 GameId0에서 다시 실행한 것은 아니다. production runtime require의 WAIVED도 새 승인이 아니라 기존 승인 이월이다. 소스 일치 검사는 서명/전체 해시가 아닌 스크립트47개의 바이트 길이 비교다. P4 로컬 environment에는 별도 SHA256 sourceHash와 balanceHash가 있다. 무시 파일은 원격에서 복원되지 않으므로 다른 checkout은 증거 재수집이 필요하다.
+
 ## 다음 작업
 
 1. 검토자가 P0/P1 증거와 overlay 결정(`data/overlay/mvp-proto-001.json`)을 확인한다.
-2. 코드가 바뀌면 Studio에서 Rojo Connect 후 P0·P2·P3 증거를 재수집한다(`verify_p0.py --studio-evidence`, `verify_p2.py --isolation-evidence`, `verify_p3.py --studio-evidence`). GameId 0 guard 음성 대조는 별도 미게시 place가 필요해 이월 상태다.
-3. P4(탄·영웅 무기 스킬)부터 `docs/IMPLEMENTATION_PLAN.md` 순서대로 진행한다.
+2. 코드가 바뀌면 Studio에서 Rojo Connect 후 P0·P2·P3·P4 증거를 재수집한다(`verify_p0.py --studio-evidence`, `verify_p2.py --isolation-evidence`, `verify_p3.py --studio-evidence`, `verify_p4.py --studio-evidence`). GameId 0 guard 음성 대조는 별도 미게시 place가 필요해 이월 상태다.
+3. P5(입력·뷰·카메라)부터 `docs/IMPLEMENTATION_PLAN.md` 순서대로 진행한다. MatchService의 완전 snapshot을 사용하며 실제 입력/화면 검증은 아직 하지 않았다. P7 순수 성장은 별도 가능하지만 정산 연결은 P6 이후다.
 
 Studio 재검증 절차는 [DEVELOPMENT](DEVELOPMENT.md)의 "Studio/MCP T-TOOL 재개"를 따른다.
 

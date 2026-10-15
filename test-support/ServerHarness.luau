@@ -49,32 +49,40 @@ function Harness.runSuite(suiteId: string, seed: number)
 		suiteId == "T-TOOL"
 			or suiteId == "T-TOOL-INTENTIONAL-FAIL"
 			or suiteId == "T-P2"
-			or suiteId == "T-P3",
+			or suiteId == "T-P3"
+			or suiteId == "T-P4",
 		"unsupported P0 suite"
 	)
 	return Runner.run("StudioServer", HttpService:GenerateGUID(false), seed, function(check)
 		if suiteId == "T-P2" then
 			require(tests.unit.P2)(p2Env(), check)
 			return
-		elseif suiteId == "T-P3" then
+		elseif suiteId == "T-P3" or suiteId == "T-P4" then
 			local simulation = GameServer.Simulation
-			require(tests.unit.P3)({
+			local env = {
 				World = require(simulation.World),
 				FixedStep = require(simulation.FixedStep),
 				Targeting = require(simulation.Targeting),
 				Damage = require(simulation.Damage),
+				ProjectileSystem = require(simulation.ProjectileSystem),
+				HeroActionSystem = require(simulation.HeroActionSystem),
 				Protocol = require(ReplicatedStorage.Shared.Protocol),
 				MatchService = require(GameServer.Services.MatchService),
 				ProfileService = require(GameServer.Services.ProfileService),
 				newStore = require(tests.fixtures.InMemoryStoreAdapter),
-			}, check)
+			}
+			if suiteId == "T-P3" then
+				require(tests.unit.P3)(env, check)
+			else
+				require(tests.unit.P4)(env, check)
+			end
 			return
 		end
 		suite(fixtures, check)
 		if suiteId == "T-TOOL-INTENTIONAL-FAIL" then
 			check("intentional-failure", 1, 2, 0)
 		end
-	end)
+	end, suiteId)
 end
 
 -- T-ISOLATION rig: production gateway/services + Mock/InMemory store + real Remotes, test build only.

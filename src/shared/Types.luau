@@ -85,7 +85,7 @@ export type ProfileSummary = {
 	stageProgress: { [string]: StageProgress },
 }
 
--- P2 snapshot skeleton: entity/projectile arrays are filled by the P3 simulation.
+-- Complete owner-facing simulation snapshot. Projectile damage/reservations stay server-only.
 export type MatchSnapshot = {
 	matchId: string,
 	snapshotSeq: number,
@@ -94,6 +94,13 @@ export type MatchSnapshot = {
 	stageId: string,
 	balanceHash: string,
 	inputAckSeq: number,
+	resources: {
+		foodMilli: number,
+		manaMilli: number,
+		summonReadyTick: { number },
+		skillReadyTick: number,
+	}?,
+	heroAction: { skillId: string?, releaseTick: number?, endTick: number? },
 	entities: { any },
 	projectiles: { any },
 	outcome: string?,

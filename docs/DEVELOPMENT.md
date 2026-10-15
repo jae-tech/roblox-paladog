@@ -1,10 +1,10 @@
-# P0 개발 및 검증
+# P0~P4 개발 및 검증
 
 ## 현재 상태
 
-P1 데이터 파이프라인 구현(`tools/verify_p1.py`: T-DATA + 자동 T-ASSET 검사 PASS; 시각·라이선스 검토는 수동이며 미실시). P0 로컬 기반 구현 + Studio runtime 검증(2026-10-15, 테스트 universe 10771015944). full gate는 `--studio-evidence`로 PASS/P0Complete=true다. production Studio 내 TestSupport require 실패는 런타임 미실행이며 사용자 결정으로 정적 XML audit으로 대체(WAIVED)했다. P0.1(팀 합의 Git 정책)은 BLOCKED로 남는다. P4~P9는 시작하지 않는다. 기존 설계 6개는 기준선이며 REA Markdown 7개는 수정하지 않는다. `tools/reference-hashes.json`으로 원본 보존을 검사한다. P0 gate 보고서의 balanceHash/schema/protocol은 null이다(밸런스 hash는 P1 산출물 `data/balance/mvp-proto-001.json`에 있다).
+P0~P4 구현 및 gate PASS. P4는 CLI/Studio 134개와 실제 Remote 시전·이동·피해를 검증했고 같은 빌드에서 P0/P2/P3도 재검증했다(2026-10-15, 테스트 universe10771015944). P5~P9는 미착수다. 저장은 Mock/InMemory이며 production bootstrap은 boot만 한다. production Studio TestSupport require 검사는 기존 사용자 결정에 따른 정적 XML audit 대체(WAIVED), P0.1 팀 Git 정책은 BLOCKED다. P1 overlay 결정 승인과 에셋 시각·라이선스 검토도 남아 있다. 기존 설계6개·REA7개는 수정하지 않는다. P0 보고서의 balanceHash/schema/protocol은 null이고 P4 environment에는 실제 balanceHash/sourceHash가 있다.
 
-실행 호스트는 계획의 Windows가 아니라 **macOS Darwin ARM64**다. 이 호스트용 로컬 도구 다운로드만 고정했다. Windows 지원/테스트를 주장하지 않는다. Git 기준선은 `f36bf2a`, origin/main과 동일한 이력이며 확인한 원격은 README의 공개 저장소다. 현재 main의 로컬 미커밋 변경으로 작업하며 팀 branch 합의는 없다. 제안 정책: 후속 변경은 `implementation/p0-foundation` 같은 로컬 feature branch, 소스/문서/도구만 커밋; `.omx/`, `artifacts/`, `.tools/`, 연구 바이너리와 키는 제외. 이번 작업은 commit/push/publish하지 않는다.
+실행 호스트는 계획의 Windows가 아니라 **macOS Darwin ARM64**다. 이 호스트용 로컬 도구 다운로드만 고정했다. Windows 지원/테스트를 주장하지 않는다. 초기 P0 Git 기준선은 `f36bf2a`였고 당시 팀 branch 정책은 미합의였다. 현재는 AGENTS.md에 따라 단계별 로컬 feature branch에서 소스/문서/도구만 커밋하고 main에 fast-forward 병합한다(P4: `p4-projectiles-and-hero-skill`). `.omx/`, `artifacts/`, `.tools/`, 연구 바이너리와 키는 제외한다. push/publish는 하지 않는다.
 
 ## 새 checkout 재현 (macOS ARM64)
 
@@ -73,7 +73,25 @@ python3 tools/verify_p3.py --studio-evidence artifacts/P3/studio/<file>.json   #
 - 공격 주기는 windup+recovery+cooldown 정확히(vanguard 76tick). 발사 시 표적 재검사(빗나가도 주기 소모), 지원장 배율은 발사 시 snapshot, 피해 `(AP*num+50)//100`, 한 tick 피해를 모아 적용해 사망·처치 보상은 한 번만.
 - `FixedStep`: 누적 경과 시간으로 due tick을 계산해 프레임률과 무관, 프레임당 최대 4tick, 0.25초 초과 backlog는 버리고 `droppedSeconds`로 보고.
 - `MatchService`: Running 진입 시 프로필의 유닛 레벨·특성을 복사해 World 생성, 매 tick `stepAll`로 대기 명령·이동축을 적용하고 최종 Accepted/Rejected(InsufficientFood/Cooldown/UnitCap)를 회신. snapshot에 엔티티(공격력 제외)·자원·outcome 포함.
-- 범위 밖/알려진 한계: 원거리 공격은 해당 tick의 `projectileRequests`로만 남고 피해는 P4. Cast는 `NotReady`(P4). 적 스폰은 P6. 경기 종료 후 세션은 `Settling`에 머물러 서버 경기 슬롯을 차지한다(정산 P7/P8). `ServerMessage.serverTick`은 서버 rig tick, snapshot `tick`은 World tick이다. 0인 recovery/cooldown은 주기가 1tick 늘지만 P1 검증이 0을 금지한다.
+- P3 당시 경계: 원거리 요청/`Cast`는 후속 P4에서 아래와 같이 연결했다. 남은 한계: 적 스폰은 P6. 경기 종료 후 세션은 `Settling`에 머물러 서버 경기 슬롯을 차지한다(정산 P7/P8). `ServerMessage.serverTick`은 서버 rig tick, snapshot `tick`은 World tick이다. 0인 recovery/cooldown은 주기가 1tick 늘지만 P1 검증이 0을 금지한다.
+
+## P4 투사체·영웅 시전 (T-PROJECTILE / T-HERO / T-SEC)
+
+```sh
+.tools/luau-0.742/luau tests/cli_p4.luau
+python3 tools/verify_p4.py  # CLI PASS여도 Studio 증거 없으면 exit2/BLOCKED
+python3 tools/verify_p4.py --studio-evidence artifacts/P4/studio/20261015T123227Z/p4-studio.json
+python3 -m unittest discover -s tools/tests
+```
+
+- `ProjectileSystem.launch`는 living owner의 진영/레인과 발사 시 피해를 복사한다. 이후 owner 존재 여부와 무관하게 `advance`가 sweep을 수행한다. 충돌은 segment 진입 거리, 정확한 동률은 entityId 순서다. pierce1은 한 표적만 때린다는 뜻이다. target ID를 추적하지 않으며 살아 있는 적대·같은 레인 대상만 판정한다.
+- 탄 ID도 `nextEntityId`를 공유한다. active 탄과 영웅 예약 합계가 cap128이고, 자동 공격은 cap 실패 시 recovery로 넘어간다. `heroAction.reservedProjectileSlot`은 예약1개를 뜻하는 boolean이다. release 직전에 예약 해제→일반 launch를 동기 수행하므로 자동 발사가 시전 슬롯을 빼앗지 못한다.
+- `HeroActionSystem.cast`의 검사 순서: slot→생존→Busy→Cooldown→InsufficientMana→ProjectileCap. 모든 검사 뒤에만 자원/쿨/예약을 변경한다. 재생이 commands보다 먼저이므로 경계 테스트는 재생을 끄거나 그 tick 재생량을 포함한다. release=cast+4, end=release+6, ready=cast+30. end tick부터 Busy가 아니며 별도 cooldown은 남을 수 있다.
+- 영웅 이동은 시전과 독립이다. 탄은 이동 후 hero.x에서 +X로 나가고 지원장 배율을 자신에게 적용하지 않는다. 발사 tick에는 이동/충돌0, 다음 tick부터 이동한다. expireTick의 마지막 segment는 collision 후 제거한다. 맵/남은거리까지 자른 segment로만 판정해 그 너머는 맞지 않는다.
+- 피해 batch는 기존 근접+기존 탄이 공유한다. 같은 tick에 발사자 사망이 발생해도 batch 전 release는 성립한다. 그 전 tick에 사망했으면 release 취소·예약해제, 환급없음. 종결 이후 World는 완전히 정지하고 잔존 탄/병력의 최종 정리는 P6이다.
+- snapshot에는 별도 복사한 궤적·시전 timing·`resources.skillReadyTick`만 추가한다. damage/attackPower/hit set/예약은 숨긴다. `World.digest`에는 모든 새 projectile 필드·시전·스킬 쿨을 포함한다. `World.PHASES`와 생성 수치는 그대로다.
+- `ServerHarness.runSuite('T-P4',12345)`가 CLI와 같은 suite를 실행한다. harness suite 선택은 분기별로 호출한다(luau-lsp는 두 require 함수의 union을 직접 호출하면 동일 서명이어도 거부했다). gate는 raw Studio seed·전체 ordered assertion을 fresh CLI와 exact 비교하고, 같은 tick 발사/명중·소스 길이 불일치·비공개 DTO·빈 suite·위조 PASS·미종료 rig를 거부한다.
+- 검증 범위는 CLI/Studio 서버 시뮬레이션과 실제 RemoteEvent까지다. PC/touch 입력, 화면 표시, 실제 저장, 4경기10분 성능은 P5/P8/P9에서 별도 검증한다. 이번 Studio fixture 마나/표적은 서버 테스트 전용이며 production에 grant endpoint를 만들지 않았다. raw 경로·수치는 [HANDOFF](HANDOFF.md)에 있다.
 
 ## production / test 경계
 

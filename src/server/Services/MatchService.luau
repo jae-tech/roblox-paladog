@@ -349,10 +349,12 @@ local function new(deps: Deps)
 					foodMilli = world.resources.foodMilli,
 					manaMilli = world.resources.manaMilli,
 					summonReadyTick = table.clone(world.resources.summonReadyTick),
+					skillReadyTick = world.resources.skillReadyTick,
 				}
 				else nil,
 			entities = if world then World.snapshotEntities(world) else {},
-			projectiles = {},
+			projectiles = if world then World.snapshotProjectiles(world) else {},
+			heroAction = if world then World.snapshotHeroAction(world) else {},
 			outcome = if world then world.outcome else nil,
 		}
 	end

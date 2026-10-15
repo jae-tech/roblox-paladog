@@ -1,7 +1,7 @@
 # 등불 원정 — Roblox 게임 설계 (가칭)
 
 Paladog의 메커니즘을 참고하는 **오리지널 2.5D 횡스크롤 전략 액션** 프로젝트입니다.
-현재 P0 로컬 기반(Rojo production/test tree, strict bootstrap, assert runner·mock fixtures·품질 gate)을 구현했습니다. Studio MCP로 승인된 테스트 universe에서 실제 server/client boot와 harness 실행을 검증해 full gate가 PASS입니다(P0.1 Git 정책 미확정, production 런타임 require 확인은 정적 audit으로 대체). **게임/MVP가 완성된 상태가 아닙니다.** P1 데이터 변환(연구 수치 → `mvp-proto-001` 밸런스·생성 Luau)은 P1 gate(T-DATA + 자동 T-ASSET 검사) PASS입니다. overlay 신규 결정은 아직 승인 전입니다. P2(원격 프로토콜 검증·세션/프로필 골격)는 Luau 테스트와 Studio 2-client 격리 검증을 통과했습니다(production에는 아직 연결 전). P3(헤드리스 전투 시뮬레이션: 자원·소환·근접)는 Luau 테스트를 통과했고 Studio 검증은 아직입니다. P4~P9는 아직 시작하지 않았습니다.
+P0 도구·빌드 기반, P1 데이터 변환, P2 원격 프로토콜·프로필 골격, P3 헤드리스 전투, P4 투사체·영웅 `pulse` 스킬을 구현했습니다. 승인된 테스트 universe의 Studio 2-client 환경에서 P0·P2·P3·P4 게이트가 PASS입니다(P4 134개 테스트 및 실제 Remote 시전·이동·피해 확인). **게임/MVP가 완성된 상태는 아닙니다.** production bootstrap에는 아직 게임을 연결하지 않았고, P5~P9는 미착수입니다. 저장은 Mock/InMemory뿐이며 overlay 결정 승인·실기기 검증은 남아 있습니다. 기존 P0.1 Git 정책 보류와 production 런타임 require 검사의 정적 audit 대체도 유지합니다.
 
 재현 명령·도구 버전·승인 경계·미검증 항목은 [개발 안내](docs/DEVELOPMENT.md)를 확인하세요. `python3 tools/verify_p0.py --local-only`는 로컬 검사이며, `python3 tools/verify_p0.py --studio-evidence <json>`은 MCP로 수집한 Studio 증거를 검증하며, 증거가 없으면 exit2/BLOCKED입니다.
 

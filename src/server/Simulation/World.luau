@@ -7,6 +7,8 @@ local Movement = require("./Movement")
 local Targeting = require("./Targeting")
 local Attack = require("./Attack")
 local Damage = require("./Damage")
+local ProjectileSystem = require("./ProjectileSystem")
+local HeroActionSystem = require("./HeroActionSystem")
 local Units = require("../Config/Generated/Units")
 local Enemies = require("../Config/Generated/Enemies")
 local HeroConfig = require("../Config/Generated/Hero")
@@ -137,13 +139,21 @@ local function new(options: Options): World
 		supportRadius = hero.supportRadius,
 		supportDamageNumerator = hero.supportDamageNumerator,
 		unitLevels = table.clone(options.unitLevels or { vanguard = 1, slinger = 1, bulwark = 1 }), -- fixed per match
-		limits = { allyCap = Generated.limits.allyCap, enemyCap = Generated.limits.enemyCap },
+		limits = {
+			allyCap = Generated.limits.allyCap,
+			enemyCap = Generated.limits.enemyCap,
+			projectileCap = Generated.limits.projectileCap,
+		},
 		outcome = nil,
 		outcomeTick = nil,
 		pendingKillGold = 0,
 		pendingKillXp = 0,
 		killCounts = {},
 		projectileRequests = {},
+		projectiles = {},
+		projectileOrder = {},
+		projectileCount = 0,
+		heroAction = { reservedProjectileSlot = false },
 		trace = if options.trace then {} else nil,
 	}
 	local heroEntity = base(world, hero.id, "Hero", "Ally")
@@ -184,9 +194,11 @@ end
 local function runCommands(world: World, commands: { any }): { SimTypes.CommandResult }
 	local results: { SimTypes.CommandResult } = {}
 	for _, command in commands do
-		local reason: string? = "NotReady" -- Cast (pulse) arrives with the P4 hero action system
+		local reason: string? = "InvalidPayload"
 		if command.kind == "Summon" then
 			reason = summon(world, command.slot)
+		elseif command.kind == "Cast" then
+			reason = HeroActionSystem.cast(world, command.slot)
 		end
 		table.insert(results, {
 			requestId = command.requestId,
@@ -270,13 +282,49 @@ local function step(world: World, input: Input?): StepResult
 	Attack.acquireTargets(world)
 	mark(world, "attack")
 	local hits = Attack.progress(world)
+	for _, request in world.projectileRequests do
+		ProjectileSystem.launch(world, request) -- full cap makes automatic ranged releases miss
+	end
+	HeroActionSystem.progress(world)
+	for _, hit in ProjectileSystem.advance(world) do
+		table.insert(hits, hit)
+	end
 	mark(world, "damage")
 	local deaths = Damage.apply(world, hits)
 	mark(world, "outcome")
 	decideOutcome(world)
 	mark(world, "cleanup")
+	HeroActionSystem.cleanup(world)
 	cleanup(world)
 	return { results = results, deaths = deaths, hits = #hits, outcome = world.outcome }
+end
+
+local function snapshotProjectiles(world: World): { { [string]: any } }
+	local list: { { [string]: any } } = {}
+	for _, id in world.projectileOrder do
+		local p = world.projectiles[id]
+		local view: { [string]: any } = {
+			entityId = p.entityId,
+			definitionId = p.definitionId,
+			team = p.team,
+			laneId = p.laneId,
+			x = p.x,
+			previousX = p.previousX,
+			direction = p.direction,
+			spawnTick = p.spawnTick,
+			expireTick = p.expireTick,
+		}
+		table.insert(list, view)
+	end
+	return list
+end
+
+local function snapshotHeroAction(world: World): { [string]: any }
+	return {
+		skillId = world.heroAction.skillId,
+		releaseTick = world.heroAction.releaseTick,
+		endTick = world.heroAction.endTick,
+	}
 end
 
 -- Owner-facing view: positions/HP/state only; attack power and internals stay on the server.
@@ -332,6 +380,19 @@ local function digest(world: World): string
 			table.concat(kills, ",")
 		),
 	}
+	local action = world.heroAction
+	table.insert(
+		parts,
+		string.format(
+			"h%s,%s,%s,%s|s%d|pc%d",
+			tostring(action.skillId),
+			tostring(action.releaseTick),
+			tostring(action.endTick),
+			tostring(action.reservedProjectileSlot),
+			resources.skillReadyTick,
+			world.projectileCount
+		)
+	)
 	for _, id in world.order do
 		local e = world.entities[id] :: Entity
 		table.insert(
@@ -354,13 +415,46 @@ local function digest(world: World): string
 			)
 		)
 	end
+	for _, id in world.projectileOrder do
+		local p = world.projectiles[id]
+		local hitIds: { number } = {}
+		for hitId in p.hitEntityIds do
+			table.insert(hitIds, hitId)
+		end
+		table.sort(hitIds)
+		local hitStrings: { string } = {}
+		for _, hitId in hitIds do
+			table.insert(hitStrings, tostring(hitId))
+		end
+		table.insert(
+			parts,
+			string.format(
+				"b%d:%s:%d:%s:%d:%.17g:%.17g:%d:%d:%d:%d:%d:%.17g:%d:%s",
+				id,
+				p.definitionId,
+				p.ownerEntityId,
+				p.team,
+				p.laneId,
+				p.x,
+				p.previousX,
+				p.direction,
+				p.damage,
+				p.attackSerial,
+				p.spawnTick,
+				p.expireTick,
+				p.distanceRemaining,
+				p.remainingPierce,
+				table.concat(hitStrings, ",")
+			)
+		)
+	end
 	for _, request in world.projectileRequests do
 		table.insert(
 			parts,
 			string.format(
-				"p%d>%d:%d@%d",
+				"p%d>%s:%d@%d",
 				request.ownerId,
-				request.targetId,
+				tostring(request.targetId),
 				request.damage,
 				request.releaseTick
 			)
@@ -384,5 +478,7 @@ return table.freeze({
 	spawnEnemy = spawnEnemy,
 	aliveCount = aliveCount,
 	snapshotEntities = snapshotEntities,
+	snapshotProjectiles = snapshotProjectiles,
+	snapshotHeroAction = snapshotHeroAction,
 	digest = digest,
 })

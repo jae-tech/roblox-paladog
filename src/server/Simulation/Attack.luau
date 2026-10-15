@@ -49,6 +49,7 @@ local function release(world: World, entity: Entity, hits: { SimTypes.Hit })
 				releaseTick = world.tick,
 				x = entity.x,
 				direction = entity.facing,
+				attackSerial = entity.attackSerial,
 			})
 		else
 			table.insert(hits, {
