@@ -51,7 +51,12 @@ export type ProfileV1 = {
 }
 
 export type SessionKey = { sessionId: string, jobId: string }
-export type Session = { sessionId: string, jobId: string, fenceEpoch: number }
+export type Session = {
+	sessionId: string,
+	jobId: string,
+	fenceEpoch: number,
+	leaseExpiresAt: number?,
+}
 
 -- `created` is true only when the store successfully read nil and wrote a new profile under the lock.
 -- "invalid": an existing document failed validation; the store must NOT lock or write it (left untouched).
@@ -74,6 +79,8 @@ export type Transform = (ProfileV1) -> (ProfileV1?, string?)
 
 export type StoreAdapter = {
 	backend: string,
+	leaseSeconds: number?, -- absent for process-local stores
+	renew: ((userId: number, session: Session, now: number) -> UpdateResult)?,
 	loadAndLock: (
 		userId: number,
 		key: SessionKey,

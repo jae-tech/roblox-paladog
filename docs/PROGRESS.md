@@ -1,6 +1,6 @@
 # 개발 진행
 
-- 현재: P7 핵심 구현, 실행 검증 보류. 단일 에이전트·서버 메모리 backend 유지.
+- 현재: P8 저장 안전장치 핵심 구현, 실행 검증 보류. 단일 에이전트, 실행 테스트·Studio·실 DataStore 접근 중단 유지.
 
 ## MVP 연결 기준선(이전 커밋)
 
@@ -35,3 +35,17 @@
 - 테스트 준비: T-P7(CLI/Studio 공용)에 첫 보상·중복/경합·상한·레벨/포인트·다음 경기 적용·클라이언트 구매 흐름을 추가했다. T-P6의 보상 기대값은 P7 계약으로 변경했다. **모두 실행 미검증**.
 - 미완료: P6/P7 회귀 실행, 실제 승리→보상→강화→재경기 UI/밸런스 확인. 이전 Studio 실행 소스 불일치·재연결/누수 검증도 남아 있다. P8 영구 저장은 미구현.
 - 브랜치: `p7-growth-rewards`. 검증 전이므로 P7 full gate PASS·main 병합으로 처리하지 않는다.
+
+## P8 핵심 구현(비활성·검증 보류)
+
+- 범위: 기본 차단된 테스트용 DataStore 어댑터, lease/fence·예산·제한 재시도, 기존 단일 프로필 queue에 갱신/종료 연결, 늦은 응답·중단 경기 복구 처리.
+- 실제 DataStore 호출·Studio API access 변경은 승인 없이 하지 않는다. 기본 실행 backend는 서버 메모리로 유지한다.
+- 핵심 fault 회귀 코드는 준비하되 실행하지 않고, 타입·lint·format·빌드만 확인한다.
+- 구현: `Persistence/`에 기본 비활성 정책·QA 전용 키·DataStore binding/adapter·bounded validator·순차 request runner 추가. 활성화는 `PersistencePolicy.config.enabled=false`가 기본이며 승인된 universe의 Studio만 허용한다. 실제 API/설정 접근은 하지 않았다.
+- 기존 profile queue를 유지하며 lease180초·40~50초 갱신·안전여유30초·session/fence 검증을 연결했다. 요청 예산 확인, 최대5회/관측20초 재시도, 응답 유실 시 동일 operation/closed-run 증명으로 중복 지급 차단, 중단 세션의 늦은 응답 무시, 이탈/종료 flush·재접속 대기·Abandoned 복구를 추가했다. 별도 경쟁 writer queue는 만들지 않았다.
+- Runtime은 기본 서버 메모리 backend 그대로다. BindToClose는 기존 writer를 최대25초 대기하며 미확정 저장 손실 가능성을 경고한다. 호출 자체가 yield 중이면 deadline이 호출 취소나 rollback을 뜻하지 않는다.
+- 테스트 준비: T-P8(CLI/Studio 공용)·offline FakeDataStore로 callback 재실행·API 실패/예산0·손상 profile·응답 유실·receipt 소실·stale fence·빠른 재접속·늦은 갱신·중복 종료를 작성했다. **테스트 실행은 하지 않았다**.
+- 정적 확인: CLI/Roblox 타입 분석, Selene, StyLua, production/test Rojo 빌드 PASS. 기록: `artifacts/P8/development/`. 보호 문서·생성 수치·TestPolicy allowlist 변경 없음.
+- 참조: [UpdateAsync/콜백·예산 공식 계약](https://create.roblox.com/docs/cloud-services/data-stores), [요청 budget API](https://create.roblox.com/docs/reference/engine/classes/DataStoreService#GetRequestBudgetForRequestType).
+- 미완료: P6~P8 실행 회귀, 실제 DataStore 승인·활성화·재시작 복원/두 Studio 경쟁 검증. 장기 API 지연·강제 종료의 미확정 보상 손실은 남는 한계이며 무손실/실서비스 PASS를 주장하지 않는다.
+- 브랜치: `p8-persistence-safety`. 실서비스 검증 전이므로 P8 full gate PASS·main 병합으로 처리하지 않는다. P9는 진행하지 않았다.

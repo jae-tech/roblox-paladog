@@ -1,5 +1,5 @@
 --!strict
--- Session-only stage gameplay. No debug remotes, DataStore or publishing APIs.
+-- Stage gameplay. Persistence stays memory-only unless the server policy is explicitly changed.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -10,6 +10,7 @@ local MatchService = require("./Services/MatchService")
 local RemoteGateway = require("./Net/RemoteGateway")
 local RemoteBinding = require("./Net/RemoteBinding")
 local FixedStep = require("./Simulation/FixedStep")
+local PersistencePolicy = require("./Persistence/PersistencePolicy")
 
 local active: any = nil
 local function start(): any
@@ -19,6 +20,7 @@ local function start(): any
 	local protocol = require(ReplicatedStorage.Shared.Protocol)
 	local catalog = require(ReplicatedStorage.Shared.PublicCatalog)
 	local tick = 0
+	local stopping = false
 	local forward: ((number, string, any) -> ())? = nil
 	local function send(userId: number, channel: string, payload: any)
 		if forward then
@@ -26,7 +28,9 @@ local function start(): any
 		end
 	end
 	local profiles = ProfileService.new({
-		store = SessionStore.new(),
+		store = if PersistencePolicy.config.enabled
+			then require("./Persistence/RobloxStoreBinding").new()
+			else SessionStore.new(),
 		clock = os.time,
 		spawn = function(fn)
 			task.spawn(fn)
@@ -73,6 +77,10 @@ local function start(): any
 	forward = sender
 	local driver = FixedStep.new()
 	RunService.Heartbeat:Connect(function(dt)
+		if stopping then
+			return
+		end
+		profiles.poll() -- memory check; due lease I/O shares the asynchronous profile writer
 		FixedStep.advance(driver, dt, function()
 			tick += 1
 			core.drain()
@@ -81,6 +89,20 @@ local function start(): any
 				core.publishSnapshots()
 			end
 		end)
+	end)
+	game:BindToClose(function()
+		stopping = true
+		for _, player in Players:GetPlayers() do
+			core.playerRemoving(player.UserId)
+		end
+		profiles.shutdown()
+		local deadline = os.clock() + 25
+		while not profiles.isIdle() and os.clock() < deadline do
+			task.wait(0.1)
+		end
+		if not profiles.isIdle() then
+			warn("Profile close deadline reached; unconfirmed data may be lost")
+		end
 	end)
 	active = { match = match, profiles = profiles }
 	return active

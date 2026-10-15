@@ -145,6 +145,11 @@ local function new(deps: Deps)
 		state.storage = payload.storage or "Unknown"
 		if payload.status ~= "Ready" then
 			state.reason = payload.status
+			if payload.status == "Unavailable" then
+				state.profileRequest = nil
+				switchMatch(nil, now)
+				state.phase, state.axis = "Unavailable", 0
+			end
 			return false
 		end
 		state.reason = nil

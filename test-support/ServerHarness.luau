@@ -53,10 +53,27 @@ function Harness.runSuite(suiteId: string, seed: number)
 			or suiteId == "T-P4"
 			or suiteId == "T-P5"
 			or suiteId == "T-P6"
-			or suiteId == "T-P7",
+			or suiteId == "T-P7"
+			or suiteId == "T-P8",
 		"unsupported P0 suite"
 	)
 	return Runner.run("StudioServer", HttpService:GenerateGUID(false), seed, function(check)
+		if suiteId == "T-P8" then
+			local client = game:GetService("StarterPlayer").StarterPlayerScripts.GameClient
+			require(tests.unit.P8)({
+				Adapter = require(GameServer.Persistence.DataStoreAdapter),
+				Policy = require(GameServer.Persistence.PersistencePolicy),
+				Validator = require(GameServer.Persistence.ProfileValidator),
+				Schema = require(GameServer.Services.ProfileSchema),
+				ProfileService = require(GameServer.Services.ProfileService),
+				MatchService = require(GameServer.Services.MatchService),
+				Catalog = require(ReplicatedStorage.Shared.PublicCatalog),
+				ClientController = require(client.Net.ClientController),
+				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				newBackend = require(tests.fixtures.FakeDataStore),
+			}, check)
+			return
+		end
 		if suiteId == "T-P7" then
 			local client = game:GetService("StarterPlayer").StarterPlayerScripts.GameClient
 			require(tests.unit.P7)({

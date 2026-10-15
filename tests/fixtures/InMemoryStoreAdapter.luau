@@ -38,6 +38,8 @@ return function()
 
 	local adapter = {
 		backend = "Mock/InMemory",
+		leaseSeconds = nil :: number?,
+		renew = nil :: ((number, any, number) -> any)?,
 		calls = calls,
 	}
 
