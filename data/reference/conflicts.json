@@ -1,0 +1,53 @@
+{
+  "U01": {
+    "recordIds": [
+      "code.mace:#9:effect"
+    ],
+    "resolved": false,
+    "summary": "E03 §3.1 food mace refills 4+0.3g vs E04 §1-5 fills to max; MVP has no food weapon"
+  },
+  "U04": {
+    "recordIds": [],
+    "resolved": true,
+    "summary": "EA # is table-local: A2 local 1~9, A4 id____ 10~29, A13 N5/N6 purchase-order labels; join by E02 §1.2/§1.4 position rules"
+  },
+  "U05": {
+    "recordIds": [
+      "db.allyBase:#1:iCLine",
+      "db.allyBase:#1:iTgDst",
+      "db.allyBase:#2:iCLine",
+      "db.allyBase:#2:iTgDst",
+      "db.allyBase:#3:iCLine",
+      "db.allyBase:#3:iTgDst",
+      "db.common:#353:fAtDly",
+      "db.common:#353:fSkDmg",
+      "db.common:#353:fSkKnd",
+      "db.common:#353:fSkPct",
+      "db.common:#353:iAtDst",
+      "db.common:#353:iAtPwr",
+      "db.common:#353:iCltm_",
+      "db.common:#353:iHtDst",
+      "db.common:#353:iMana_",
+      "db.common:#353:iMaxHP",
+      "db.common:#353:iMvSpd",
+      "db.common:#353:iSkDst",
+      "db.common:#353:iTgDst",
+      "db.enemyBase:#10:iTgDst",
+      "db.enemyBase:#11:iTgDst",
+      "db.enemyBase:#17:iTgDst",
+      "db.hero:#0:iCLine",
+      "db.hero:#0:iTgDst",
+      "db.hero:#255:iCLine",
+      "db.hero:#255:iTgDst",
+      "stage.campaign:#0:iCrRwd",
+      "stage.campaign:#0:iCrSec",
+      "stage.campaign:#0:time2",
+      "stage.campaign:#1:iCrRwd",
+      "stage.campaign:#1:iCrSec",
+      "stage.campaign:#2:iCrRwd",
+      "stage.campaign:#2:iCrSec"
+    ],
+    "resolved": true,
+    "summary": "iCLine, #353, iTgDst, campaign iCrRwd/iCrSec differ from runtime meaning; raw kept, runtime use excluded"
+  }
+}

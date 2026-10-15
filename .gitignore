@@ -4,7 +4,7 @@
 artifacts/
 
 # Research-only original binaries/assets are never release inputs
-reference/
+/reference/
 *.apk
 *.dex
 *.so
