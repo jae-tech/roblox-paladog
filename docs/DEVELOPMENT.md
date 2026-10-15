@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-P1 데이터 파이프라인 구현(`tools/verify_p1.py`: T-DATA + 자동 T-ASSET 검사 PASS; 시각·라이선스 검토는 수동이며 미실시). P0 로컬 기반 구현 + Studio runtime 검증(2026-10-15, 테스트 universe 10771015944). full gate는 `--studio-evidence`로 PASS/P0Complete=true다. production Studio 내 TestSupport require 실패는 런타임 미실행이며 사용자 결정으로 정적 XML audit으로 대체(WAIVED)했다. P0.1(팀 합의 Git 정책)은 BLOCKED로 남는다. P2~P9는 시작하지 않는다. 기존 설계 6개는 기준선이며 REA Markdown 7개는 수정하지 않는다. `tools/reference-hashes.json`으로 원본 보존을 검사한다. P0 gate 보고서의 balanceHash/schema/protocol은 null이다(밸런스 hash는 P1 산출물 `data/balance/mvp-proto-001.json`에 있다).
+P1 데이터 파이프라인 구현(`tools/verify_p1.py`: T-DATA + 자동 T-ASSET 검사 PASS; 시각·라이선스 검토는 수동이며 미실시). P0 로컬 기반 구현 + Studio runtime 검증(2026-10-15, 테스트 universe 10771015944). full gate는 `--studio-evidence`로 PASS/P0Complete=true다. production Studio 내 TestSupport require 실패는 런타임 미실행이며 사용자 결정으로 정적 XML audit으로 대체(WAIVED)했다. P0.1(팀 합의 Git 정책)은 BLOCKED로 남는다. P3~P9는 시작하지 않는다. 기존 설계 6개는 기준선이며 REA Markdown 7개는 수정하지 않는다. `tools/reference-hashes.json`으로 원본 보존을 검사한다. P0 gate 보고서의 balanceHash/schema/protocol은 null이다(밸런스 hash는 P1 산출물 `data/balance/mvp-proto-001.json`에 있다).
 
 실행 호스트는 계획의 Windows가 아니라 **macOS Darwin ARM64**다. 이 호스트용 로컬 도구 다운로드만 고정했다. Windows 지원/테스트를 주장하지 않는다. Git 기준선은 `f36bf2a`, origin/main과 동일한 이력이며 확인한 원격은 README의 공개 저장소다. 현재 main의 로컬 미커밋 변경으로 작업하며 팀 branch 합의는 없다. 제안 정책: 후속 변경은 `implementation/p0-foundation` 같은 로컬 feature branch, 소스/문서/도구만 커밋; `.omx/`, `artifacts/`, `.tools/`, 연구 바이너리와 키는 제외. 이번 작업은 commit/push/publish하지 않는다.
 
@@ -39,6 +39,26 @@ python3 tools/verify_p1.py   # golden + --check + validate + 재생성 diff0 →
 - 검증: 닫힌 필드 집합(DATA_MODELS §2/§5 타입, 누락·미지정 필드 FAIL), 모든 tick/HP/속도 >0, 참조 무결성, 가중치 합100, provenance 양방향 일치, PublicCatalog 텍스트 필드 allowlist(특성 설명 수치는 밸런스에서 생성), overlay 같은 필드 중복 지정 금지, 관리 디렉터리의 orphan 파일 FAIL. T-ASSET 자동 검사는 `data/assets/asset-manifest.json` 커버리지·asset ID/승인 허위 기재 금지·release tree는 `.luau`만·금지 확장자0이다.
 - 증거 위치는 IMPLEMENTATION_PLAN의 `artifacts/P1/<runId>/`를 따른다(ASSET_PIPELINE §2의 `artifacts/data/` 표기와 다름).
 - `src/`가 바뀌면 P0 Studio 증거의 소스 길이가 달라져 full gate가 FAIL한다. 이때 Studio 증거를 다시 수집한다.
+
+## P2 권한·DTO·세션·프로필 골격 (T-SEC 기본 / T-ISOLATION)
+
+```sh
+.tools/luau-0.742/luau tests/cli_p2.luau          # P2 suite (Luau CLI)
+python3 tools/verify_p2.py --isolation-evidence artifacts/P2/studio/<file>.json   # 증거 없으면 exit 2
+```
+
+- 모듈: `src/shared/{Types,Protocol}.luau`, `src/server/ServerTypes.luau`, `src/server/Net/{TokenBucket,RemoteGateway,RemoteBinding}.luau`, `src/server/Services/{ProfileSchema,ProfileService,MatchService}.luau`. 순수 core는 CLI와 Studio에서 같은 코드로 테스트한다.
+- require 경계: 같은 트리 안은 `./`·`../` 문자열 require(Studio 0.743과 CLI 모두 확인). server→shared는 DataModel 경로가 달라 한 경로로 쓸 수 없고(Studio는 `.luaurc` alias 미지원, CLI는 symlink 미추적을 확인) 구성 함수에서 주입한다.
+- `Protocol.validateCommand`: kind별 허용 필드만, 키 8개 상한, 값은 문자열/수만, 정수·유한·범위·ID 집합 검사. `InsufficientGold` reason을 추가했다(설계 enum에 골드 부족이 없음).
+- 게이트웨이: 토큰 버킷(명령 10/s·20, 이동 20/s·30, bootstrap 1/s·2), 플레이어별 대기열 32, 버킷 초과는 응답 없이 집계만. GetBootstrap은 메모리만 읽고 yield하지 않는다.
+- MatchService: 소유자당 경기 1개·서버 4개, phase 검사, commandSeq high-watermark + 최근 128 ack 캐시, 이동 seq·TTL 10tick, 소유자에게만 snapshot.
+- ProfileService: StoreAdapter 계약(loadAndLock/update/release), 사용자별 직렬 큐, expectedRevision·최근 64 영수증, 반환 문서의 영수증으로 commit 확인. 오류≠신규 계정, 손상·미래 schema는 덮어쓰지 않음, stale writer는 SessionLost.
+- **production Bootstrap은 아직 게이트웨이를 켜지 않는다**: 실제 저장소(P8)와 시뮬레이션(P3)이 없다. Studio T-ISOLATION은 test 빌드 전용 `ServerHarness.startNetRig()`(Mock/InMemory store, 같은 guard)로 실행한다.
+- 세션 안전: 같은 플레이어 중복 join은 무시. lease 해제는 sessionId+fenceEpoch가 맞을 때만, 진행 중 write가 끝난 뒤에만 실행. stale writer는 대기 중 작업까지 모두 `SessionLost`로 끝내고 경기 phase를 `Unavailable`로 바꾼다. 손상·미래 schema 문서는 load 단계에서 잠그거나 쓰지 않는다. 남은 activeRun은 재접속 load 때 `Abandoned`(보상0)로 닫는다. StartStage는 반환 문서의 activeRun.startOperationId가 요청과 같을 때만 Running.
+- 저장 예산: expectedRevision 불일치는 메모리에서 바로 거부, 프로필별 대기 작업 4개 상한(`Busy`).
+- 의도적 선택: 버킷 초과 명령은 응답 없이 버리고 집계만 한다(flood 증폭 방지). 클라이언트는 응답 대기 3초 후 표시를 멈춘다(ARCH §6.1).
+- 범위 밖/알려진 한계: Summon/Cast는 대기열에 `Pending`으로만 쌓인다(P3가 처리). 정산·Settled 진입·T-SEC-04 '종결 후' 입력은 P7/P8. lease heartbeat가 아직 없어 Mock rig에서 180초 뒤 write가 `SessionLost`가 된다(P8). 응답 유실 뒤 메모리 profile은 다음 commit까지 이전 값이며, 같은 requestId 재시도는 변경 없는 문서를 한 번 더 쓴다(P8 DataStore 어댑터에서 재검토).
+- 증거: `verify_p2.py`는 Studio 기록의 스크립트 바이트 길이가 현재 test 빌드와 같아야 PASS한다(코드가 바뀌면 다시 수집).
 
 ## production / test 경계
 

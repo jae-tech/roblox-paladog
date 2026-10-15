@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-**P0 full gate PASS (`P0Complete: true`), P1 gate(T-DATA + 자동 T-ASSET) PASS (2026-10-15). P2~P9는 시작하지 않았다.** P0.1(팀 합의 Git 정책)은 BLOCKED이고(로컬 main에 병합, push 안 함), production place 안의 런타임 TestSupport require 실패는 사용자 결정으로 정적 audit으로 대체(WAIVED)했다. P0/P1 증거와 overlay 결정은 검토자 확인 전이다.
+**P0 full gate PASS (`P0Complete: true`), P1 gate(T-DATA + 자동 T-ASSET) PASS, P2 gate(T-SEC 기본 + T-ISOLATION) PASS (2026-10-15). P3~P9는 시작하지 않았다.** P0.1(팀 합의 Git 정책)은 BLOCKED이고(로컬 main에 병합, push 안 함), production place 안의 런타임 TestSupport require 실패는 사용자 결정으로 정적 audit으로 대체(WAIVED)했다. P0/P1 증거와 overlay 결정은 검토자 확인 전이다.
 
 기준 문서는 기존 설계 6개(`PRD`, `ARCHITECTURE`, `DATA_MODELS`, `ASSET_PIPELINE`, `IMPLEMENTATION_PLAN`, `TEST_PLAN`)와 REA Markdown 7개다. 이 13개 원문은 변경하지 않았다. REA 원본 SHA256은 `tools/reference-hashes.json`으로 검사한다.
 
@@ -21,7 +21,7 @@
 | guard 음성 대조 | GameId 0 place(`instance:l96-gww`)에서 server/client harness 모두 universe 미승인으로 거부 |
 | production 격리 | 빌드 XML 정적 audit PASS. Studio 런타임 require 실패는 WAIVED |
 
-증거: `artifacts/P0/studio/20261015T1014Z-harness.json`(P1 생성 Luau 포함 빌드로 재수집; 이전 0933Z 증거는 소스 길이 불일치로 FAIL하는 것이 정상). `artifacts/`는 gitignore 대상이라 **이 증거는 원격에 없다**; 다른 checkout에서는 위 절차로 Studio 증거를 새로 수집해야 PASS를 재현할 수 있다. 증거 JSON은 MCP 출력을 옮겨 적은 자기 기록(서명 없음)이며 소스 일치는 바이트 길이 비교다. gate report의 `openTasks`에 P0.1이 남는다. 조작 증거(GameId 0, 빈 player 목록, 개별 case FAIL 등)는 FAIL exit 1.
+증거: `artifacts/P0/studio/20261015T1052Z-harness.json`(P2 코드 포함 빌드에서 2-client 플레이테스트로 재수집; 이전 증거는 소스 길이 불일치로 FAIL하는 것이 정상). `artifacts/`는 gitignore 대상이라 **이 증거는 원격에 없다**; 다른 checkout에서는 위 절차로 Studio 증거를 새로 수집해야 PASS를 재현할 수 있다. 증거 JSON은 MCP 출력을 옮겨 적은 자기 기록(서명 없음)이며 소스 일치는 바이트 길이 비교다. gate report의 `openTasks`에 P0.1이 남는다. 조작 증거(GameId 0, 빈 player 목록, 개별 case FAIL 등)는 FAIL exit 1.
 
 ## 실제 실행한 검증
 
@@ -72,10 +72,17 @@ clean checkout 재현: commit `dea9708`을 새로 clone해 도구 설치부터 l
 - T-ASSET: 자동 검사만(manifest 커버리지·금지 파일). 7개 presentation 모두 `placeholder`이고 asset ID·승인자는 비어 있다. 시각·라이선스 검토는 미실시.
 - 남은 판단: overlay 결정의 실제 승인(`approvedBy`)은 비어 있다. 밸런스는 플레이 검증 전 기준선이다.
 
+## P2 권한·DTO·세션·프로필 골격 (2026-10-15)
+
+- 원격 입력 검증(`Protocol`), 게이트웨이(토큰 버킷·대기열·no-yield bootstrap), MatchService(소유권·phase·seq/ack·이동 TTL), ProfileService(StoreAdapter 계약·영수증·fenced lease), InMemory 어댑터. production Bootstrap에는 아직 연결하지 않음(저장소 P8, 시뮬레이션 P3).
+- Luau P2 suite 132개 PASS(CLI와 Studio 서버 VM 동일). 리뷰에서 나온 lease 경쟁(늦은 release가 새 세션 lease 삭제), stale writer 후 Preparing 고착, run 식별 미검증, 남은 activeRun 영구 차단, 손상 문서 선기록 등을 고치고 각각 회귀 테스트를 추가했다. 규칙을 수동으로 깨 보는 mutation 실행(허용 필드·소유권·영수증·fence·중복 join)에서 테스트가 실패하는 것을 확인했다(저장소에서 자동 재현되지는 않음).
+- Studio 2-client(테스트 universe, 실제 RemoteEvent, Mock store): 타인 경기 명령 `NotOwner`, 임의 hp 필드·Instance·NaN `InvalidPayload`, 피해자 대기열·이동축·revision 불변, 각자 자기 snapshot만 수신, 1000건 flood에서 20건만 수용·980건 무응답 집계·다른 플레이어 정상. 증거 `artifacts/P2/studio/20261015T1052Z-isolation.json`, gate `tools/verify_p2.py`.
+- 설계 대비 변경: reason에 `InsufficientGold` 추가. server→shared require는 주입으로 해결(Studio alias·CLI symlink 불가를 실측).
+
 ## 다음 작업
 
 1. 검토자가 P0/P1 증거와 overlay 결정(`data/overlay/mvp-proto-001.json`)을 확인한다.
-2. P2(권한·DTO·상태·프로필 인터페이스 골격)부터 `docs/IMPLEMENTATION_PLAN.md` 순서대로 진행한다.
+2. P3(순수 시뮬레이션: 자원·소환·근접)부터 `docs/IMPLEMENTATION_PLAN.md` 순서대로 진행한다.
 
 Studio 재검증 절차는 [DEVELOPMENT](DEVELOPMENT.md)의 "Studio/MCP T-TOOL 재개"를 따른다.
 
