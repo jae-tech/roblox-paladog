@@ -344,10 +344,18 @@ local function new(deps: Deps)
 			stageId = session.stageId,
 			balanceHash = deps.balanceHash,
 			inputAckSeq = session.moveSeq,
+			commandAckSeq = session.commandHigh,
+			stageLength = if world then world.stage.length else nil,
+			advanceLimitX = if world then world.stage.advanceLimitX else nil,
+			heroMoveSpeed = if world then world.entities[world.heroId].moveSpeed else nil,
+			pendingKillGold = if world then world.pendingKillGold else 0,
+			pendingKillXp = if world then world.pendingKillXp else 0,
 			resources = if world
 				then {
 					foodMilli = world.resources.foodMilli,
 					manaMilli = world.resources.manaMilli,
+					foodMaxMilli = world.resources.foodMaxMilli,
+					manaMaxMilli = world.resources.manaMaxMilli,
 					summonReadyTick = table.clone(world.resources.summonReadyTick),
 					skillReadyTick = world.resources.skillReadyTick,
 				}

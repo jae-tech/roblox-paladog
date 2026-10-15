@@ -5,7 +5,7 @@ Codex·Claude 등 코딩 에이전트용 작업 안내. 상세 근거는 아래 
 ## 먼저 읽을 것
 
 1. `docs/HANDOFF.md`: 단계별 현재 상태, 실제로 실행한 검증, 남은 일
-2. `docs/DEVELOPMENT.md`: 단계별(P1~P3) 설계 결정과 알려진 한계
+2. `docs/DEVELOPMENT.md`: 단계별 설계 결정과 알려진 한계
 3. 다음 단계 범위: `docs/IMPLEMENTATION_PLAN.md`의 해당 P절, 테스트 기준은 `docs/TEST_PLAN.md`, 수치·타입은 `docs/DATA_MODELS.md`, 처리 순서·권한·저장은 `docs/ARCHITECTURE.md`
 
 ## 현재 상태 (2026-10-15)
@@ -17,7 +17,9 @@ Codex·Claude 등 코딩 에이전트용 작업 안내. 상세 근거는 아래 
 | P2 원격 프로토콜·세션·프로필 골격 | gate PASS (Luau 132 cases, Studio 2-client 격리) |
 | P3 헤드리스 전투 시뮬레이션 | gate PASS (Luau 123 cases, Studio suite + 라이브 경기) |
 | P4 탄·영웅 무기 스킬 | gate PASS (Luau 134 cases, Studio 동일 suite + 실제 Remote 시전·이동·피해) |
-| **다음: P5 입력·뷰·카메라** | 미착수. `MatchService.snapshot`의 `heroAction`·`skillReadyTick`·탄 궤적 DTO 사용. 성장 순수 계산(P7)은 별도 진행 가능 |
+| **진행 중: P5 입력·뷰·카메라** | 구현 + CLI/Studio 서버/클라이언트 동일613 cases PASS. 실제 입력·장치 화면·renderer 런타임 교체·멀티터치 미검증으로 full gate BLOCKED. 다음은 이 검증 재개 |
+
+P0~P4 full PASS는 P4 기준선 기록이다. 현재 P5 브랜치에서는 P0 로컬 gate와 P1 PASS, Studio의 P0/P2/P3/P4 원시 suite PASS를 확인했지만 full evidence 재수집은 끝내지 않았다. 이전 P4 소스 길이 증거를 현재 빌드의 PASS로 재사용하지 않는다.
 
 ## 환경과 명령 (macOS arm64 전용 bootstrap)
 
@@ -28,9 +30,11 @@ python3 tools/verify_p1.py                 # 데이터 golden·재생성 diff0·
 .tools/luau-0.742/luau tests/cli_p2.luau   # P2 suite
 .tools/luau-0.742/luau tests/cli_p3.luau   # P3 suite
 .tools/luau-0.742/luau tests/cli_p4.luau   # P4 suite
+.tools/luau-0.742/luau tests/cli_p5.luau   # P5 입력/네트워크/뷰 suite
 python3 tools/verify_p2.py                 # Studio 증거 없으면 exit 2(BLOCKED)가 정상
 python3 tools/verify_p3.py                 # 동일
 python3 tools/verify_p4.py                 # 동일 (Studio 증거는 --studio-evidence)
+python3 tools/verify_p5.py                 # 실제 입력/장치/렌더/터치 증거 부족은 BLOCKED
 python3 -m unittest discover -s tools/tests
 .tools/stylua-2.6.0/stylua src tests test-support test-support-client   # 커밋 전 포맷
 ```
@@ -47,7 +51,7 @@ python3 -m unittest discover -s tools/tests
 
 ## 하지 말 것
 
-- **생성 파일을 직접 고치지 않는다**: `data/reference/*`, `data/normalized/*`, `data/balance/*`, `src/server/Config/Generated/*`, `src/shared/PublicCatalog.luau`. 수치는 `data/overlay/mvp-proto-001.json`(결정 ID·이유 필수, `approvedBy`는 실제 승인 전까지 null)을 고친 뒤 `python3 tools/build_balance.py --version mvp-proto-001`로 재생성한다.
+- **생성 파일을 직접 고치지 않는다**: `data/reference/*`, `data/normalized/*`, `data/balance/*`, `src/server/Config/Generated/*`, `src/shared/PublicCatalog.luau`. 수치는 `data/overlay/mvp-proto-001.json`(결정 ID·이유 필수, `approvedBy`는 실제 승인 전까지 null)을 고친 뒤 `python3 tools/build_balance.py --version mvp-proto-001`로 재생성한다. 표현 계약은 `DESIGN.md`, 추가 코드 생성 도형도 `data/assets/asset-manifest.json`에 기록한다.
 - 연구 원문 `docs/paladog-*.md` 7개와 설계 문서 6개를 수정하지 않는다(SHA 고정).
 - 셸 작업 디렉터리를 `src/`·`tests/`·`test-support*/`·`artifacts/` 안으로 옮기지 않는다. 에이전트 훅이 작업 디렉터리에 상태 파일을 만들면 Rojo가 Studio로 동기화하고 T-ASSET 검사가 실패한다.
 - 사용자 승인 없이 하지 않는다: `git push`, 실제 DataStore 접근, Studio API access 토글, place publish, 에셋 업로드·구매, `TestPolicy.luau` allowlist 변경. 테스트 universe는 사용자가 승인한 `10771015944`뿐이다.
@@ -58,8 +62,8 @@ python3 -m unittest discover -s tools/tests
 gate는 Studio를 직접 구동하지 못하고, MCP로 수집한 증거 JSON을 검증한다. 증거에는 test 빌드의 스크립트 바이트 길이가 들어 있어 **코드가 바뀌면 이전 증거로는 FAIL**이 정상이다.
 
 1. `rojo serve test.project.json --port 34872`를 띄우고, 승인된 테스트 universe의 place에서 Rojo 플러그인 Connect를 누른다(사람이 해야 함). 저장하거나 publish하지 않는다.
-2. 2-client multiplayer playtest에서 (`Script.Source` 바이트 길이는 runtime VM에서 읽을 수 없으니 edit 피어 `execute_luau`로 수집) `ServerHarness.runSuite`(`T-TOOL`, `T-TOOL-INTENTIONAL-FAIL`, `T-P2`, `T-P3`, `T-P4`)와 `startNetRig()`/`ClientHarness`로 시나리오를 실행한다. 형식은 `artifacts/P*/studio/`의 기존 증거와 `docs/HANDOFF.md`를 따른다.
-3. `verify_p0.py --studio-evidence`, `verify_p2.py --isolation-evidence`, `verify_p3.py --studio-evidence`, `verify_p4.py --studio-evidence`로 검증한다. P4는 raw Studio suite의 seed·전체 assertion을 최신 CLI와 비교한다. `artifacts/`는 gitignore 대상이라 증거가 원격에는 없다.
+2. 2-client multiplayer playtest에서 (`Script.Source` 바이트 길이는 runtime VM에서 읽을 수 없으니 edit 피어 `execute_luau`로 수집) `ServerHarness.runSuite`(`T-TOOL`, `T-TOOL-INTENTIONAL-FAIL`, `T-P2`, `T-P3`, `T-P4`, `T-P5`)와 `startNetRig()`/`ClientHarness`로 시나리오를 실행한다. P5는 `ClientHarness.runSuite('T-P5',12345)`도 실행한다. 형식은 `artifacts/P*/studio/`의 기존 증거와 `docs/HANDOFF.md`를 따른다.
+3. `verify_p0.py --studio-evidence`, `verify_p2.py --isolation-evidence`, `verify_p3.py --studio-evidence`, `verify_p4.py --studio-evidence`, `verify_p5.py --studio-evidence`로 검증한다. P4/P5는 raw Studio suite의 seed·전체 assertion을 최신 CLI와 비교한다. `artifacts/`는 gitignore 대상이라 증거가 원격에는 없다. 화면 캡처 실패나 실제 touch 도구 부재를 mock PASS로 바꾸지 않는다.
 
 MCP가 없으면 Studio 단계는 하지 말고 BLOCKED로 남긴 뒤 HANDOFF에 적는다.
 

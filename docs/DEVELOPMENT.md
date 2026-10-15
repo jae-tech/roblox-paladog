@@ -1,8 +1,8 @@
-# P0~P4 개발 및 검증
+# P0~P5 개발 및 검증
 
 ## 현재 상태
 
-P0~P4 구현 및 gate PASS. P4는 CLI/Studio 134개와 실제 Remote 시전·이동·피해를 검증했고 같은 빌드에서 P0/P2/P3도 재검증했다(2026-10-15, 테스트 universe10771015944). P5~P9는 미착수다. 저장은 Mock/InMemory이며 production bootstrap은 boot만 한다. production Studio TestSupport require 검사는 기존 사용자 결정에 따른 정적 XML audit 대체(WAIVED), P0.1 팀 Git 정책은 BLOCKED다. P1 overlay 결정 승인과 에셋 시각·라이선스 검토도 남아 있다. 기존 설계6개·REA7개는 수정하지 않는다. P0 보고서의 balanceHash/schema/protocol은 null이고 P4 environment에는 실제 balanceHash/sourceHash가 있다.
+P0~P4 gate PASS는 P4 기준선 기록이다. 현재 P5는 입력·네트워크·뷰 구현과 CLI/Studio 서버/클라이언트613개 PASS 체크포인트이며, 실제 입력/장치 화면/renderer 교체/멀티터치 증거가 부족하여 full gate BLOCKED다. production 서버는 boot만 하고 client UI는 server remote를 기다린다. 테스트 저장은 Mock/InMemory이며 P6~P9는 미착수다. 기존 production runtime WAIVED·P0.1 보류·overlay 미승인은 유지한다. 연구/설계 정본13개는 수정하지 않는다.
 
 실행 호스트는 계획의 Windows가 아니라 **macOS Darwin ARM64**다. 이 호스트용 로컬 도구 다운로드만 고정했다. Windows 지원/테스트를 주장하지 않는다. 초기 P0 Git 기준선은 `f36bf2a`였고 당시 팀 branch 정책은 미합의였다. 현재는 AGENTS.md에 따라 단계별 로컬 feature branch에서 소스/문서/도구만 커밋하고 main에 fast-forward 병합한다(P4: `p4-projectiles-and-hero-skill`). `.omx/`, `artifacts/`, `.tools/`, 연구 바이너리와 키는 제외한다. push/publish는 하지 않는다.
 
@@ -93,10 +93,27 @@ python3 -m unittest discover -s tools/tests
 - `ServerHarness.runSuite('T-P4',12345)`가 CLI와 같은 suite를 실행한다. harness suite 선택은 분기별로 호출한다(luau-lsp는 두 require 함수의 union을 직접 호출하면 동일 서명이어도 거부했다). gate는 raw Studio seed·전체 ordered assertion을 fresh CLI와 exact 비교하고, 같은 tick 발사/명중·소스 길이 불일치·비공개 DTO·빈 suite·위조 PASS·미종료 rig를 거부한다.
 - 검증 범위는 CLI/Studio 서버 시뮬레이션과 실제 RemoteEvent까지다. PC/touch 입력, 화면 표시, 실제 저장, 4경기10분 성능은 P5/P8/P9에서 별도 검증한다. 이번 Studio fixture 마나/표적은 서버 테스트 전용이며 production에 grant endpoint를 만들지 않았다. raw 경로·수치는 [HANDOFF](HANDOFF.md)에 있다.
 
+## P5 클라이언트 기반 (진행 중 / full gate BLOCKED)
+
+```sh
+.tools/luau-0.742/luau tests/cli_p5.luau  # 입력31 + 네트워크163 + 뷰419 = 613
+python3 tools/verify_p5.py              # runtime 증거 없으면 exit2
+python3 tools/verify_p5.py --studio-evidence artifacts/P5/studio/20261015T125703Z/p5-partial.json
+```
+
+- 표현 정본은 `DESIGN.md`다. `Presentation/Layout`는 safe-area 내부 offset을 사용하고 실제 세로 여부와 좁은 가로 compact 배치를 분리한다. 10개 viewport의 최소48px·간격8px·HUD 비중첩을 순수 테스트했다. P5 추가 핵/탄/지면5개도 Original placeholder로 manifest에 선언하고 `asset_audit`가 ViewDefinitions의 literal presentationId를 함께 검사한다.
+- `ActionRouter`는 순수 입력 상태, `DeviceAdapter`는 CAS/GUI/UIS 경계다. CAS Cancel은 KeyCode.Unknown일 수 있어 action의 모든 alias를 정리한다. movement는 InputObject별 hold/global release, GUI discrete는 Activated 하나만 사용한다. 숨김·focus·text·menu blockers는 서로 독립이고 재활성 시 키를 자동 복원하지 않는다.
+- snapshot은 현재 match·증가 seq·비감소 tick·동일 balance와 유한값을 검증해 복사한다. 비영웅은0.1초 지연 보간/최신 밖 최대0.15초 시각 외삽, 영웅만 최대0.15초 입력 예측과 clamp를 한다. 0.1stud 이하 오차는0.1초 보정, 큰 오차와 종결은 snap한다. HP/자원/피해를 로컬에서 확정하지 않는다.
+- 완전 snapshot에 표시용 bounds/속도/상한/잠정 보상과 `commandAckSeq`를 추가했다. `inputAckSeq`/`commandAckSeq`는 재연결 후 서버 high-watermark 이하 seq를 재사용하지 않기 위한 값이고 최종 Accepted/Rejected는 기존 ServerMessage를 따른다. bootstrap은 동시1개·최소1초 간격이며3초 UI timeout도 호출 취소로 취급하지 않는다. Preparing의 승인 누락과1초 stale snapshot은 bootstrap으로 복구한다. 오래된 bootstrap/StartStage ack는 최신 terminal phase를 덮지 못한다.
+- EntityView의 renderer 시도는 각자 Folder를 소유한다. 미지원 Sprite/Model은 예상된 Placeholder fallback이고, 등록된 factory/update/play/destroy 결함은 원래 문맥을 경고한다. 부분 생성물과 실패한 handle은 정리하며 Placeholder 자체 결함은 다시 던진다. renderer 생명주기/카메라 실제 복원과 digest 동일성의 엔진 검증은 아직 남아 있다.
+- Runtime은 production remote를 새로 만들지 않고 서버가 제공할 때만 구독한다. remote 제거/재연결 시 controller/입력 상태를 정리한다. production 서버 bootstrap은 boot만 하므로 실제 플레이 서버 연결은 이후 단계 범위다. 로비에 Mock으로 위장한 진행을 만들지 않는다.
+- 공식 API는 Context7 `/websites/create_roblox`와 Roblox docs(ContextActionService, GuiButton, UserInputService, GuiService, ScreenGui, Camera)를2026-10-15 확인했다. ScreenInsets=CoreUISafeInsets와 IgnoreGuiInset을 섞지 않으며 Scriptable camera는 Focus도 갱신한다.
+- 검증: P0 local/P1 gate PASS, P2/P3/P4 CLI132/123/134 PASS, 전체 Python86 PASS, 타입 분석·lint·format·production/test build PASS. Studio 서버/클라이언트613개도 PASS이나 실제 키/GUI·장치 화면·renderer 교체·실제 touch는 BLOCKED다. 캡처 실패/터치 도구 부재 및 raw 경로는 [HANDOFF](HANDOFF.md)에 있다. P5 partial gate는 의도적으로 exit2이며 P6 선행 PASS로 쓰지 않는다.
+
 ## production / test 경계
 
 - `default.project.json`: Shared/GameServer/GameClient와 직접 만든 빈 Environment만. 테스트 모듈·fixture·Remote endpoint가 없다.
-- `test.project.json`: 같은 소스 + TestSupport와 명시 `P0TestBuild` marker. 외부 에셋/스크립트는 없다.
+- `test.project.json`: 같은 소스 + TestSupport와 명시 `P0TestBuild` marker. P5 client에는 Runner와 P5 pure suite4개만 추가로 매핑한다(서버 저장 fixture는 client에 배포하지 않음). 외부 에셋/스크립트는 없다.
 - `Players.CharacterAutoLoads=false`를 프로젝트와 서버 bootstrap에 명시. boot script는 realm별 marker를 기록할 뿐 플레이 가능한 게임은 아니다.
 - 빌드 XML에서 test 노드/의존성과 Remote endpoint0을 검사한다. Studio production place 안의 TestSupport require 실패 런타임 확인은 2026-10-15 사용자 결정으로 이 정적 audit으로 대체(WAIVED)했다.
 - fake Clock/RNG와 `Mock/InMemory` numeric store는 P0 fixture일 뿐이다. P2 lease/revision/store 계약이나 Roblox MemoryStore/DataStore 구현이 아니다.

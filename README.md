@@ -1,7 +1,7 @@
 # 등불 원정 — Roblox 게임 설계 (가칭)
 
 Paladog의 메커니즘을 참고하는 **오리지널 2.5D 횡스크롤 전략 액션** 프로젝트입니다.
-P0 도구·빌드 기반, P1 데이터 변환, P2 원격 프로토콜·프로필 골격, P3 헤드리스 전투, P4 투사체·영웅 `pulse` 스킬을 구현했습니다. 승인된 테스트 universe의 Studio 2-client 환경에서 P0·P2·P3·P4 게이트가 PASS입니다(P4 134개 테스트 및 실제 Remote 시전·이동·피해 확인). **게임/MVP가 완성된 상태는 아닙니다.** production bootstrap에는 아직 게임을 연결하지 않았고, P5~P9는 미착수입니다. 저장은 Mock/InMemory뿐이며 overlay 결정 승인·실기기 검증은 남아 있습니다. 기존 P0.1 Git 정책 보류와 production 런타임 require 검사의 정적 audit 대체도 유지합니다.
+P0~P4 도구·데이터·서버 전투 게이트는 P4 기준선에서 PASS입니다. **P5 입력·네트워크 예측·HUD·Placeholder·카메라는 구현 중이며 CLI/Studio 서버/클라이언트 동일613개 테스트가 PASS입니다.** 실제 키/GUI 입력, 장치별 화면, renderer 런타임 교체와 실제 멀티터치 검증은 남아 있어 P5 full gate는 BLOCKED입니다. 현재 환경은 화면 캡처에도 실패했고 권한/API 설정을 변경하지 않았습니다. **게임/MVP 완성이 아닙니다.** production 서버는 boot만 수행하고 클라이언트 UI는 서버 remote를 기다립니다. 테스트 저장은 Mock/InMemory뿐이며 P6~P9·밸런스 승인·실기기 검증은 미완료입니다. 기존 P0.1 Git 정책 보류와 production 런타임 require 검사의 정적 audit 대체도 유지합니다.
 
 재현 명령·도구 버전·승인 경계·미검증 항목은 [개발 안내](docs/DEVELOPMENT.md)를 확인하세요. `python3 tools/verify_p0.py --local-only`는 로컬 검사이며, `python3 tools/verify_p0.py --studio-evidence <json>`은 MCP로 수집한 Studio 증거를 검증하며, 증거가 없으면 exit2/BLOCKED입니다.
 

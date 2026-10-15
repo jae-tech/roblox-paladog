@@ -960,6 +960,10 @@ def asset_audit(balance, manifest, release_files, repo_files):
     errors = []
     used = {item["presentationId"] for group in ("units", "enemies") for item in balance[group].values()}
     used.add(balance["hero"]["presentationId"])
+    # P5 code-built core/projectile/ground views declare their IDs in the client definition table.
+    view_defs = ROOT / "src/client/Presentation/ViewDefinitions.luau"
+    if view_defs.exists():
+        used.update(re.findall(r'presentationId\s*=\s*"([a-z0-9_]+)"', view_defs.read_text(encoding="utf-8")))
     entries = {e.get("presentationId"): e for e in manifest.get("entries", [])}
     if len(entries) != len(manifest.get("entries", [])):
         errors.append("asset manifest has duplicate presentationId")
