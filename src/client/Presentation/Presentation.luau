@@ -67,7 +67,7 @@ local function cooldown(ready: number?, tick: number): string
 	return if ticks > 0 then string.format("%.1f초", ticks / 20) else "준비"
 end
 
-local function new(playerGui: PlayerGui, onAction: (string) -> ())
+local function new(playerGui: PlayerGui, onAction: (string) -> (), playableMvp: boolean?)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "LanternExpedition"
 	gui.ResetOnSpawn = false
@@ -100,7 +100,7 @@ local function new(playerGui: PlayerGui, onAction: (string) -> ())
 	local modalText = label(modal, "MenuText", 18, Tokens.text)
 	modalText.Size, modalText.Position = UDim2.new(1, -32, 1, -100), UDim2.fromOffset(16, 16)
 	modalText.Text =
-		"원정 일시 메뉴\n메뉴 중에도 서버 전투는 계속됩니다.\n저장: Mock/InMemory · 영구 저장 아님"
+		"원정 메뉴\n메뉴 중에도 서버 전투는 계속됩니다.\n영구 저장·보상 없음\nA/D 이동 · 1 전위병 소환 · 적 핵 파괴 시 승리"
 	modalText.ZIndex = 11
 	local close = button(modal, "CloseMenu", "전투로 돌아가기", Tokens.amber)
 	close.ZIndex = 11
@@ -132,6 +132,14 @@ local function new(playerGui: PlayerGui, onAction: (string) -> ())
 			end)
 		)
 	end
+	local retry = button(stage, "Retry", "원정 선택으로 돌아가기", Tokens.teal)
+	retry.Visible = false
+	table.insert(
+		connections,
+		retry.Activated:Connect(function()
+			onAction("ReturnToLobby")
+		end)
+	)
 	local controls = Instance.new("Frame")
 	controls.Name, controls.Size, controls.BackgroundTransparency =
 		"Controls", UDim2.fromScale(1, 1), 1
@@ -144,6 +152,9 @@ local function new(playerGui: PlayerGui, onAction: (string) -> ())
 	for slot = 1, 3 do
 		buttons["Summon" .. slot] =
 			button(controls, "Summon" .. slot, slot .. " · 소환", Tokens.teal)
+	end
+	if playableMvp then
+		buttons.Summon2.Visible, buttons.Summon3.Visible, buttons.Cast.Visible = false, false, false
 	end
 	local folder = Instance.new("Folder")
 	folder.Name, folder.Parent = "LanternClientVisuals", workspace
@@ -179,6 +190,10 @@ local function new(playerGui: PlayerGui, onAction: (string) -> ())
 		stageTitle.Position, stageTitle.Size = UDim2.fromOffset(12, 4), UDim2.new(1, -24, 0, 28)
 		stageNote.Position, stageNote.Size = UDim2.fromOffset(12, 32), UDim2.new(1, -24, 0, 28)
 		for slot, item in starts do
+			if playableMvp and slot == 1 then
+				item.Position, item.Size = UDim2.fromOffset(12, 64), UDim2.new(1, -24, 0, 48)
+				continue
+			end
 			if layout.portrait then
 				item.Position, item.Size =
 					UDim2.fromOffset(12, 64 + (slot - 1) * 56), UDim2.new(1, -24, 0, 48)
@@ -188,6 +203,7 @@ local function new(playerGui: PlayerGui, onAction: (string) -> ())
 					UDim2.fromOffset(12 + (slot - 1) * (width + 8), 64), UDim2.fromOffset(width, 48)
 			end
 		end
+		retry.Position, retry.Size = UDim2.fromOffset(12, 64), UDim2.new(1, -24, 0, 48)
 		local messageY = if layout.compact and not layout.portrait
 			then layout.hud.y + layout.hud.height
 			else if layout.portrait then layout.height - 184 else layout.height - 140
@@ -230,24 +246,44 @@ local function new(playerGui: PlayerGui, onAction: (string) -> ())
 			)
 			else "영웅 HP —   ·   핵 HP —"
 		resources.Text = if running or model.heroHp ~= nil
-			then string.format(
-				"식량 %s/%s   ·   마나 %s/%s",
-				milli(model.foodMilli),
-				milli(model.foodMaxMilli or 40000),
-				milli(model.manaMilli),
-				milli(model.manaMaxMilli or 100000)
-			)
+			then if playableMvp
+				then string.format(
+					"식량 %s/%s",
+					milli(model.foodMilli),
+					milli(model.foodMaxMilli or 40000)
+				)
+				else string.format(
+					"식량 %s/%s   ·   마나 %s/%s",
+					milli(model.foodMilli),
+					milli(model.foodMaxMilli or 40000),
+					milli(model.manaMilli),
+					milli(model.manaMaxMilli or 100000)
+				)
 			else "식량 —   ·   마나 —"
-		status.Text = string.format(
-			"%s · %s | 잠정 보상 %dG / %dXP",
-			model.storage or "Mock/InMemory",
-			model.network or "연결 대기",
-			model.pendingKillGold or 0,
-			model.pendingKillXp or 0
-		)
-		message.Text = if model.reason
-			then (REASONS[model.reason] or tostring(model.reason))
-			elseif model.outcome then "전투 종료 · 정산 미구현 · 보상 미확정"
+		status.Text = if playableMvp
+			then string.format(
+				"%s · %s",
+				model.storage or "서버 메모리",
+				model.network or "연결 대기"
+			)
+			else string.format(
+				"%s · %s | 잠정 보상 %dG / %dXP",
+				model.storage or "Mock/InMemory",
+				model.network or "연결 대기",
+				model.pendingKillGold or 0,
+				model.pendingKillXp or 0
+			)
+		local outcomeText = ({
+			Victory = "승리! 적 핵을 파괴했습니다",
+			Defeat = "패배 · 영웅이 쓰러졌습니다",
+			Timeout = "패배 · 제한 시간 종료",
+		})[model.outcome]
+		message.Text = if model.outcome
+			then outcomeText or "전투 종료"
+			elseif model.reason then (REASONS[model.reason] or tostring(model.reason))
+			elseif
+				playableMvp and running
+			then "A/D 이동 · 1 전위병(식량 10) · 적 핵 파괴 시 승리"
 			else ""
 		controls.Visible = running
 		stage.Visible = not running
@@ -258,8 +294,13 @@ local function new(playerGui: PlayerGui, onAction: (string) -> ())
 			Settled = "서버 결과 확인",
 			Unavailable = "원정을 시작할 수 없습니다",
 		})[model.phase] or "서버 연결을 기다립니다"
+		if model.outcome then
+			stageTitle.Text = outcomeText or "전투 종료"
+		end
 		stageNote.Text = if model.phase == "LobbyReady"
-			then "Mock/InMemory · 영구 저장 아님"
+			then (if playableMvp
+				then "서버 메모리 · 영구 저장·보상 없음"
+				else "Mock/InMemory · 영구 저장 아님")
 			else tostring(model.phase or "연결 대기") .. " · " .. tostring(
 				model.network or "대기"
 			)
@@ -281,7 +322,9 @@ local function new(playerGui: PlayerGui, onAction: (string) -> ())
 			item.Active, item.Selectable =
 				model.phase == "LobbyReady" and unlocked, model.phase == "LobbyReady" and unlocked
 			item.TextColor3 = if item.Active then Tokens.text else Tokens.muted
+			item.Visible = (not playableMvp or slot == 1) and not model.outcome
 		end
+		retry.Visible = playableMvp == true and model.phase == "Settled"
 		for slot, id in ORDER do
 			local def = (catalog.units or {})[id] or {}
 			local item = buttons["Summon" .. slot] :: TextButton
@@ -361,7 +404,7 @@ local function new(playerGui: PlayerGui, onAction: (string) -> ())
 				y = item.AbsolutePosition.Y,
 				width = item.AbsoluteSize.X,
 				height = item.AbsoluteSize.Y,
-				visible = controls.Visible,
+				visible = controls.Visible and item.Visible,
 			}
 		end
 		local stages: { [string]: any } = {}

@@ -122,6 +122,8 @@ export type World = {
 	limits: { allyCap: number, enemyCap: number, projectileCap: number },
 	outcome: string?,
 	outcomeTick: number?,
+	spawnsRemaining: number?,
+	nextSpawnTick: number?,
 	pendingKillGold: number,
 	pendingKillXp: number,
 	killCounts: { [string]: number },

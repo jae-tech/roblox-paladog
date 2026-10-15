@@ -3,6 +3,7 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
+      "$attributes": { "PlayableMvp": true },
       "Shared": {
         "$path": "src/shared"
       }

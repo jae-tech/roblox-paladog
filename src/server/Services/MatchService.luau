@@ -50,6 +50,7 @@ export type Deps = {
 	maxMatches: number,
 	ackCacheSize: number,
 	moveTtlTicks: number,
+	playableMvp: boolean?,
 }
 
 local ACTIVE: { [Phase]: boolean } =
@@ -216,6 +217,10 @@ local function new(deps: Deps)
 	end
 
 	local function startStage(userId: number, session: Session, command: any)
+		if deps.playableMvp and command.stageId ~= "s01" then
+			reply(userId, command.requestId, "Rejected", "LockedStage")
+			return
+		end
 		if session.phase ~= "LobbyReady" then
 			reply(userId, command.requestId, "Rejected", "WrongPhase")
 			return
@@ -250,6 +255,7 @@ local function new(deps: Deps)
 			local world =
 				World.new({ -- built first: a config error must not leave a Running session without a world
 					stageId = run.stageId,
+					spawnEncounter = deps.playableMvp,
 					unitLevels = loaded.unitLevels,
 					heroTraits = loaded.heroTraits, -- copied by World: growth is fixed for the whole match
 				})
@@ -272,6 +278,18 @@ local function new(deps: Deps)
 			return
 		end
 		local kind = command.kind
+		if
+			deps.playableMvp
+			and (
+				kind == "Cast"
+				or kind == "UpgradeUnit"
+				or kind == "AllocatePoint"
+				or (kind == "Summon" and command.slot ~= 1)
+			)
+		then
+			reply(userId, command.requestId, "Rejected", "WrongPhase")
+			return
+		end
 		if kind == "Summon" or kind == "Cast" then
 			battleCommand(userId, session, command)
 		elseif kind == "StartStage" then
@@ -296,7 +314,10 @@ local function new(deps: Deps)
 			session.phase, session.matchId, session.stageId, session.runOrdinal =
 				"LobbyReady", nil, nil, nil
 			session.world = nil
-			reply(userId, command.requestId, "Accepted")
+			local profile = deps.profiles.profileOf(userId)
+			reply(userId, command.requestId, "Accepted", nil, {
+				profileRevision = if profile then profile.revision else nil,
+			})
 		end
 	end
 
@@ -391,7 +412,19 @@ local function new(deps: Deps)
 					end
 				end
 				if result.outcome then
-					session.phase = "Settling" -- settlement transaction is P7/P8
+					session.phase = "Settling"
+					if deps.playableMvp then
+						deps.profiles.finishRun(
+							userId,
+							session.matchId :: string,
+							result.outcome,
+							function(profile)
+								if sessions[userId] == session and session.phase == "Settling" then
+									session.phase = if profile then "Settled" else "Unavailable"
+								end
+							end
+						)
+					end
 				end
 			end
 		end

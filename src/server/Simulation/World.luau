@@ -118,11 +118,13 @@ export type Options = {
 	unitLevels: { [string]: number }?,
 	heroTraits: { [string]: number }?,
 	trace: boolean?,
+	spawnEncounter: boolean?,
 }
 
 local function new(options: Options): World
 	local stage = (Stages :: any)[options.stageId]
 	assert(stage, "unknown stage " .. tostring(options.stageId))
+	assert(not options.spawnEncounter or options.stageId == "s01", "MVP encounter is s01 only")
 	local traits: { [string]: number } = table.clone(options.heroTraits or {})
 	local progression = Generated.progression
 	local hero = HeroConfig.hero
@@ -146,6 +148,8 @@ local function new(options: Options): World
 		},
 		outcome = nil,
 		outcomeTick = nil,
+		spawnsRemaining = if options.spawnEncounter then stage.blockCount else nil,
+		nextSpawnTick = if options.spawnEncounter then 1 else nil,
 		pendingKillGold = 0,
 		pendingKillXp = 0,
 		killCounts = {},
@@ -272,7 +276,18 @@ local function step(world: World, input: Input?): StepResult
 	Resource.regen(world.resources)
 	mark(world, "commands")
 	local results = runCommands(world, commands)
-	mark(world, "spawn") -- stage spawner joins here in P6
+	mark(world, "spawn")
+	-- Finite s01 encounter: existing stage count/cadence and scrapper stats, no new balance values.
+	if
+		world.spawnsRemaining
+		and world.spawnsRemaining > 0
+		and world.tick >= (world.nextSpawnTick or 1)
+	then
+		if spawnEnemy(world, "scrapper") then
+			world.spawnsRemaining -= 1
+			world.nextSpawnTick = world.tick + world.stage.slowMaxTicks
+		end -- At the cap the due spawn waits, with no backlog burst.
+	end
 	mark(world, "move")
 	Movement.moveHero(world, if input and input.axis then input.axis else 0)
 	Movement.moveUnits(world)
@@ -381,6 +396,9 @@ local function digest(world: World): string
 		),
 	}
 	local action = world.heroAction
+	if world.spawnsRemaining then
+		table.insert(parts, `spawn:{world.spawnsRemaining}:{world.nextSpawnTick}`)
+	end
 	table.insert(
 		parts,
 		string.format(

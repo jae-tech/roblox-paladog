@@ -2,8 +2,13 @@
 -- Intent building, snapshot authority, bounded local hero prediction and one in-flight bootstrap.
 local SnapshotBuffer = require("./SnapshotBuffer")
 
-export type Deps =
-	{ protocol: any, catalog: any, send: (string, any) -> (), requestId: () -> string }
+export type Deps = {
+	protocol: any,
+	catalog: any,
+	send: (string, any) -> (),
+	requestId: () -> string,
+	playableMvp: boolean?,
+}
 
 local function new(deps: Deps)
 	local buffer = SnapshotBuffer.new(deps.catalog.balanceHash)
@@ -166,6 +171,24 @@ local function new(deps: Deps)
 		if destroyed then
 			return false
 		end
+		if name == "ReturnToLobby" then
+			if state.phase ~= "Settled" or not state.matchId then
+				return false
+			end
+			sendCommand({ kind = "ReturnToLobby", matchId = state.matchId })
+			return true
+		end
+		if
+			deps.playableMvp
+			and (
+				name == "Cast"
+				or name == "Summon2"
+				or name == "Summon3"
+				or (string.sub(name, 1, 6) == "Start_" and name ~= "Start_s01")
+			)
+		then
+			return false
+		end
 		if string.sub(name, 1, 6) == "Start_" then
 			local stage = string.sub(name, 7)
 			if state.phase ~= "LobbyReady" or not deps.catalog.stages[stage] then
@@ -225,6 +248,10 @@ local function new(deps: Deps)
 			elseif message.status == "Rejected" and state.phase == "Preparing" then
 				state.phase = "LobbyReady"
 			end
+		end
+		if command.kind == "ReturnToLobby" and message.status == "Accepted" then
+			switchMatch(nil, now)
+			state.phase = "LobbyReady"
 		end
 		if message.status ~= "Pending" then
 			pending[message.requestId] = nil

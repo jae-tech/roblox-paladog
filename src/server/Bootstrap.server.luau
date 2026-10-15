@@ -5,5 +5,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 Players.CharacterAutoLoads = false
 local info = require(ReplicatedStorage.Shared.BootstrapInfo)
 script:SetAttribute("BootMarker", info.buildMarker)
+if ReplicatedStorage:GetAttribute("PlayableMvp") == true then
+	require(script.Parent.Runtime).start()
+end
 script:SetAttribute("BootReady", true)
-print("P0 server bootstrap ready", info.buildMarker)
+print("Server bootstrap ready", info.buildMarker)

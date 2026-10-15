@@ -363,6 +363,40 @@ local function new(deps: Deps)
 		})
 	end
 
+	-- MVP closes the server-owned result without currency, XP or progression rewards.
+	local function finishRun(userId: number, matchId: string, outcome: string, done: Done)
+		local profile = states[userId] and states[userId].profile
+		if not profile or not profile.activeRun then
+			done(nil, "WrongPhase")
+			return
+		end
+		local ordinal = profile.activeRun.ordinal
+		enqueue(userId, {
+			kind = "FinishRun",
+			requestId = `finish-{ordinal}-{matchId}`,
+			expectedRevision = profile.revision,
+			done = done,
+			mutate = function(current)
+				local run = current.activeRun
+				if not run or run.matchId ~= matchId or run.ordinal ~= ordinal then
+					return "WrongPhase"
+				elseif outcome ~= "Victory" and outcome ~= "Defeat" and outcome ~= "Timeout" then
+					return "WrongPhase"
+				end
+				current.lastClosedRunOrdinal = ordinal
+				current.lastRunResult = {
+					ordinal = ordinal,
+					matchId = matchId,
+					outcome = outcome :: string,
+					awardedGold = 0,
+					awardedXp = 0,
+				}
+				current.activeRun = nil
+				return nil
+			end,
+		})
+	end
+
 	-- Leave: fail queued work, then release the lease after any in-flight write (never in parallel with it).
 	local function release(userId: number)
 		local state = states[userId]
@@ -397,6 +431,7 @@ local function new(deps: Deps)
 		startRun = startRun,
 		upgradeUnit = upgradeUnit,
 		allocatePoint = allocatePoint,
+		finishRun = finishRun,
 	})
 end
 
