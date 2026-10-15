@@ -12,6 +12,9 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from toolchain import archive_path, host_lock, tool  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -68,9 +71,9 @@ def sourcemap_lengths(sourcemap):
 
 def audit_studio_evidence(evidence, expected_lengths):
     """Validate MCP-captured Studio runtime evidence; the gate itself cannot drive Studio."""
-    policy = (ROOT / "test-support/TestPolicy.luau").read_text()
+    policy = (ROOT / "test-support/TestPolicy.luau").read_text(encoding="utf-8")
     allowed = {int(n) for n in re.findall(r"\d+", re.search(r"allowedUniverseIds\s*=\s*\{([^}]*)\}", policy).group(1))}
-    marker = re.search(r'buildMarker\s*=\s*"([^"]+)"', (ROOT / "src/shared/BootstrapInfo.luau").read_text()).group(1)
+    marker = re.search(r'buildMarker\s*=\s*"([^"]+)"', (ROOT / "src/shared/BootstrapInfo.luau").read_text(encoding="utf-8")).group(1)
     if evidence.get("schema") != "p0-studio-evidence/1" or not evidence.get("studio_id"):
         raise ValueError("unknown evidence schema or missing studio_id")
     if evidence["gameId"] == 0 or evidence["gameId"] not in allowed:
@@ -131,38 +134,40 @@ def main():
 
     def command(name, argv, expected=0):
         try:
-            result = subprocess.run([str(a) for a in argv], cwd=ROOT, capture_output=True, text=True)
+            result = subprocess.run([str(a) for a in argv], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
         except FileNotFoundError as error:
             record(name, "BLOCKED", reason=str(error), command=[str(a) for a in argv])
             return None
-        (out / (name + ".log")).write_text(result.stdout + result.stderr)
+        (out / (name + ".log")).write_text(result.stdout + result.stderr, encoding="utf-8")
         record(name, "PASS" if result.returncode == expected else "FAIL", exitCode=result.returncode,
                expectedExitCode=expected, command=[str(a) for a in argv], evidencePath=str(out / (name + ".log")))
         return result
 
     try:
-        audit_projects(json.loads((ROOT / "default.project.json").read_text()),
-                       json.loads((ROOT / "test.project.json").read_text()))
+        audit_projects(json.loads((ROOT / "default.project.json").read_text(encoding="utf-8")),
+                       json.loads((ROOT / "test.project.json").read_text(encoding="utf-8")))
         record("project-mapping-contract", "PASS")
     except (ValueError, KeyError, TypeError) as error:
         record("project-mapping-contract", "FAIL", reason=str(error))
-    references = json.loads((ROOT / "tools/reference-hashes.json").read_text())
+    references = json.loads((ROOT / "tools/reference-hashes.json").read_text(encoding="utf-8"))
     actual = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in references}
     record("reference-preservation", "PASS" if actual == references and len(actual) == 7 else "FAIL")
-    (out / "reference-hashes.json").write_text(json.dumps(actual, indent=2))
-    lock = json.loads((ROOT / "tools/toolchain-lock.json").read_text())
+    (out / "reference-hashes.json").write_text(json.dumps(actual, indent=2), encoding="utf-8")
+    try:
+        lock = host_lock()
+    except ValueError as error:
+        lock = {"platform": "unsupported", "assets": []}
+        record("host-toolchain", "BLOCKED", reason=str(error))
     for asset in lock["assets"]:
-        file = ROOT / ".tools" / (asset["name"] + (".d.luau" if asset["name"] == "roblox-types" else ".zip"))
+        file = archive_path(asset, ROOT / ".tools" / lock["platform"])
         record("checksum-" + asset["name"], "BLOCKED" if not file.exists() else (
             "PASS" if hashlib.sha256(file.read_bytes()).hexdigest() == asset["sha256"] else "FAIL"))
     versions = {"rojo": "7.7.1", "selene": "0.32.0", "luau-lsp": "1.70.1"}
     for name, version in versions.items():
-        result = command("version-" + name, [name, "--version"])
+        result = command("version-" + name, [tool(name), "--version"])
         if result is not None and version not in result.stdout + result.stderr:
             record("pin-" + name, "FAIL", expected=version)
-    luau = ROOT / ".tools/luau-0.742/luau"
-    analyze = ROOT / ".tools/luau-0.742/luau-analyze"
-    stylua = ROOT / ".tools/stylua-2.6.0/stylua"
+    luau, analyze, stylua = tool("luau"), tool("luau-analyze"), tool("stylua")
     sources = ["src", "tests", "test-support", "test-support-client"]
     command("python-tests", [sys.executable, "-m", "unittest", "discover", "-s", "tools/tests", "-v"])
     command("python-syntax", [sys.executable, "-m", "compileall", "-q", "tools"])
@@ -172,7 +177,7 @@ def main():
             report = json.loads(result.stdout)
             if report["status"] != "PASS" or len(report["cases"]) == 0:
                 raise ValueError("empty or non-PASS report")
-            (out / "pure-tests.json").write_text(json.dumps(report, indent=2))
+            (out / "pure-tests.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
         except (ValueError, KeyError) as error:
             record("pure-report-schema", "FAIL", reason=str(error))
     result = command("intentional-failure", [luau, "tests/intentional-failure.luau"], expected=1)
@@ -180,27 +185,27 @@ def main():
         try:
             report = json.loads(result.stdout)
             assert report["status"] == "FAIL" and len(report["failures"]) > 0
-            (out / "intentional-failure.json").write_text(json.dumps(report, indent=2))
+            (out / "intentional-failure.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
         except (ValueError, KeyError, AssertionError):
             record("intentional-failure-json", "FAIL")
     command("pure-analysis", [analyze, "tests"])
     negative = out / "intentional-type-error.luau"
-    negative.write_text('--!strict\nlocal value: number = "not a number"\nprint(value)\n')
+    negative.write_text('--!strict\nlocal value: number = "not a number"\nprint(value)\n', encoding="utf-8")
     command("analyzer-negative-control", [analyze, negative], expected=1)
-    command("lsp-negative-control", ["luau-lsp", "analyze", negative], expected=1)
-    command("lint", ["selene", *sources])
+    command("lsp-negative-control", [tool("luau-lsp"), "analyze", negative], expected=1)
+    command("lint", [tool("selene"), *sources])
     command("format", [stylua, "--check", *sources])
     production_build = None
     for mode, project in [("production", "default.project.json"), ("test", "test.project.json")]:
-        built = command("build-" + mode, ["rojo", "build", project, "-o", out / (mode + ".rbxlx")])
+        built = command("build-" + mode, [tool("rojo"), "build", project, "-o", out / (mode + ".rbxlx")])
         if mode == "production":
             production_build = built
-        mapped = command("sourcemap-" + mode, ["rojo", "sourcemap", project, "-o", out / (mode + ".sourcemap.json")])
+        mapped = command("sourcemap-" + mode, [tool("rojo"), "sourcemap", project, "-o", out / (mode + ".sourcemap.json")])
         dirs = ["src"] if mode == "production" else sources[:1] + sources[2:]
         if mapped is None or mapped.returncode != 0:
             record("roblox-analysis-" + mode, "BLOCKED", reason="sourcemap prerequisite unavailable")
         else:
-            command("roblox-analysis-" + mode, ["luau-lsp", "analyze", "--platform", "roblox", "--sourcemap",
+            command("roblox-analysis-" + mode, [tool("luau-lsp"), "analyze", "--platform", "roblox", "--sourcemap",
                     out / (mode + ".sourcemap.json"), "--definitions", "@roblox=.tools/roblox-types.d.luau", *dirs])
     try:
         if production_build is None or production_build.returncode != 0:
@@ -219,8 +224,8 @@ def main():
             record("studio-mcp-runtime", "BLOCKED", reason="Requires --studio-evidence captured via Studio MCP")
         else:
             try:
-                studio = json.loads(args.studio_evidence.read_text())
-                expected = sourcemap_lengths(json.loads((out / "test.sourcemap.json").read_text()))
+                studio = json.loads(args.studio_evidence.read_text(encoding="utf-8"))
+                expected = sourcemap_lengths(json.loads((out / "test.sourcemap.json").read_text(encoding="utf-8")))
                 audit_studio_evidence(studio, expected)
                 shutil.copyfile(args.studio_evidence, out / "studio-evidence.json")
                 record("studio-mcp-runtime", "PASS", studio_id=studio["studio_id"], gameId=studio["gameId"],
@@ -230,7 +235,7 @@ def main():
             except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
                 studio = None
                 record("studio-mcp-runtime", "FAIL", reason=str(error))
-    (out / "boot.json").write_text(json.dumps(boot, indent=2))
+    (out / "boot.json").write_text(json.dumps(boot, indent=2), encoding="utf-8")
     status = "FAIL" if any(c["status"] == "FAIL" for c in checks) else (
         "BLOCKED" if any(c["status"] == "BLOCKED" for c in checks) else "PASS")
     mcp_raw = ROOT / ".omx/ultragoal/mcp-preflight.jsonl"
@@ -245,7 +250,7 @@ def main():
                     "transcriptFileModifiedAt": datetime.fromtimestamp(mcp_raw.stat().st_mtime, timezone.utc).isoformat(),
                     "transcriptSha256": hashlib.sha256(mcp_raw.read_bytes()).hexdigest(),
                     "reason": "Session preflight transcript copied; inspect raw tools/list result"})
-        for line in mcp_raw.read_text().splitlines():
+        for line in mcp_raw.read_text(encoding="utf-8").splitlines():
             try:
                 entry = json.loads(line)
             except ValueError:
@@ -255,12 +260,12 @@ def main():
     studio_mcp_binary = Path("/Applications/RobloxStudio.app/Contents/MacOS/StudioMCP")
     if studio_mcp_binary.exists():
         try:
-            version = subprocess.run([str(studio_mcp_binary), "--version"], capture_output=True, text=True, timeout=5)
+            version = subprocess.run([str(studio_mcp_binary), "--version"], capture_output=True, text=True, timeout=5, encoding="utf-8")
             if version.returncode == 0:
                 mcp["installedStudioMCP"] = version.stdout.strip()
         except (OSError, subprocess.TimeoutExpired) as error:
             mcp["installedVersionStatus"] = "unknown: " + str(error)
-    (out / "mcp-capabilities.json").write_text(json.dumps(mcp, indent=2))
+    (out / "mcp-capabilities.json").write_text(json.dumps(mcp, indent=2), encoding="utf-8")
     studio_plist = Path("/Applications/RobloxStudio.app/Contents/Info.plist")
     installed_studio = None
     if studio_plist.exists():
@@ -268,19 +273,19 @@ def main():
             installed_studio = plistlib.load(stream).get("CFBundleShortVersionString")
     build_hashes = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in out.glob("*.rbxlx")}
     environment = {"utc": run_id, "platform": platform.platform(), "python": sys.version,
-                   "gitCommit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
-                   "workingTree": "dirty" if subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, capture_output=True, text=True).stdout.strip() else "clean", "buildHashes": build_hashes,
+                   "gitCommit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, encoding="utf-8").strip(),
+                   "workingTree": "dirty" if subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8").stdout.strip() else "clean", "buildHashes": build_hashes,
                    "balanceHash": None, "schemaVersion": None, "protocolVersion": None,
                    "seed": 12345, "clockPolicy": "fake integer ticks in CLI and Studio harness",
                    "studio_id": studio["studio_id"] if studio else None,
                    "studioVersion": studio["studioVersion"] if studio else None, "mcpSchemaHash": None,
                    "installedStudioVersion": installed_studio, "installedStudioMCP": mcp["installedStudioMCP"],
                    "cleanCheckoutReproduction": "NOT_RUN",
-                   "tools": {n: shutil.which(n) for n in versions}, "lock": lock,
+                   "tools": {n: shutil.which(str(tool(n))) for n in versions}, "lock": lock,
                    "localBinaryHashes": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
                        for p in (luau, analyze, stylua) if p.exists()}}
-    (out / "toolchain.json").write_text(json.dumps(environment, indent=2))
-    (out / "environment.json").write_text(json.dumps(environment, indent=2))
+    (out / "toolchain.json").write_text(json.dumps(environment, indent=2), encoding="utf-8")
+    (out / "environment.json").write_text(json.dumps(environment, indent=2), encoding="utf-8")
     p0_complete = status == "PASS" and studio is not None
     studio_status = "PASS" if studio else "BLOCKED"
     task_titles = [
@@ -301,14 +306,14 @@ def main():
               "StudioVersion": environment["studioVersion"], "installedStudioVersion": installed_studio,
               "MCPVersion": mcp["installedStudioMCP"], "verdict": task_status, "unresolvedRisks": risk}
              for task_id, task_status, title, risk in task_titles]
-    (out / "task-cards.json").write_text(json.dumps(cards, indent=2))
+    (out / "task-cards.json").write_text(json.dumps(cards, indent=2), encoding="utf-8")
     # P0Complete covers the gate checks; open task cards (e.g. P0.1 Git policy) are listed, not hidden.
     report = {"runId": run_id, "suite": "T-TOOL", "scope": "local-only" if args.local_only else "P0",
               "status": status, "cases": checks, "P0Complete": p0_complete, "boot": boot,
               "openTasks": [card["taskId"] for card in cards if card["status"] != "PASS"],
               "productionRuntimeRequire": studio["productionRuntimeRequire"] if studio else "NOT_RUN"}
-    (out / "report.json").write_text(json.dumps(report, indent=2))
-    (out / "build.log").write_text("\n".join((out / ("build-" + mode + ".log")).read_text() for mode in ("production", "test") if (out / ("build-" + mode + ".log")).exists()))
+    (out / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    (out / "build.log").write_text("\n".join((out / ("build-" + mode + ".log")).read_text(encoding="utf-8") for mode in ("production", "test") if (out / ("build-" + mode + ".log")).exists()), encoding="utf-8")
     print(json.dumps({"status": status, "P0Complete": p0_complete, "report": str(out / "report.json")}))
     return 1 if status == "FAIL" else 2 if status == "BLOCKED" else 0
 

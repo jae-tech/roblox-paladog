@@ -4,7 +4,22 @@
 
 P0~P4 gate PASS는 P4 기준선 기록이다. 현재 P5는 입력·네트워크·뷰 구현과 CLI/Studio 서버/클라이언트613개 PASS 체크포인트이며, 실제 입력/장치 화면/renderer 교체/멀티터치 증거가 부족하여 full gate BLOCKED다. production 서버는 boot만 하고 client UI는 server remote를 기다린다. 테스트 저장은 Mock/InMemory이며 P6~P9는 미착수다. 기존 production runtime WAIVED·P0.1 보류·overlay 미승인은 유지한다. 연구/설계 정본13개는 수정하지 않는다.
 
-실행 호스트는 계획의 Windows가 아니라 **macOS Darwin ARM64**다. 이 호스트용 로컬 도구 다운로드만 고정했다. Windows 지원/테스트를 주장하지 않는다. 초기 P0 Git 기준선은 `f36bf2a`였고 당시 팀 branch 정책은 미합의였다. 현재는 AGENTS.md에 따라 단계별 로컬 feature branch에서 소스/문서/도구만 커밋하고 main에 fast-forward 병합한다(P4: `p4-projectiles-and-hero-skill`). `.omx/`, `artifacts/`, `.tools/`, 연구 바이너리와 키는 제외한다. push/publish는 하지 않는다.
+최초 검증 호스트는 **macOS Darwin ARM64**였으며 2026-10-16 재개 호스트는 **Windows AMD64 / Python 3.14.2**다. 두 호스트의 같은 도구 버전을 고정했고 Windows 로컬 gate를 새로 검증했다(아래 참조). macOS에서 변경된 bootstrap을 재실행한 것은 아니다. 초기 P0 Git 기준선은 `f36bf2a`였고 당시 팀 branch 정책은 미합의였다. 현재는 AGENTS.md에 따라 단계별 로컬 feature branch에서 소스/문서/도구만 커밋하고 main에 fast-forward 병합한다(P4: `p4-projectiles-and-hero-skill`). `.omx/`, `artifacts/`, `.tools/`, 연구 바이너리와 키는 제외한다. push/publish는 하지 않는다.
+
+## Windows AMD64 재개 (2026-10-16)
+
+```powershell
+python tools/setup_tools.py
+python tools/verify_p0.py --local-only
+python tools/verify_p1.py
+python tools/verify_p5.py  # Studio 증거 없으면 exit 2/BLOCKED
+```
+
+- 추가 Python 패키지나 전역 도구 설치 없이 기존 Luau0.742/StyLua2.6.0/Rojo7.7.1/selene0.32.0/luau-lsp1.70.1의 Windows ZIP을 `.tools/`에 설치한다. 플랫폼별 URL/SHA256은 `toolchain-lock.json`, 경로 선택은 `toolchain.py`다. ZIP은 `.tools/<platform>/`, 실행파일은 기존 버전 디렉터리에 두며 macOS의 rokit 사용은 유지했다. Windows ARM64/Linux는 고정 자산이 없어 bootstrap exit2다.
+- Windows ZIP SHA256은 각 공식 release의 GitHub API digest와 실제 다운로드를 비교했다: [Luau](https://github.com/luau-lang/luau/releases/tag/0.742), [StyLua](https://github.com/JohnnyMorganz/StyLua/releases/tag/v2.6.0), [Rojo](https://github.com/rojo-rbx/rojo/releases/tag/v7.7.1), [selene](https://github.com/Kampfkarren/selene/releases/tag/0.32.0), [luau-lsp](https://github.com/JohnnyMorganz/luau-lsp/releases/tag/1.70.1). macOS 자산/타입 정의 URL·SHA는 보존했다.
+- 최초 checkout의 `core.autocrlf=true`가 원문 2개의 SHA와 생성물 바이트 비교를 깨뜨렸다. `.gitattributes`에 LF checkout 정책을 추가하고, 줄바꿈만 달라진 파일을 기존 Git blob의 정확한 바이트로 복원했다. 원문/생성물/밸런스 값은 바꾸지 않았다. 검사에서 CRLF를 정규화해 허용하거나 SHA를 갱신하지 않는다.
+- 검증 도구의 파일·subprocess 텍스트는 UTF-8을 명시해 Windows CP949에 의존하지 않는다. 실행파일 경로 선택을 공유하며 검사 assertion/Studio 증거 요구사항은 유지했다.
+- 호스트 선택/기존 버전 보존/명시적 `.exe`/미지원 BLOCKED/체크섬 선검증/경로 탈출 거부/캐시·타입 정의 설치/실제 Git autocrlf clone 회귀10개를 추가했다. 전체 Python96개, P0 local/P1, P2/P3/P4/P5 CLI132/123/134/613개, 타입/lint/format/build PASS다. full gates는 Studio MCP가 이 세션에 노출되지 않아 BLOCKED다. Windows Studio 실행·화면·touch 또는 macOS 재실행 PASS를 뜻하지 않는다.
 
 ## 새 checkout 재현 (macOS ARM64)
 

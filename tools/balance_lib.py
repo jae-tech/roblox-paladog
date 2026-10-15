@@ -10,13 +10,15 @@ from pathlib import Path
 import re
 import subprocess
 
+from toolchain import tool
+
 ROOT = Path(__file__).resolve().parents[1]
 GENERATOR_VERSION = "p1-balance-1"
 SCHEMA_VERSION = 1
 BALANCE_VERSION = "mvp-proto-001"
 PX_TO_STUD = Decimal("0.1")
 TICK_SECONDS = Decimal("0.05")
-STYLUA = ROOT / ".tools/stylua-2.6.0/stylua"
+STYLUA = tool("stylua")
 
 DOCS = {
     "E00": "docs/paladog-00-index.md",
@@ -792,7 +794,7 @@ def luau_module(comment, value):
     if not STYLUA.exists():
         raise DataError("pinned StyLua missing; run python3 tools/setup_tools.py")
     result = subprocess.run([str(STYLUA), "--config-path", str(ROOT / "stylua.toml"), "-"], input=source,
-                            capture_output=True, text=True)
+                            capture_output=True, text=True, encoding="utf-8")
     if result.returncode != 0:
         raise DataError("StyLua failed: " + result.stderr)
     return result.stdout
@@ -996,5 +998,5 @@ def release_and_repo_files(root=ROOT):
                 yield from [value] if key == "$path" else paths(value)
     release = sorted(p.relative_to(root).as_posix() for d in paths(project) for p in (root / d).rglob("*") if p.is_file())
     listed = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"], cwd=root,
-                            capture_output=True, text=True, check=True).stdout.split()
+                            capture_output=True, text=True, check=True, encoding="utf-8").stdout.split()
     return release, listed

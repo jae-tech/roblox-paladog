@@ -10,9 +10,10 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from verify_p0 import sourcemap_lengths  # noqa: E402
 from verify_p2 import allowed_universes  # noqa: E402
+from toolchain import tool  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-LUAU = ROOT / ".tools/luau-0.742/luau"
+LUAU = tool("luau")
 PHASES = ["regen", "commands", "spawn", "move", "support", "target", "attack", "damage", "outcome", "cleanup"]
 
 
@@ -48,7 +49,7 @@ def main():
     out.mkdir(parents=True)
     checks = []
     cli_cases = 0
-    unit = subprocess.run([str(LUAU), "tests/cli_p3.luau"], cwd=ROOT, capture_output=True, text=True)
+    unit = subprocess.run([str(LUAU), "tests/cli_p3.luau"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
     (out / "unit.log").write_text(unit.stdout + unit.stderr, encoding="utf-8")
     try:
         report = json.loads(unit.stdout.splitlines()[0])
@@ -58,7 +59,7 @@ def main():
         checks.append({"id": "unit", "status": "PASS" if ok else "FAIL", "cases": cli_cases, "failures": report["failures"]})
     except (ValueError, IndexError, KeyError) as error:
         checks.append({"id": "unit", "status": "FAIL", "reason": str(error)})
-    extra = subprocess.run([str(LUAU), "tests/p3_evidence.luau"], cwd=ROOT, capture_output=True, text=True)
+    extra = subprocess.run([str(LUAU), "tests/p3_evidence.luau"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
     try:
         data = json.loads(extra.stdout.splitlines()[0])
         replay, order = data["seedReplay"], data["tickOrder"]
@@ -76,7 +77,7 @@ def main():
         try:
             evidence = json.loads(args.studio_evidence.read_text(encoding="utf-8"))
             sourcemap = out / "test.sourcemap.json"
-            subprocess.run(["rojo", "sourcemap", "test.project.json", "-o", str(sourcemap)], cwd=ROOT, check=True,
+            subprocess.run([tool("rojo"), "sourcemap", "test.project.json", "-o", str(sourcemap)], cwd=ROOT, check=True,
                            capture_output=True)
             audit_studio(evidence, cli_cases, sourcemap_lengths(json.loads(sourcemap.read_text(encoding="utf-8"))))
             shutil.copyfile(args.studio_evidence, out / "studio.json")

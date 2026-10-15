@@ -56,7 +56,7 @@ class ProjectContractTests(unittest.TestCase):
     def test_missing_rojo_stays_blocked(self):
         original = subprocess.run
         def run(argv, **kwargs):
-            if argv[0] == "rojo":
+            if Path(argv[0]).stem == "rojo":
                 raise FileNotFoundError("regression: missing rojo")
             if "unittest" in argv:
                 return subprocess.CompletedProcess(argv, 0, "outer regression suite owns this check", "")

@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-**P4 기준선(`67549f3`)에서 P0~P4 full gate PASS. 현재 `p5-client-input-presentation`은 P5 구현 체크포인트이며 CLI/Studio 서버/Studio 클라이언트 동일613개 PASS, 실제 입력·화면·renderer 교체·멀티터치 증거가 부족해 P5 full gate BLOCKED다. 사용자 요청으로 이 상태를 커밋하며 P5 완료로 표시하지 않는다. P6~P9는 미착수다.** 현재 P5 빌드에서 P0 로컬/P1 PASS 및 P0/P2/P3/P4 Studio 원시 suite PASS를 확인했지만 기존 단계의 full evidence 재수집은 끝내지 않았다. P0.1 Git 정책 보류와 기존 production runtime 검사 WAIVED는 유지하고 새 승인은 추가하지 않았다.
+**P4 기준선(`67549f3`)에서 P0~P4 full gate PASS. P5 구현 체크포인트(`51d08a7`→main `ec778ec`)는 CLI/Studio 서버/Studio 클라이언트 동일613개 PASS였으며, 실제 입력·화면·renderer 교체·멀티터치 증거가 부족해 P5 full gate BLOCKED다. 2026-10-16에는 Windows 로컬 재현만 복구·재검증했고 P5 완료로 표시하지 않는다. P6~P9는 미착수다.** 현재 P5 빌드에서 P0 로컬/P1 PASS 및 이전 세션의 P0/P2/P3/P4 Studio 원시 suite PASS를 확인했지만 기존 단계의 full evidence 재수집은 끝내지 않았다. P0.1 Git 정책 보류와 기존 production runtime 검사 WAIVED는 유지하고 새 승인은 추가하지 않았다.
 
 기준 문서는 기존 설계 6개(`PRD`, `ARCHITECTURE`, `DATA_MODELS`, `ASSET_PIPELINE`, `IMPLEMENTATION_PLAN`, `TEST_PLAN`)와 REA Markdown 7개다. 이 13개 원문은 변경하지 않았다. REA 원본 SHA256은 `tools/reference-hashes.json`으로 검사한다.
 
@@ -125,6 +125,28 @@ P0의 GameId0 guard 음성 대조는 **1052Z 결과를 이월**했다. Guard/Tes
 - Studio screenshot은 `EditableImage` texture 로드 실패와 host capture60초 timeout으로 실패했고 OS `screencapture`도 실패했다. Security/API/OS 설정은 바꾸지 않았다. MCP에는 실제 독립 multi-touch injection이 없어 Android/touch 검증도 BLOCKED다. screenshot/에뮬레이터·순수 fixture를 실제 입력 PASS로 대체하지 않았다.
 - raw/부분 증거: `artifacts/P5/studio/20261015T125703Z/`의 `edit-meta-final.json`, `studio-suites-final.json`, `client-suite-final.json`, `screenshot-failure.json`, `p5-partial.json`. 첫 exploratory609개 실행은 추가 ack 회귀 수정 전이므로 final613개 결과로 대체했다. 실행한 rig/2-client playtest는 종료했다. 이 파일들은 gitignore이며 원격에 없다.
 - 커밋 직전 재검증: P0 local `artifacts/P0/20261015T130301851163Z/report.json` PASS, P1 `artifacts/P1/20261015T130306888928Z/report.json` PASS, P5 `artifacts/P5/20261015T130308027697Z/report.json` **BLOCKED(exit2)** — unit/input/network/view/Studio suite PASS, pcInput/device/render/touch BLOCKED. Python86개·타입/lint/format/build·diff 검사 PASS. 독립 reviewer는 남은 late StartStage HIGH 수정과 네트워크163개 PASS를 확인하여 **체크포인트 커밋만 승인**했고 full P5 승인은 하지 않았다.
+
+## Windows 재개 체크포인트 (2026-10-16 KST / 2026-10-15 22:12Z)
+
+- `p5-windows-verification`에서 P5 남은 검증을 재개했다. 이번 세션 도구 목록에는 Roblox/Studio MCP가 없으며 과거 `artifacts/`도 이 checkout에는 없었다. Studio 실행·키/GUI·화면·renderer·touch는 **NOT_RUN/BLOCKED**다. 설치 여부로 연결 성공을 추정하거나 다른 경로로 Studio 권한을 우회하지 않았다.
+- 최초 `setup_tools.py`는 macOS 전용으로 BLOCKED였다. Python suite도 `core.autocrlf=true`에 의한 고정 원문 SHA 불일치로 실패했다. `.gitattributes` LF 정책과 기존 Git blob 바이트 복원으로 해결했고 원문 SHA·생성값·검사 기준은 변경하지 않았다.
+- Windows AMD64용 같은 고정 버전 공식 ZIP/SHA와 명시적 `.exe` 경로, UTF-8 파일/프로세스 경계를 추가했다. Windows는 `.tools/`만 사용하고 전역 PATH·도구 설치나 새 Python 패키지는 없다. macOS 기존 pin/rokit 경로는 보존했지만 macOS 재실행 검증은 하지 않았다.
+- 도구/checkout 회귀10개를 추가해 Python **96개 PASS**. P2/P3/P4/P5 CLI는 **132/123/134/613개 PASS**(P5 입력31/네트워크163/뷰419). 순수/Roblox 타입 분석·두 analyzer 음성 대조·selene·StyLua·production/test build·production 정적 격리 PASS. `.exe` StyLua 실제 포맷 후 Luau 내용 diff0이다.
+- 네이티브 researcher/reviewer 위임도 시도했으나 설치된 역할 모델이 계정에서 미지원으로 시작 실패했다. 독립 리뷰 완료로 기록하지 않고 단독 검토와 실제 gate로 검증했다.
+
+| 명령 | 결과 / 새 로컬 증거 |
+|---|---|
+| `python tools/setup_tools.py` | PASS, 실제 다운로드와 host별 SHA 일치 / 재실행 캐시 검증 PASS |
+| `python tools/verify_p0.py --local-only` | PASS(exit0), `artifacts/P0/20261015T221157047911Z/report.json` |
+| `python tools/verify_p0.py` | BLOCKED(exit2), `artifacts/P0/20261015T221208229252Z/report.json`, Studio 미실행 |
+| `python tools/verify_p1.py` | PASS(exit0), `artifacts/P1/20261015T221217406150Z/report.json`, 원문 SHA·생성물 byte diff0·T-ASSET |
+| `python tools/verify_p2.py` | CLI132 PASS / full BLOCKED(exit2), `artifacts/P2/20261015T221219757756Z/report.json` |
+| `python tools/verify_p3.py` | CLI123·seed replay·tick 순서 PASS / full BLOCKED(exit2), `artifacts/P3/20261015T221220157640Z/report.json` |
+| `python tools/verify_p4.py` | CLI134 PASS / full BLOCKED(exit2), `artifacts/P4/20261015T221220642840Z/report.json` |
+| `python tools/verify_p5.py` | CLI613 PASS / full BLOCKED(exit2), `artifacts/P5/20261015T221221289985Z/report.json` |
+| `python -m unittest discover -s tools/tests` | 96개 PASS |
+
+위 증거는 현재 Windows checkout의 무시 파일이며 원격에 포함되지 않는다. 이전 macOS Studio 증거를 재사용한 것이 아니다. P5 full gate 전에는 P6로 진행하지 않는다.
 
 ## 다음 작업
 

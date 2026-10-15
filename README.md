@@ -5,6 +5,8 @@ P0~P4 도구·데이터·서버 전투 게이트는 P4 기준선에서 PASS입�
 
 재현 명령·도구 버전·승인 경계·미검증 항목은 [개발 안내](docs/DEVELOPMENT.md)를 확인하세요. `python3 tools/verify_p0.py --local-only`는 로컬 검사이며, `python3 tools/verify_p0.py --studio-evidence <json>`은 MCP로 수집한 Studio 증거를 검증하며, 증거가 없으면 exit2/BLOCKED입니다.
 
+2026-10-16 Windows AMD64에서 도구 설치·줄바꿈/UTF-8 재현 문제를 해결하고 P0 로컬/P1 및 P5 CLI613개를 다시 통과했습니다. Windows에서는 `python tools/setup_tools.py`로 같은 고정 버전을 설치합니다. 현재 세션에는 Studio MCP가 없어 P5 실제 입력·화면 검증은 여전히 BLOCKED입니다.
+
 ## 설계 문서
 
 1. [PRD](docs/PRD.md) — MVP, 원작 확인/추정/충돌, 제품 수용 기준

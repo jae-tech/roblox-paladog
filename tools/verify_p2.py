@@ -10,9 +10,10 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from verify_p0 import sourcemap_lengths  # noqa: E402
+from toolchain import tool  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-LUAU = ROOT / ".tools/luau-0.742/luau"
+LUAU = tool("luau")
 
 
 def allowed_universes():
@@ -70,7 +71,7 @@ def main():
     out = ROOT / "artifacts/P2" / run_id
     out.mkdir(parents=True)
     checks = []
-    result = subprocess.run([str(LUAU), "tests/cli_p2.luau"], cwd=ROOT, capture_output=True, text=True)
+    result = subprocess.run([str(LUAU), "tests/cli_p2.luau"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
     (out / "protocol-tests.log").write_text(result.stdout + result.stderr, encoding="utf-8")
     cli_cases = 0
     try:
@@ -88,7 +89,7 @@ def main():
         try:
             evidence = json.loads(args.isolation_evidence.read_text(encoding="utf-8"))
             sourcemap = out / "test.sourcemap.json"
-            subprocess.run(["rojo", "sourcemap", "test.project.json", "-o", str(sourcemap)], cwd=ROOT, check=True,
+            subprocess.run([tool("rojo"), "sourcemap", "test.project.json", "-o", str(sourcemap)], cwd=ROOT, check=True,
                            capture_output=True)
             audit_isolation(evidence, cli_cases, sourcemap_lengths(json.loads(sourcemap.read_text(encoding="utf-8"))))
             shutil.copyfile(args.isolation_evidence, out / "isolation.json")

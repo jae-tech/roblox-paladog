@@ -21,10 +21,12 @@ Codex·Claude 등 코딩 에이전트용 작업 안내. 상세 근거는 아래 
 
 P0~P4 full PASS는 P4 기준선 기록이다. 현재 P5 브랜치에서는 P0 로컬 gate와 P1 PASS, Studio의 P0/P2/P3/P4 원시 suite PASS를 확인했지만 full evidence 재수집은 끝내지 않았다. 이전 P4 소스 길이 증거를 현재 빌드의 PASS로 재사용하지 않는다.
 
-## 환경과 명령 (macOS arm64 전용 bootstrap)
+## 환경과 명령 (macOS arm64 / Windows AMD64 bootstrap)
+
+Windows는 Python만 선행 설치하고 아래 `python3` 대신 `python`을 써도 된다. bootstrap은 같은 고정 버전 Windows 도구를 `.tools/`에 설치하며 전역 PATH·rokit을 바꾸지 않는다. 직접 CLI 실행 시 Windows 실행파일에는 `.exe`를 붙인다. macOS는 기존 rokit 선행 설치를 유지한다. `.gitattributes`의 LF 정책을 유지한다(연구 원문 SHA·생성물 바이트 비교에 필요).
 
 ```sh
-python3 tools/setup_tools.py               # .tools/에 고정 버전 Luau/StyLua/타입 정의 설치 (rokit: rojo/selene/luau-lsp)
+python3 tools/setup_tools.py               # 호스트별 SHA 고정 도구 설치 (macOS의 rojo/selene/luau-lsp는 rokit)
 python3 tools/verify_p0.py --local-only    # 분석·lint·format·build·production 격리 (PASS 기대)
 python3 tools/verify_p1.py                 # 데이터 golden·재생성 diff0·T-ASSET
 .tools/luau-0.742/luau tests/cli_p2.luau   # P2 suite

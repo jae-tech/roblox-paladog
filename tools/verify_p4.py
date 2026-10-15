@@ -12,9 +12,10 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from verify_p0 import sourcemap_lengths  # noqa: E402
 from verify_p2 import allowed_universes  # noqa: E402
+from toolchain import tool  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-LUAU = ROOT / ".tools/luau-0.742/luau"
+LUAU = tool("luau")
 
 
 def integer(value, minimum=0):
@@ -114,7 +115,7 @@ def main():
         (out / name).write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
     try:
-        result = subprocess.run([str(LUAU), "tests/cli_p4.luau"], cwd=ROOT, capture_output=True, text=True)
+        result = subprocess.run([str(LUAU), "tests/cli_p4.luau"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
         (out / "unit.log").write_text(result.stdout + result.stderr, encoding="utf-8")
         report = json.loads(result.stdout.splitlines()[0])
         write("unit.json", report)
@@ -131,7 +132,7 @@ def main():
     except (OSError, ValueError, IndexError, KeyError, TypeError, AttributeError) as error:
         checks.append({"id": "unit", "status": "FAIL", "reason": str(error)})
     try:
-        build = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True)
+        build = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True, encoding="utf-8")
         balance = json.loads((ROOT / "data/balance/mvp-proto-001.json").read_text(encoding="utf-8"))
         source_hash = hashlib.sha256()
         for folder in ("src", "tests", "test-support", "test-support-client"):
@@ -148,8 +149,8 @@ def main():
         try:
             evidence = json.loads(args.studio_evidence.read_text(encoding="utf-8"))
             sourcemap = out / "test.sourcemap.json"
-            result = subprocess.run(["rojo", "sourcemap", "test.project.json", "-o", str(sourcemap)],
-                                    cwd=ROOT, check=True, capture_output=True, text=True)
+            result = subprocess.run([tool("rojo"), "sourcemap", "test.project.json", "-o", str(sourcemap)],
+                                    cwd=ROOT, check=True, capture_output=True, text=True, encoding="utf-8")
             (out / "sourcemap.log").write_text(result.stdout + result.stderr, encoding="utf-8")
             audit_studio(evidence, cli_cases, sourcemap_lengths(json.loads(sourcemap.read_text(encoding="utf-8"))), cli_report)
             shutil.copyfile(args.studio_evidence, out / "studio.json")
