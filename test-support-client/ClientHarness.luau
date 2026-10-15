@@ -23,6 +23,37 @@ local function remotes(): Instance
 end
 
 return {
+	runSuite = function(suiteId: string, seed: number)
+		guard()
+		assert(suiteId == "T-P5", "unsupported client suite")
+		local client = Players.LocalPlayer.PlayerScripts.GameClient
+		local tests = script.Parent.Tests
+		local Runner = require(tests.Runner)
+		return Runner.run("StudioClient", "studio-client-p5", seed, function(check)
+			require(tests.unit.P5)({
+				ActionRouter = require(client.Input.ActionRouter),
+				SnapshotBuffer = require(client.Net.SnapshotBuffer),
+				ClientController = require(client.Net.ClientController),
+				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				catalog = require(ReplicatedStorage.Shared.PublicCatalog),
+				Layout = require(client.Presentation.Layout),
+				CameraMath = require(client.Presentation.CameraMath),
+				ViewDefinitions = require(client.Presentation.ViewDefinitions),
+			}, check)
+		end, suiteId)
+	end,
+	inspectRuntime = function(): any
+		guard()
+		return require(Players.LocalPlayer.PlayerScripts.GameClient.Runtime).inspect()
+	end,
+	inspectHUD = function(): any
+		guard()
+		return require(Players.LocalPlayer.PlayerScripts.GameClient.Runtime).inspect().presentation
+	end,
+	inspectInputState = function(): any
+		guard()
+		return require(Players.LocalPlayer.PlayerScripts.GameClient.Runtime).inspect().input
+	end,
 	inspectBoot = function()
 		guard()
 		local bootstrap = Players.LocalPlayer.PlayerScripts.GameClient.Bootstrap

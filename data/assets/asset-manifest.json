@@ -9,7 +9,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
     },
     {
       "presentationId": "vanguard_placeholder",
@@ -19,7 +19,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
     },
     {
       "presentationId": "slinger_placeholder",
@@ -29,7 +29,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
     },
     {
       "presentationId": "bulwark_placeholder",
@@ -39,7 +39,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
     },
     {
       "presentationId": "scrapper_placeholder",
@@ -49,7 +49,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
     },
     {
       "presentationId": "spitter_placeholder",
@@ -59,7 +59,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
     },
     {
       "presentationId": "brute_placeholder",
@@ -69,7 +69,57 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
+    },
+    {
+      "presentationId": "core_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: original code-built geometry, no asset file (P5 DESIGN.md)"
+    },
+    {
+      "presentationId": "ally_bolt_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: original code-built geometry, no asset file (P5 DESIGN.md)"
+    },
+    {
+      "presentationId": "enemy_bolt_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: original code-built geometry, no asset file (P5 DESIGN.md)"
+    },
+    {
+      "presentationId": "pulse_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: original code-built geometry, no asset file (P5 DESIGN.md)"
+    },
+    {
+      "presentationId": "environment_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: original code-built geometry, no asset file (P5 DESIGN.md)"
     }
   ]
 }

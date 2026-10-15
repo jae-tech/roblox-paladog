@@ -50,10 +50,25 @@ function Harness.runSuite(suiteId: string, seed: number)
 			or suiteId == "T-TOOL-INTENTIONAL-FAIL"
 			or suiteId == "T-P2"
 			or suiteId == "T-P3"
-			or suiteId == "T-P4",
+			or suiteId == "T-P4"
+			or suiteId == "T-P5",
 		"unsupported P0 suite"
 	)
 	return Runner.run("StudioServer", HttpService:GenerateGUID(false), seed, function(check)
+		if suiteId == "T-P5" then
+			local client = game:GetService("StarterPlayer").StarterPlayerScripts.GameClient
+			require(tests.unit.P5)({
+				ActionRouter = require(client.Input.ActionRouter),
+				SnapshotBuffer = require(client.Net.SnapshotBuffer),
+				ClientController = require(client.Net.ClientController),
+				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				catalog = require(ReplicatedStorage.Shared.PublicCatalog),
+				Layout = require(client.Presentation.Layout),
+				CameraMath = require(client.Presentation.CameraMath),
+				ViewDefinitions = require(client.Presentation.ViewDefinitions),
+			}, check)
+			return
+		end
 		if suiteId == "T-P2" then
 			require(tests.unit.P2)(p2Env(), check)
 			return

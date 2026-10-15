@@ -1,12 +1,12 @@
-# 개발 인수인계 — P4 투사체·영웅 스킬
+# 개발 인수인계 — P5 입력·뷰 기반 체크포인트
 
 ## 현재 상태
 
-**P0 full gate PASS (`P0Complete: true`), P1 gate(T-DATA + 자동 T-ASSET) PASS, P2 gate(T-SEC 기본 + T-ISOLATION) PASS, P3 gate(T-RESOURCE/T-COMBAT/T-HERO-01 + Studio 헤드리스) PASS, P4 gate(T-PROJECTILE/T-HERO/T-SEC + Studio 실제 Remote 시전) PASS (2026-10-15, P4 소스에서 P0·P2·P3·P4 Studio 증거 재수집). P5~P9는 시작하지 않았다.** P0.1(팀 합의 Git 정책)은 BLOCKED이고(로컬 feature branch → main fast-forward, push 안 함), production place 안의 런타임 TestSupport require 실패는 기존 사용자 결정으로 정적 audit 대체(WAIVED)를 유지한다. P0/P1 증거와 overlay 결정의 사람 검토는 남아 있다.
+**P4 기준선(`67549f3`)에서 P0~P4 full gate PASS. 현재 `p5-client-input-presentation`은 P5 구현 체크포인트이며 CLI/Studio 서버/Studio 클라이언트 동일613개 PASS, 실제 입력·화면·renderer 교체·멀티터치 증거가 부족해 P5 full gate BLOCKED다. 사용자 요청으로 이 상태를 커밋하며 P5 완료로 표시하지 않는다. P6~P9는 미착수다.** 현재 P5 빌드에서 P0 로컬/P1 PASS 및 P0/P2/P3/P4 Studio 원시 suite PASS를 확인했지만 기존 단계의 full evidence 재수집은 끝내지 않았다. P0.1 Git 정책 보류와 기존 production runtime 검사 WAIVED는 유지하고 새 승인은 추가하지 않았다.
 
 기준 문서는 기존 설계 6개(`PRD`, `ARCHITECTURE`, `DATA_MODELS`, `ASSET_PIPELINE`, `IMPLEMENTATION_PLAN`, `TEST_PLAN`)와 REA Markdown 7개다. 이 13개 원문은 변경하지 않았다. REA 원본 SHA256은 `tools/reference-hashes.json`으로 검사한다.
 
-구현: production/test Rojo tree 분리, strict bootstrap, test guard, 고정 도구·품질 gate, 데이터 생성, 원격·프로필 골격, 헤드리스 자원·소환·근접·투사체 전투와 영웅 시전. production bootstrap은 boot만 수행한다. 플레이 입력·렌더링·스테이지 스폰·정산·실제 저장 기능은 없다.
+구현: production/test 분리, 품질 gate, 데이터 생성, 서버 전투/원격·프로필 골격, P5 클라이언트 입력·순수 snapshot/예측·HUD·placeholder·카메라. production 서버는 boot만 하고 클라이언트는 remote를 기다린다. 스테이지 스폰·정산·실제 저장은 없다.
 
 ## Studio 실행 검증 (2026-10-15)
 
@@ -113,11 +113,25 @@ clean checkout 재현: commit `dea9708`을 새로 clone해 도구 설치부터 l
 
 P0의 GameId0 guard 음성 대조는 **1052Z 결과를 이월**했다. Guard/TestPolicy/ClientHarness는 그대로이고 바뀐 ServerHarness를 GameId0에서 다시 실행한 것은 아니다. production runtime require의 WAIVED도 새 승인이 아니라 기존 승인 이월이다. 소스 일치 검사는 서명/전체 해시가 아닌 스크립트47개의 바이트 길이 비교다. P4 로컬 environment에는 별도 SHA256 sourceHash와 balanceHash가 있다. 무시 파일은 원격에서 복원되지 않으므로 다른 checkout은 증거 재수집이 필요하다.
 
+## P5 체크포인트 (2026-10-15, 완료 아님)
+
+- `DESIGN.md`에 오리지널 산업적 등불 원정 표현·반응형·접근성·검증 경계를 정리했다. 아군/영웅/적7종과 핵/탄/지면5종은 code-built placeholder이며 manifest12개 모두 assetId/승인자 null이다. 생성 밸런스·13개 정본·TestPolicy는 바꾸지 않았다.
+- `Input/ActionRouter`는 입력 객체별 hold, 양방향 중립, key repeat 차단, 0.1초 keepalive, focus/text/menu/숨김 취소를 처리한다. `DeviceAdapter`는 CAS + GuiButton의 movement hold / discrete Activated 경로만 연결하고 End/Cancel과 외부 release도 정리한다.
+- `Net/SnapshotBuffer`/`ClientController`는 현재 match/seq/balance 검증, 완전 snapshot 제거, 보간·0.15초 예측·ack 재적용·경계/종결 snap, 단일 in-flight bootstrap과 지연/재동기화를 담당한다. 자원/HP는 예측으로 바꾸지 않는다.
+- 서버 snapshot에 안전한 bounds/heroSpeed/자원 상한/잠정 보상과 `commandAckSeq`를 추가했다. 후자는 명령 ingress high-watermark이며 최종 비용 수락 ack의 대체가 아니다. 재연결한 클라이언트는 두 seq를 서버 high-watermark 이상으로 복구한다.
+- `Presentation/**`는 safe inset·48px/8px 조작부·세로/좁은 가로 대응, 한국어 HUD/로비·메뉴, Client-only 물리 비활성 도형, renderer 교체/fallback 수명과 오류 진단, Scriptable camera 복원을 구현한다. `Runtime`/client bootstrap은 기존 server remote에만 연결하고 production debug/Mock remote는 만들지 않는다.
+- 독립 테스트: 입력31 + 네트워크163 + 뷰419 = **613 PASS**. 독립 리뷰의 재연결 seq 초기화, 늦은 bootstrap/StartStage 승인에 의한 terminal 역행, 시작 ack 누락 후 Preparing 고착, renderer 예외 은폐/부분 생성 누수, 좁은 가로 버튼 겹침을 수정하고 회귀를 추가했다. 순수 finite 검사의 HP NaN/마나∞/previousX NaN 결함도 회귀로 고쳤다.
+- 승인 universe `10771015944`, Studio `0.743.0.7431133`의 2-client 실행에서 서버·클라이언트 각각 동일613개 PASS를 확인했다. P0 정상10/의도적 실패1, P2 132, P3 123, P4 134도 서버 suite PASS다. 실제 gameplay 키/GUI 조작은 아직 실행하지 않았다.
+- Studio screenshot은 `EditableImage` texture 로드 실패와 host capture60초 timeout으로 실패했고 OS `screencapture`도 실패했다. Security/API/OS 설정은 바꾸지 않았다. MCP에는 실제 독립 multi-touch injection이 없어 Android/touch 검증도 BLOCKED다. screenshot/에뮬레이터·순수 fixture를 실제 입력 PASS로 대체하지 않았다.
+- raw/부분 증거: `artifacts/P5/studio/20261015T125703Z/`의 `edit-meta-final.json`, `studio-suites-final.json`, `client-suite-final.json`, `screenshot-failure.json`, `p5-partial.json`. 첫 exploratory609개 실행은 추가 ack 회귀 수정 전이므로 final613개 결과로 대체했다. 실행한 rig/2-client playtest는 종료했다. 이 파일들은 gitignore이며 원격에 없다.
+- 커밋 직전 재검증: P0 local `artifacts/P0/20261015T130301851163Z/report.json` PASS, P1 `artifacts/P1/20261015T130306888928Z/report.json` PASS, P5 `artifacts/P5/20261015T130308027697Z/report.json` **BLOCKED(exit2)** — unit/input/network/view/Studio suite PASS, pcInput/device/render/touch BLOCKED. Python86개·타입/lint/format/build·diff 검사 PASS. 독립 reviewer는 남은 late StartStage HIGH 수정과 네트워크163개 PASS를 확인하여 **체크포인트 커밋만 승인**했고 full P5 승인은 하지 않았다.
+
 ## 다음 작업
 
 1. 검토자가 P0/P1 증거와 overlay 결정(`data/overlay/mvp-proto-001.json`)을 확인한다.
-2. 코드가 바뀌면 Studio에서 Rojo Connect 후 P0·P2·P3·P4 증거를 재수집한다(`verify_p0.py --studio-evidence`, `verify_p2.py --isolation-evidence`, `verify_p3.py --studio-evidence`, `verify_p4.py --studio-evidence`). GameId 0 guard 음성 대조는 별도 미게시 place가 필요해 이월 상태다.
-3. P5(입력·뷰·카메라)부터 `docs/IMPLEMENTATION_PLAN.md` 순서대로 진행한다. MatchService의 완전 snapshot을 사용하며 실제 입력/화면 검증은 아직 하지 않았다. P7 순수 성장은 별도 가능하지만 정산 연결은 P6 이후다.
+2. P5 실제 키/GUI·focus·장치 화면·renderer 교체/cleanup/camera 복원·멀티터치 증거를 수집한다. `verify_p5.py --studio-evidence`는 누락/명시 보류를 BLOCKED로 유지한다. 현재 체크포인트는 P5 완료가 아니므로 P6 완료 게이트 선행으로 삼지 않는다.
+3. P0·P2·P3·P4 full 증거를 현재 소스에서 재수집한다. ClientHarness도 바뀌었으므로 과거 GameId0 guard 음성 대조를 바이트 동일이라고 이월하지 않는다. 별도 미게시 place에서 다시 확인해야 한다.
+4. P5 full gate 이후 P6 순서로 진행한다. P7 순수 성장은 독립 가능하지만 정산 연결은 P6 이후다.
 
 Studio 재검증 절차는 [DEVELOPMENT](DEVELOPMENT.md)의 "Studio/MCP T-TOOL 재개"를 따른다.
 

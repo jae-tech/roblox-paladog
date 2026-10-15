@@ -1,0 +1,422 @@
+--!strict
+local Layout = require("./Layout")
+local Tokens = require("./Tokens")
+local CameraController = require("./CameraController")
+local EntityView = require("./EntityView")
+
+local ORDER = { "vanguard", "slinger", "bulwark" }
+local REASONS: { [string]: string } = {
+	InsufficientFood = "식량이 부족합니다",
+	InsufficientMana = "마나가 부족합니다",
+	Cooldown = "아직 준비 중입니다",
+	Busy = "처리 중입니다",
+	UnitCap = "아군이 최대 인원입니다",
+	ProjectileCap = "탄이 너무 많습니다",
+	NotRunning = "전투 중에만 사용할 수 있습니다",
+	RateLimited = "입력이 너무 빠릅니다",
+	SessionLost = "세션이 종료되었습니다",
+	StageLocked = "이전 원정을 먼저 완료하세요",
+	LockedStage = "이전 원정을 먼저 완료하세요",
+	WrongPhase = "현재 상태에서는 사용할 수 없습니다",
+	NotReady = "서버 준비를 기다립니다",
+	StorageUnavailable = "저장소를 사용할 수 없습니다",
+	ProtocolMismatch = "버전이 달라 연결할 수 없습니다",
+	InvalidPhase = "현재 상태에서는 사용할 수 없습니다",
+}
+
+local function bounds(gui: GuiObject, rect: Layout.Rect)
+	gui.Position = UDim2.fromOffset(rect.x, rect.y)
+	gui.Size = UDim2.fromOffset(rect.width, rect.height)
+end
+local function label(parent: Instance, name: string, size: number, color: Color3): TextLabel
+	local item = Instance.new("TextLabel")
+	item.Name, item.BackgroundTransparency = name, 1
+	item.Font, item.TextSize = Enum.Font.GothamMedium, size
+	item.TextColor3, item.TextXAlignment = color, Enum.TextXAlignment.Left
+	item.TextWrapped = true
+	item.Parent = parent
+	return item
+end
+local function button(parent: Instance, name: string, text: string, accent: Color3): TextButton
+	local item = Instance.new("TextButton")
+	item.Name, item.Text = name, text
+	item.BackgroundColor3, item.TextColor3 = Tokens.button, Tokens.text
+	item.Font, item.TextSize = Enum.Font.GothamMedium, 14
+	item.TextWrapped, item.AutoButtonColor = true, true
+	item.Selectable = true
+	local stroke = Instance.new("UIStroke")
+	stroke.Color, stroke.Thickness, stroke.ApplyStrokeMode = accent, 1, Enum.ApplyStrokeMode.Border
+	stroke.Parent = item
+	local round = Instance.new("UICorner")
+	round.CornerRadius, round.Parent = UDim.new(0, 6), item
+	item.Parent = parent
+	return item
+end
+local function panel(parent: Instance, name: string): Frame
+	local item = Instance.new("Frame")
+	item.Name, item.BackgroundColor3 = name, Tokens.panel
+	item.BorderSizePixel = 0
+	item.Parent = parent
+	return item
+end
+local function milli(value: number?): string
+	return string.format("%.1f", (value or 0) / 1000)
+end
+local function cooldown(ready: number?, tick: number): string
+	local ticks = math.max(0, (ready or 0) - tick)
+	return if ticks > 0 then string.format("%.1f초", ticks / 20) else "준비"
+end
+
+local function new(playerGui: PlayerGui, onAction: (string) -> ())
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "LanternExpedition"
+	gui.ResetOnSpawn = false
+	gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	gui.Parent = playerGui
+	local root = Instance.new("Frame")
+	root.Name, root.Size, root.BackgroundTransparency = "SafeArea", UDim2.fromScale(1, 1), 1
+	root.Parent = gui
+	local hud = panel(root, "HUD")
+	local title = label(hud, "Title", 18, Tokens.amber)
+	local hp = label(hud, "Health", 14, Tokens.text)
+	local resources = label(hud, "Resources", 14, Tokens.teal)
+	local status = label(hud, "Status", 12, Tokens.muted)
+	local message = label(root, "Reason", 14, Tokens.amber)
+	message.TextXAlignment = Enum.TextXAlignment.Center
+	local rotate = label(root, "RotateHint", 12, Tokens.muted)
+	rotate.Text, rotate.TextXAlignment =
+		"가로 화면에서 전장이 더 넓게 보입니다", Enum.TextXAlignment.Center
+	local menu = button(hud, "Menu", "메뉴", Tokens.border)
+	local stage = panel(root, "StageSelect")
+	local stageTitle = label(stage, "StageTitle", 18, Tokens.amber)
+	local stageNote = label(stage, "StageNote", 12, Tokens.muted)
+	local starts: { TextButton } = {}
+	local connections: { RBXScriptConnection } = {}
+	local model: any =
+		{ phase = "Connecting", storage = "Mock/InMemory", network = "연결 대기" }
+	local modal = panel(root, "MenuOverlay")
+	modal.ZIndex, modal.Visible, modal.Active = 10, false, true
+	local modalText = label(modal, "MenuText", 18, Tokens.text)
+	modalText.Size, modalText.Position = UDim2.new(1, -32, 1, -100), UDim2.fromOffset(16, 16)
+	modalText.Text =
+		"원정 일시 메뉴\n메뉴 중에도 서버 전투는 계속됩니다.\n저장: Mock/InMemory · 영구 저장 아님"
+	modalText.ZIndex = 11
+	local close = button(modal, "CloseMenu", "전투로 돌아가기", Tokens.amber)
+	close.ZIndex = 11
+	close.Size, close.Position = UDim2.new(1, -32, 0, 48), UDim2.new(0, 16, 1, -64)
+	table.insert(
+		connections,
+		menu.Activated:Connect(function()
+			modal.Visible = true
+			onAction("Menu")
+		end)
+	)
+	table.insert(
+		connections,
+		close.Activated:Connect(function()
+			modal.Visible = false
+			onAction("CloseMenu")
+		end)
+	)
+	for slot = 1, 3 do
+		local stageId = string.format("s%02d", slot)
+		local item = button(stage, stageId, "원정 " .. slot, Tokens.teal)
+		starts[slot] = item
+		table.insert(
+			connections,
+			item.Activated:Connect(function()
+				if item.Active and model.phase == "LobbyReady" then
+					onAction("Start_" .. stageId)
+				end
+			end)
+		)
+	end
+	local controls = Instance.new("Frame")
+	controls.Name, controls.Size, controls.BackgroundTransparency =
+		"Controls", UDim2.fromScale(1, 1), 1
+	controls.Parent = root
+	local buttons: { [string]: GuiButton } = {
+		Left = button(controls, "Left", "◀\nA / ←", Tokens.border),
+		Right = button(controls, "Right", "▶\nD / →", Tokens.border),
+		Cast = button(controls, "Cast", "등불 파동\nQ · 마나 10", Tokens.amber),
+	}
+	for slot = 1, 3 do
+		buttons["Summon" .. slot] =
+			button(controls, "Summon" .. slot, slot .. " · 소환", Tokens.teal)
+	end
+	local folder = Instance.new("Folder")
+	folder.Name, folder.Parent = "LanternClientVisuals", workspace
+	local view, camera = EntityView.new(folder), CameraController.new()
+	local floor: Part? = nil
+	local layout = Layout.compute(1280, 720)
+	local destroyed = false
+	local function relayout()
+		local size = root.AbsoluteSize
+		if size.X <= 0 or size.Y <= 0 then
+			return
+		end
+		layout = Layout.compute(size.X, size.Y)
+		bounds(hud, layout.hud)
+		bounds(stage, layout.stage)
+		bounds(rotate, layout.rotateHint)
+		rotate.Visible = layout.portrait and model.phase == "Running"
+		for name, rect in layout.buttons do
+			bounds(buttons[name], rect)
+		end
+		local hudWidth = layout.hud.width
+		title.Position, title.Size = UDim2.fromOffset(12, 4), UDim2.fromOffset(hudWidth - 84, 26)
+		menu.Position, menu.Size = UDim2.fromOffset(hudWidth - 60, 8), UDim2.fromOffset(48, 48)
+		hp.Position, hp.Size =
+			UDim2.fromOffset(12, 32),
+			UDim2.fromOffset(hudWidth - 84, if layout.portrait then 40 else 24)
+		resources.Position, resources.Size =
+			UDim2.fromOffset(12, if layout.portrait then 74 else 58),
+			UDim2.fromOffset(hudWidth - 24, 24)
+		status.Position, status.Size =
+			UDim2.fromOffset(12, if layout.portrait then 102 else 80),
+			UDim2.fromOffset(hudWidth - 24, if layout.portrait then 38 else 22)
+		stageTitle.Position, stageTitle.Size = UDim2.fromOffset(12, 4), UDim2.new(1, -24, 0, 28)
+		stageNote.Position, stageNote.Size = UDim2.fromOffset(12, 32), UDim2.new(1, -24, 0, 28)
+		for slot, item in starts do
+			if layout.portrait then
+				item.Position, item.Size =
+					UDim2.fromOffset(12, 64 + (slot - 1) * 56), UDim2.new(1, -24, 0, 48)
+			else
+				local width = (layout.stage.width - 40) / 3
+				item.Position, item.Size =
+					UDim2.fromOffset(12 + (slot - 1) * (width + 8), 64), UDim2.fromOffset(width, 48)
+			end
+		end
+		local messageY = if layout.compact and not layout.portrait
+			then layout.hud.y + layout.hud.height
+			else if layout.portrait then layout.height - 184 else layout.height - 140
+		message.Position, message.Size =
+			UDim2.fromOffset(16, messageY),
+			UDim2.fromOffset(
+				layout.width - 32,
+				if layout.compact and not layout.portrait then 20 else 28
+			)
+		modal.Size =
+			UDim2.fromOffset(math.min(360, layout.width - 32), math.min(240, layout.height - 32))
+		modal.Position = UDim2.fromOffset(
+			(layout.width - modal.Size.X.Offset) / 2,
+			(layout.height - modal.Size.Y.Offset) / 2
+		)
+	end
+	table.insert(connections, root:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout))
+	local function update(nextModel: any)
+		if destroyed then
+			return
+		end
+		model = nextModel
+		local running = model.phase == "Running"
+		local tick = model.tick or 0
+		local seconds = math.floor(tick / 20)
+		title.Text = if model.tick ~= nil
+			then string.format(
+				"등불 원정  /  %02d:%02d",
+				math.floor(seconds / 60),
+				seconds % 60
+			)
+			else "등불 원정  /  —:—"
+		hp.Text = if model.heroHp ~= nil
+			then string.format(
+				"영웅 HP %d/%d   ·   핵 HP %d/%d",
+				model.heroHp,
+				model.heroMaxHp or 0,
+				model.coreHp or 0,
+				model.coreMaxHp or 0
+			)
+			else "영웅 HP —   ·   핵 HP —"
+		resources.Text = if running or model.heroHp ~= nil
+			then string.format(
+				"식량 %s/%s   ·   마나 %s/%s",
+				milli(model.foodMilli),
+				milli(model.foodMaxMilli or 40000),
+				milli(model.manaMilli),
+				milli(model.manaMaxMilli or 100000)
+			)
+			else "식량 —   ·   마나 —"
+		status.Text = string.format(
+			"%s · %s | 잠정 보상 %dG / %dXP",
+			model.storage or "Mock/InMemory",
+			model.network or "연결 대기",
+			model.pendingKillGold or 0,
+			model.pendingKillXp or 0
+		)
+		message.Text = if model.reason
+			then (REASONS[model.reason] or tostring(model.reason))
+			elseif model.outcome then "전투 종료 · 정산 미구현 · 보상 미확정"
+			else ""
+		controls.Visible = running
+		stage.Visible = not running
+		stageTitle.Text = ({
+			LobbyReady = "다음 원정을 선택하세요",
+			Preparing = "원정을 준비합니다",
+			Settling = "전투 종료 · 정산 대기",
+			Settled = "서버 결과 확인",
+			Unavailable = "원정을 시작할 수 없습니다",
+		})[model.phase] or "서버 연결을 기다립니다"
+		stageNote.Text = if model.phase == "LobbyReady"
+			then "Mock/InMemory · 영구 저장 아님"
+			else tostring(model.phase or "연결 대기") .. " · " .. tostring(
+				model.network or "대기"
+			)
+		local catalog = model.catalog or {}
+		local progress = model.stageProgress or {}
+		for slot, item in starts do
+			local id = string.format("s%02d", slot)
+			local previous = string.format("s%02d", slot - 1)
+			local previousProgress = progress[previous]
+			local unlocked = slot == 1
+				or (type(previousProgress) == "table" and (previousProgress.wins or 0) > 0)
+			local def = (catalog.stages or {})[id] or {}
+			item.Text = string.format(
+				"%02d  %s%s",
+				slot,
+				def.displayName or "원정",
+				if unlocked then "" else " · 잠김"
+			)
+			item.Active, item.Selectable =
+				model.phase == "LobbyReady" and unlocked, model.phase == "LobbyReady" and unlocked
+			item.TextColor3 = if item.Active then Tokens.text else Tokens.muted
+		end
+		for slot, id in ORDER do
+			local def = (catalog.units or {})[id] or {}
+			local item = buttons["Summon" .. slot] :: TextButton
+			item.TextSize = 12
+			local ready = (model.summonReadyTick or {})[slot]
+			item.Text = string.format(
+				"%d · %s\n식량 %s · %s",
+				slot,
+				def.displayName or "소환",
+				tostring(def.foodCost or "—"),
+				cooldown(ready, tick)
+			)
+		end
+		local skill = (catalog.skills or {}).pulse or {}
+		local heroAction = model.heroAction or {}
+		local castState = if heroAction.endTick and tick < heroAction.endTick
+			then "시전 중"
+			else cooldown(model.skillReadyTick, tick)
+		local castButton = buttons.Cast :: TextButton
+		castButton.Text = string.format(
+			"Q · %s\n마나 %s · %s",
+			skill.displayName or "등불 파동",
+			tostring(skill.manaCost or "—"),
+			castState
+		)
+		relayout()
+	end
+	local function render(frame: any, _dt: number)
+		if destroyed then
+			return
+		end
+		if not frame or #(frame.entities or {}) == 0 then
+			view.clear()
+			if floor then
+				floor:Destroy()
+				floor = nil
+			end
+			return
+		end
+		view.sync(frame.entities or {}, frame.projectiles or {})
+		local length = frame.stageLength or 100
+		if not floor then
+			floor = EntityView.part(
+				folder,
+				"ExpeditionGround",
+				Vector3.new(length, 0.25, 8),
+				Tokens.panel
+			)
+		end
+		assert(floor, "floor initialized")
+		floor.Size, floor.CFrame =
+			Vector3.new(math.max(1, length), 0.25, 8), CFrame.new(length / 2, -0.25, 0)
+		camera.update(frame.heroX or 0, length)
+	end
+	local function inspect(): any
+		local function metrics(item: GuiObject): any
+			local visible = item.Visible
+			local ancestor = item.Parent
+			while ancestor and ancestor ~= gui do
+				if ancestor:IsA("GuiObject") and not ancestor.Visible then
+					visible = false
+				end
+				ancestor = ancestor.Parent
+			end
+			return {
+				x = item.AbsolutePosition.X,
+				y = item.AbsolutePosition.Y,
+				width = item.AbsoluteSize.X,
+				height = item.AbsoluteSize.Y,
+				visible = visible,
+			}
+		end
+		local rects: { [string]: any } = {}
+		for name, item in buttons do
+			rects[name] = {
+				x = item.AbsolutePosition.X,
+				y = item.AbsolutePosition.Y,
+				width = item.AbsoluteSize.X,
+				height = item.AbsoluteSize.Y,
+				visible = controls.Visible,
+			}
+		end
+		local stages: { [string]: any } = {}
+		for slot, item in starts do
+			local entry = metrics(item)
+			entry.active = item.Active
+			stages[string.format("Start_s%02d", slot)] = entry
+		end
+		return {
+			safeArea = metrics(root),
+			stageButtons = stages,
+			menuButton = metrics(menu),
+			closeMenuButton = metrics(close),
+			stageBounds = metrics(stage),
+			controlsVisible = controls.Visible,
+			width = root.AbsoluteSize.X,
+			height = root.AbsoluteSize.Y,
+			portrait = layout.portrait,
+			buttons = rects,
+			phase = model.phase,
+			hudText = title.Text
+				.. "\n"
+				.. hp.Text
+				.. "\n"
+				.. resources.Text
+				.. "\n"
+				.. status.Text,
+			reasonText = message.Text,
+			stageVisible = stage.Visible,
+			menuVisible = modal.Visible,
+			rotateHintVisible = rotate.Visible,
+			entities = view.inspect(),
+			visualCount = #folder:GetDescendants(),
+		}
+	end
+	local function destroy()
+		if destroyed then
+			return
+		end
+		destroyed = true
+		for _, connection in connections do
+			connection:Disconnect()
+		end
+		view.clear()
+		camera.destroy()
+		folder:Destroy()
+		gui:Destroy()
+	end
+	update(model)
+	return {
+		buttons = buttons,
+		update = update,
+		render = render,
+		inspect = inspect,
+		destroy = destroy,
+	}
+end
+return table.freeze({ new = new })
