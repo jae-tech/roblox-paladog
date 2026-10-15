@@ -15,10 +15,14 @@ ROOT = Path(__file__).resolve().parents[1]
 LUAU = ROOT / ".tools/luau-0.742/luau"
 
 
+def allowed_universes():
+    policy = (ROOT / "test-support/TestPolicy.luau").read_text(encoding="utf-8")
+    return {int(n) for n in re.findall(r"\d+", re.search(r"allowedUniverseIds\s*=\s*\{([^}]*)\}", policy).group(1))}
+
+
 def audit_isolation(evidence, cli_cases, expected_lengths):
     """Validate MCP-captured two-client evidence; raises ValueError on any weak or failing field."""
-    policy = (ROOT / "test-support/TestPolicy.luau").read_text(encoding="utf-8")
-    allowed = {int(n) for n in re.findall(r"\d+", re.search(r"allowedUniverseIds\s*=\s*\{([^}]*)\}", policy).group(1))}
+    allowed = allowed_universes()
     limits = (ROOT / "src/shared/Protocol.luau").read_text(encoding="utf-8")
     burst = int(re.search(r"discreteBurst = (\d+)", limits).group(1))
     if evidence.get("schema") != "p2-isolation-evidence/1" or not evidence.get("studio_id"):

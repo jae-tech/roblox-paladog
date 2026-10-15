@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-**P0 full gate PASS (`P0Complete: true`), P1 gate(T-DATA + 자동 T-ASSET) PASS, P2 gate(T-SEC 기본 + T-ISOLATION) PASS (2026-10-15). P3~P9는 시작하지 않았다.** P0.1(팀 합의 Git 정책)은 BLOCKED이고(로컬 main에 병합, push 안 함), production place 안의 런타임 TestSupport require 실패는 사용자 결정으로 정적 audit으로 대체(WAIVED)했다. P0/P1 증거와 overlay 결정은 검토자 확인 전이다.
+**P0 full gate PASS (`P0Complete: true`), P1 gate(T-DATA + 자동 T-ASSET) PASS, P2 gate(T-SEC 기본 + T-ISOLATION) PASS (2026-10-15). P3는 로컬 검증 PASS, Studio 증거 미수집(BLOCKED). P4~P9는 시작하지 않았다.** P0.1(팀 합의 Git 정책)은 BLOCKED이고(로컬 main에 병합, push 안 함), production place 안의 런타임 TestSupport require 실패는 사용자 결정으로 정적 audit으로 대체(WAIVED)했다. P0/P1 증거와 overlay 결정은 검토자 확인 전이다.
 
 기준 문서는 기존 설계 6개(`PRD`, `ARCHITECTURE`, `DATA_MODELS`, `ASSET_PIPELINE`, `IMPLEMENTATION_PLAN`, `TEST_PLAN`)와 REA Markdown 7개다. 이 13개 원문은 변경하지 않았다. REA 원본 SHA256은 `tools/reference-hashes.json`으로 검사한다.
 
@@ -79,10 +79,19 @@ clean checkout 재현: commit `dea9708`을 새로 clone해 도구 설치부터 l
 - Studio 2-client(테스트 universe, 실제 RemoteEvent, Mock store): 타인 경기 명령 `NotOwner`, 임의 hp 필드·Instance·NaN `InvalidPayload`, 피해자 대기열·이동축·revision 불변, 각자 자기 snapshot만 수신, 1000건 flood에서 20건만 수용·980건 무응답 집계·다른 플레이어 정상. 증거 `artifacts/P2/studio/20261015T1052Z-isolation.json`, gate `tools/verify_p2.py`.
 - 설계 대비 변경: reason에 `InsufficientGold` 추가. server→shared require는 주입으로 해결(Studio alias·CLI symlink 불가를 실측).
 
+## P3 헤드리스 시뮬레이션 (2026-10-15)
+
+- `src/server/Simulation/*` 8개 모듈 + MatchService 연결. Luau P3 suite 123개 PASS(CLI), seed 재현(600tick 체크포인트 6개 동일), tick 순서 증거는 `tools/verify_p3.py`가 생성한다.
+- 리뷰 반영: 실패할 수 없던 테스트 3개 수정(죽은 표적 → 발사 hit 0 확인, breach 1회 재배치 → 추적·순간이동 금지 확인), MatchService `stepAll` 통합 테스트와 실제 TTL로 T-HERO-01, 행동 기반 tick 순서 테스트, 프레임 1초 급증 시 4tick·피해 상한 추가. 원거리 요청 목록은 tick마다 비움, 피해식 정수화, digest에 facing·maxHp·공격력·처치수·재생률 포함.
+- 수동 mutation 확인(저장소에서 자동 재현되지 않음): 지원장 배율, 공격 주기, breach 처리, 사망 1회 guard, 매 tick 재배치를 각각 깨면 테스트가 실패한다.
+- **Studio 미검증**: Rojo 서버 재시작 후 Studio 플러그인 재연결을 사용자가 나중으로 미뤘다. 지금 Studio에는 P3 이전 빌드와 잘못 동기화된 `.omc` 상태 모듈이 남아 있으며, Connect 시 Rojo가 정리한다.
+- **P0·P2 Studio 증거도 다시 수집해야 한다**: 소스가 바뀌어 `20261015T1052Z` 증거는 이제 FAIL이 정상이다. 다음 Studio 세션에서 2-client 플레이테스트 한 번으로 P0·P2·P3 증거를 함께 수집한다.
+
 ## 다음 작업
 
 1. 검토자가 P0/P1 증거와 overlay 결정(`data/overlay/mvp-proto-001.json`)을 확인한다.
-2. P3(순수 시뮬레이션: 자원·소환·근접)부터 `docs/IMPLEMENTATION_PLAN.md` 순서대로 진행한다.
+2. Studio에서 Rojo Connect 후 P0·P2·P3 증거를 재수집한다(`verify_p0.py --studio-evidence`, `verify_p2.py --isolation-evidence`, `verify_p3.py --studio-evidence`).
+3. P4(탄·영웅 무기 스킬)부터 `docs/IMPLEMENTATION_PLAN.md` 순서대로 진행한다.
 
 Studio 재검증 절차는 [DEVELOPMENT](DEVELOPMENT.md)의 "Studio/MCP T-TOOL 재개"를 따른다.
 

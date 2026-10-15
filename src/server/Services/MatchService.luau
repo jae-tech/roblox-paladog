@@ -2,6 +2,8 @@
 -- Per-owner session/phase state and command admission (ARCHITECTURE §6.1, §7). P2 skeleton: accepted
 -- Summon/Cast commands are queued for the P3 simulation; settlement arrives with P7/P8.
 local ProfileService = require("./ProfileService")
+local World = require("../Simulation/World")
+local SimTypes = require("../Simulation/SimTypes")
 
 type Phase =
 	"ProfileLoading"
@@ -36,6 +38,7 @@ type Session = {
 	moveTick: number,
 	pending: { any },
 	snapshotSeq: number,
+	world: SimTypes.World?,
 }
 
 export type Deps = {
@@ -114,7 +117,7 @@ local function new(deps: Deps)
 				end
 				session.phase, session.matchId, session.stageId, session.runOrdinal =
 					"Unavailable", nil, nil, nil
-				session.pending = {}
+				session.pending, session.world = {}, nil
 			end
 		end)
 	end
@@ -173,10 +176,12 @@ local function new(deps: Deps)
 			return
 		end
 		session.commandHigh = command.commandSeq
-		table.insert(
-			session.pending,
-			{ kind = command.kind, slot = command.slot, commandSeq = command.commandSeq }
-		)
+		table.insert(session.pending, {
+			kind = command.kind,
+			slot = command.slot,
+			commandSeq = command.commandSeq,
+			requestId = command.requestId,
+		})
 		local message =
 			reply(userId, command.requestId, "Pending", nil, { matchId = session.matchId })
 		rememberAck(session, command.requestId, command.commandSeq, message)
@@ -241,10 +246,18 @@ local function new(deps: Deps)
 				return
 			end
 			-- Running starts only after activeRun is committed; a replayed start returns the stored run.
+			local loaded = profile :: any
+			local world =
+				World.new({ -- built first: a config error must not leave a Running session without a world
+					stageId = run.stageId,
+					unitLevels = loaded.unitLevels,
+					heroTraits = loaded.heroTraits, -- copied by World: growth is fixed for the whole match
+				})
 			session.phase, session.matchId, session.stageId, session.runOrdinal =
 				"Running", run.matchId, run.stageId, run.ordinal
 			session.commandHigh, session.moveSeq, session.moveAxis, session.snapshotSeq = 0, 0, 0, 0
 			session.acks, session.ackOrder, session.pending = {}, {}, {} -- request cache is scoped to one match
+			session.world = world
 			owners[run.matchId] = userId
 			reply(userId, command.requestId, "Committed", nil, {
 				matchId = run.matchId,
@@ -282,6 +295,7 @@ local function new(deps: Deps)
 			owners[session.matchId :: string] = nil
 			session.phase, session.matchId, session.stageId, session.runOrdinal =
 				"LobbyReady", nil, nil, nil
+			session.world = nil
 			reply(userId, command.requestId, "Accepted")
 		end
 	end
@@ -314,24 +328,63 @@ local function new(deps: Deps)
 		return if session then session.phase else nil
 	end
 
-	-- Owner-only skeleton snapshot; P3 fills entities/projectiles.
+	-- Owner-only snapshot (complete state each time, no deltas). Attack power and internals stay server-side.
 	local function snapshot(userId: number): { [string]: any }?
 		local session = sessions[userId]
 		if not session or not session.matchId then
 			return nil
 		end
 		session.snapshotSeq += 1
+		local world = session.world
 		return {
 			matchId = session.matchId,
 			snapshotSeq = session.snapshotSeq,
-			tick = deps.tick(),
+			tick = if world then world.tick else deps.tick(),
 			phase = session.phase,
 			stageId = session.stageId,
 			balanceHash = deps.balanceHash,
 			inputAckSeq = session.moveSeq,
-			entities = {},
+			resources = if world
+				then {
+					foodMilli = world.resources.foodMilli,
+					manaMilli = world.resources.manaMilli,
+					summonReadyTick = table.clone(world.resources.summonReadyTick),
+				}
+				else nil,
+			entities = if world then World.snapshotEntities(world) else {},
 			projectiles = {},
+			outcome = if world then world.outcome else nil,
 		}
+	end
+
+	-- One simulation tick for every running match; replies carry the final Accepted/Rejected per command.
+	local function stepAll()
+		for userId, session in sessions do
+			local world = session.world
+			if session.phase == "Running" and world then
+				local commands = session.pending
+				session.pending = {}
+				local result =
+					World.step(world, { commands = commands, axis = effectiveAxis(userId) })
+				for _, outcome in result.results do
+					local requestId = outcome.requestId or ""
+					local message = reply(
+						userId,
+						requestId,
+						outcome.status,
+						outcome.reason,
+						{ matchId = session.matchId }
+					)
+					local cached = session.acks[requestId]
+					if cached then
+						cached.message = message -- duplicates now get the final answer
+					end
+				end
+				if result.outcome then
+					session.phase = "Settling" -- settlement transaction is P7/P8
+				end
+			end
+		end
 	end
 
 	local function takePending(userId: number): { any }
@@ -353,6 +406,11 @@ local function new(deps: Deps)
 		phaseOf = phaseOf,
 		snapshot = snapshot,
 		takePending = takePending,
+		stepAll = stepAll,
+		worldOf = function(userId: number): SimTypes.World?
+			local session = sessions[userId]
+			return if session then session.world else nil -- server diagnostics/tests only; never replicated
+		end,
 		activeMatches = activeMatches,
 	})
 end

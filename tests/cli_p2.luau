@@ -13,6 +13,6 @@ local env = {
 }
 local report = Runner.run("PureLuau", "cli-p2", 12345, function(check)
 	suite(env, check)
-end)
+end, "T-P2")
 print(Runner.toJson(report))
 assert(report.status == "PASS", "P2 suite failed")

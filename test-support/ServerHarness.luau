@@ -46,12 +46,28 @@ local Harness = {}
 function Harness.runSuite(suiteId: string, seed: number)
 	guard()
 	assert(
-		suiteId == "T-TOOL" or suiteId == "T-TOOL-INTENTIONAL-FAIL" or suiteId == "T-P2",
+		suiteId == "T-TOOL"
+			or suiteId == "T-TOOL-INTENTIONAL-FAIL"
+			or suiteId == "T-P2"
+			or suiteId == "T-P3",
 		"unsupported P0 suite"
 	)
 	return Runner.run("StudioServer", HttpService:GenerateGUID(false), seed, function(check)
 		if suiteId == "T-P2" then
 			require(tests.unit.P2)(p2Env(), check)
+			return
+		elseif suiteId == "T-P3" then
+			local simulation = GameServer.Simulation
+			require(tests.unit.P3)({
+				World = require(simulation.World),
+				FixedStep = require(simulation.FixedStep),
+				Targeting = require(simulation.Targeting),
+				Damage = require(simulation.Damage),
+				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				MatchService = require(GameServer.Services.MatchService),
+				ProfileService = require(GameServer.Services.ProfileService),
+				newStore = require(tests.fixtures.InMemoryStoreAdapter),
+			}, check)
 			return
 		end
 		suite(fixtures, check)
@@ -74,7 +90,7 @@ function Harness.startNetRig()
 	local Progression = require(GameServer.Config.Generated.Progression)
 	local RemoteBinding = require(GameServer.Net.RemoteBinding)
 	local store = env.newStore()
-	local state = { tick = 0, accumulator = 0 }
+	local state = { tick = 0 }
 	local forward: ((number, string, any) -> ())? = nil
 	local profiles = env.ProfileService.new({
 		store = store,
@@ -126,16 +142,17 @@ function Harness.startNetRig()
 	})
 	local _, send, disconnect = RemoteBinding.bind(core, ReplicatedStorage, Players)
 	forward = send
+	local FixedStep = require(GameServer.Simulation.FixedStep)
+	local driver = FixedStep.new()
 	local heartbeat = RunService.Heartbeat:Connect(function(dt)
-		state.accumulator = math.min(state.accumulator + dt, 0.25)
-		while state.accumulator >= 0.05 do
-			state.accumulator -= 0.05
+		FixedStep.advance(driver, dt, function()
 			state.tick += 1
 			core.drain()
+			match.stepAll()
 			if state.tick % 2 == 0 then
-				core.publishSnapshots()
+				core.publishSnapshots() -- 10 Hz full snapshots
 			end
-		end
+		end)
 	end)
 	rig = {
 		core = core,

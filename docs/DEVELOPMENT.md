@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-P1 데이터 파이프라인 구현(`tools/verify_p1.py`: T-DATA + 자동 T-ASSET 검사 PASS; 시각·라이선스 검토는 수동이며 미실시). P0 로컬 기반 구현 + Studio runtime 검증(2026-10-15, 테스트 universe 10771015944). full gate는 `--studio-evidence`로 PASS/P0Complete=true다. production Studio 내 TestSupport require 실패는 런타임 미실행이며 사용자 결정으로 정적 XML audit으로 대체(WAIVED)했다. P0.1(팀 합의 Git 정책)은 BLOCKED로 남는다. P3~P9는 시작하지 않는다. 기존 설계 6개는 기준선이며 REA Markdown 7개는 수정하지 않는다. `tools/reference-hashes.json`으로 원본 보존을 검사한다. P0 gate 보고서의 balanceHash/schema/protocol은 null이다(밸런스 hash는 P1 산출물 `data/balance/mvp-proto-001.json`에 있다).
+P1 데이터 파이프라인 구현(`tools/verify_p1.py`: T-DATA + 자동 T-ASSET 검사 PASS; 시각·라이선스 검토는 수동이며 미실시). P0 로컬 기반 구현 + Studio runtime 검증(2026-10-15, 테스트 universe 10771015944). full gate는 `--studio-evidence`로 PASS/P0Complete=true다. production Studio 내 TestSupport require 실패는 런타임 미실행이며 사용자 결정으로 정적 XML audit으로 대체(WAIVED)했다. P0.1(팀 합의 Git 정책)은 BLOCKED로 남는다. P4~P9는 시작하지 않는다. 기존 설계 6개는 기준선이며 REA Markdown 7개는 수정하지 않는다. `tools/reference-hashes.json`으로 원본 보존을 검사한다. P0 gate 보고서의 balanceHash/schema/protocol은 null이다(밸런스 hash는 P1 산출물 `data/balance/mvp-proto-001.json`에 있다).
 
 실행 호스트는 계획의 Windows가 아니라 **macOS Darwin ARM64**다. 이 호스트용 로컬 도구 다운로드만 고정했다. Windows 지원/테스트를 주장하지 않는다. Git 기준선은 `f36bf2a`, origin/main과 동일한 이력이며 확인한 원격은 README의 공개 저장소다. 현재 main의 로컬 미커밋 변경으로 작업하며 팀 branch 합의는 없다. 제안 정책: 후속 변경은 `implementation/p0-foundation` 같은 로컬 feature branch, 소스/문서/도구만 커밋; `.omx/`, `artifacts/`, `.tools/`, 연구 바이너리와 키는 제외. 이번 작업은 commit/push/publish하지 않는다.
 
@@ -59,6 +59,21 @@ python3 tools/verify_p2.py --isolation-evidence artifacts/P2/studio/<file>.json 
 - 의도적 선택: 버킷 초과 명령은 응답 없이 버리고 집계만 한다(flood 증폭 방지). 클라이언트는 응답 대기 3초 후 표시를 멈춘다(ARCH §6.1).
 - 범위 밖/알려진 한계: Summon/Cast는 대기열에 `Pending`으로만 쌓인다(P3가 처리). 정산·Settled 진입·T-SEC-04 '종결 후' 입력은 P7/P8. lease heartbeat가 아직 없어 Mock rig에서 180초 뒤 write가 `SessionLost`가 된다(P8). 응답 유실 뒤 메모리 profile은 다음 commit까지 이전 값이며, 같은 requestId 재시도는 변경 없는 문서를 한 번 더 쓴다(P8 DataStore 어댑터에서 재검토).
 - 증거: `verify_p2.py`는 Studio 기록의 스크립트 바이트 길이가 현재 test 빌드와 같아야 PASS한다(코드가 바뀌면 다시 수집).
+
+## P3 헤드리스 시뮬레이션 (T-RESOURCE / T-COMBAT / T-HERO-01)
+
+```sh
+.tools/luau-0.742/luau tests/cli_p3.luau        # P3 suite (Luau CLI)
+python3 tools/verify_p3.py --studio-evidence artifacts/P3/studio/<file>.json   # 증거 없으면 exit 2
+```
+
+- 모듈: `src/server/Simulation/{SimTypes,Resource,Targeting,Movement,Attack,Damage,World,FixedStep}.luau`. Instance·Heartbeat·애니·시계 없이 정수 tick으로만 진행한다.
+- 한 tick 순서(`World.PHASES`): regen → commands → spawn → move → support → target → attack → damage → outcome → cleanup. 처리 이후 같은 tick 안의 다음 단계가 앞 단계 결과를 쓰는지(이동→타깃, 이동→지원장→공격)를 행동 테스트로 확인한다.
+- 자원은 milli·tick당 `n=rate+remainder; plus=n//20`, 상한에서 remainder=0. 소환은 쿨다운→식량→아군 30 상한 순으로 검사한 뒤에만 한 번에 차감·생성한다.
+- 공격 주기는 windup+recovery+cooldown 정확히(vanguard 76tick). 발사 시 표적 재검사(빗나가도 주기 소모), 지원장 배율은 발사 시 snapshot, 피해 `(AP*num+50)//100`, 한 tick 피해를 모아 적용해 사망·처치 보상은 한 번만.
+- `FixedStep`: 누적 경과 시간으로 due tick을 계산해 프레임률과 무관, 프레임당 최대 4tick, 0.25초 초과 backlog는 버리고 `droppedSeconds`로 보고.
+- `MatchService`: Running 진입 시 프로필의 유닛 레벨·특성을 복사해 World 생성, 매 tick `stepAll`로 대기 명령·이동축을 적용하고 최종 Accepted/Rejected(InsufficientFood/Cooldown/UnitCap)를 회신. snapshot에 엔티티(공격력 제외)·자원·outcome 포함.
+- 범위 밖/알려진 한계: 원거리 공격은 해당 tick의 `projectileRequests`로만 남고 피해는 P4. Cast는 `NotReady`(P4). 적 스폰은 P6. 경기 종료 후 세션은 `Settling`에 머물러 서버 경기 슬롯을 차지한다(정산 P7/P8). `ServerMessage.serverTick`은 서버 rig tick, snapshot `tick`은 World tick이다. 0인 recovery/cooldown은 주기가 1tick 늘지만 P1 검증이 0을 금지한다.
 
 ## production / test 경계
 

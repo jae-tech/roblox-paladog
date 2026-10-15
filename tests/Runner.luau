@@ -17,11 +17,12 @@ function Runner.run(
 	environment: string,
 	runId: string,
 	seed: number,
-	suite: (check: (string, unknown, unknown, number) -> ()) -> ()
+	suite: (check: (string, unknown, unknown, number) -> ()) -> (),
+	suiteName: string?
 ): Report
 	local report: Report = {
 		runId = runId,
-		suite = "T-TOOL-P0",
+		suite = suiteName or "T-TOOL-P0",
 		environment = environment,
 		seed = seed,
 		status = "PASS",
