@@ -7,7 +7,6 @@ export type Deps = {
 	catalog: any,
 	send: (string, any) -> (),
 	requestId: () -> string,
-	playableMvp: boolean?,
 }
 
 local function new(deps: Deps)
@@ -178,17 +177,6 @@ local function new(deps: Deps)
 			sendCommand({ kind = "ReturnToLobby", matchId = state.matchId })
 			return true
 		end
-		if
-			deps.playableMvp
-			and (
-				name == "Cast"
-				or name == "Summon2"
-				or name == "Summon3"
-				or (string.sub(name, 1, 6) == "Start_" and name ~= "Start_s01")
-			)
-		then
-			return false
-		end
 		if string.sub(name, 1, 6) == "Start_" then
 			local stage = string.sub(name, 7)
 			if state.phase ~= "LobbyReady" or not deps.catalog.stages[stage] then
@@ -237,8 +225,11 @@ local function new(deps: Deps)
 			return false
 		end
 		state.reason = message.reason
-		if message.profileRevision then
-			state.profileRevision = math.max(state.profileRevision, message.profileRevision)
+		if message.profileRevision and message.profileRevision >= state.profileRevision then
+			state.profileRevision = message.profileRevision
+			if message.profileSummary then
+				state.stageProgress = message.profileSummary.stageProgress
+			end
 		end
 		if command.kind == "StartStage" then
 			if message.status == "Committed" and type(message.matchId) == "string" then
@@ -302,6 +293,7 @@ local function new(deps: Deps)
 		}
 		if snapshot then
 			m.tick, m.heroAction, m.outcome = snapshot.tick, snapshot.heroAction, snapshot.outcome
+			m.result, m.settlementStatus = snapshot.result, snapshot.settlementStatus
 			for k, v in snapshot.resources or {} do
 				m[k] = v
 			end

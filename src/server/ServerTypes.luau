@@ -11,6 +11,20 @@ export type ActiveRun = {
 
 export type Receipt = { id: string, kind: string, revision: number }
 
+-- Frozen by MatchService on the first terminal tick; never accepted from a client payload.
+export type MatchResult = {
+	matchId: string,
+	runOrdinal: number,
+	stageId: string,
+	balanceHash: string,
+	seed: number,
+	outcome: string,
+	elapsedTicks: number,
+	killCounts: { [string]: number },
+	pendingKillGold: number,
+	pendingKillXp: number,
+}
+
 export type ProfileV1 = {
 	schemaVersion: number,
 	revision: number,

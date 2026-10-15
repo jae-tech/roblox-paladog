@@ -71,6 +71,7 @@ export type ServerMessage = {
 	serverTick: number,
 	profileRevision: number?,
 	matchId: string?,
+	profileSummary: ProfileSummary?,
 }
 
 export type StageProgress = { wins: number, bestTicks: number? }
@@ -112,6 +113,19 @@ export type MatchSnapshot = {
 	entities: { any },
 	projectiles: { any },
 	outcome: string?,
+	result: {
+		matchId: string,
+		runOrdinal: number,
+		stageId: string,
+		balanceHash: string,
+		seed: number,
+		outcome: string,
+		elapsedTicks: number,
+		killCounts: { [string]: number },
+		pendingKillGold: number,
+		pendingKillXp: number,
+	}?,
+	settlementStatus: ("Pending" | "Committed" | "Failed")?,
 }
 
 export type BootstrapStatus =

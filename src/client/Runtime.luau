@@ -17,7 +17,7 @@ local function start(): any
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui") :: PlayerGui
 	local protocol = require(ReplicatedStorage.Shared.Protocol)
 	local catalog = require(ReplicatedStorage.Shared.PublicCatalog)
-	local playableMvp = ReplicatedStorage:GetAttribute("PlayableMvp") == true
+	local stageGameplay = ReplicatedStorage:GetAttribute("StageGameplay") == true
 	local folder: Instance? = nil
 	local connections: { RBXScriptConnection } = {}
 	local remoteConnections: { RBXScriptConnection } = {}
@@ -32,7 +32,6 @@ local function start(): any
 		return ClientController.new({
 			protocol = protocol,
 			catalog = catalog,
-			playableMvp = playableMvp,
 			send = send,
 			requestId = function()
 				return HttpService:GenerateGUID(false)
@@ -49,7 +48,7 @@ local function start(): any
 		else
 			controller.action(action, os.clock())
 		end
-	end, playableMvp)
+	end, stageGameplay)
 	router = ActionRouter.new({
 		onAxis = function(axis)
 			controller.move(axis, os.clock())

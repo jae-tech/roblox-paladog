@@ -106,6 +106,13 @@ export type CommandResult = {
 	reason: string?,
 }
 
+export type SpawnState = {
+	seed: number,
+	rngState: number,
+	successfulSpawnCount: number,
+	nextSpawnTicks: number,
+}
+
 export type World = {
 	tick: number,
 	stageId: string,
@@ -122,8 +129,7 @@ export type World = {
 	limits: { allyCap: number, enemyCap: number, projectileCap: number },
 	outcome: string?,
 	outcomeTick: number?,
-	spawnsRemaining: number?,
-	nextSpawnTick: number?,
+	spawner: SpawnState?,
 	pendingKillGold: number,
 	pendingKillXp: number,
 	killCounts: { [string]: number },

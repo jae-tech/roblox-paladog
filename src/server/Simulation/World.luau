@@ -9,6 +9,7 @@ local Attack = require("./Attack")
 local Damage = require("./Damage")
 local ProjectileSystem = require("./ProjectileSystem")
 local HeroActionSystem = require("./HeroActionSystem")
+local StageSystem = require("./StageSystem")
 local Units = require("../Config/Generated/Units")
 local Enemies = require("../Config/Generated/Enemies")
 local HeroConfig = require("../Config/Generated/Hero")
@@ -118,13 +119,13 @@ export type Options = {
 	unitLevels: { [string]: number }?,
 	heroTraits: { [string]: number }?,
 	trace: boolean?,
-	spawnEncounter: boolean?,
+	stageSpawns: boolean?,
+	seed: number?,
 }
 
 local function new(options: Options): World
 	local stage = (Stages :: any)[options.stageId]
 	assert(stage, "unknown stage " .. tostring(options.stageId))
-	assert(not options.spawnEncounter or options.stageId == "s01", "MVP encounter is s01 only")
 	local traits: { [string]: number } = table.clone(options.heroTraits or {})
 	local progression = Generated.progression
 	local hero = HeroConfig.hero
@@ -148,8 +149,9 @@ local function new(options: Options): World
 		},
 		outcome = nil,
 		outcomeTick = nil,
-		spawnsRemaining = if options.spawnEncounter then stage.blockCount else nil,
-		nextSpawnTick = if options.spawnEncounter then 1 else nil,
+		spawner = if options.stageSpawns
+			then StageSystem.new(stage, options.seed or 12345)
+			else nil,
 		pendingKillGold = 0,
 		pendingKillXp = 0,
 		killCounts = {},
@@ -277,16 +279,15 @@ local function step(world: World, input: Input?): StepResult
 	mark(world, "commands")
 	local results = runCommands(world, commands)
 	mark(world, "spawn")
-	-- Finite s01 encounter: existing stage count/cadence and scrapper stats, no new balance values.
-	if
-		world.spawnsRemaining
-		and world.spawnsRemaining > 0
-		and world.tick >= (world.nextSpawnTick or 1)
-	then
-		if spawnEnemy(world, "scrapper") then
-			world.spawnsRemaining -= 1
-			world.nextSpawnTick = world.tick + world.stage.slowMaxTicks
-		end -- At the cap the due spawn waits, with no backlog burst.
+	if world.spawner then
+		local id = StageSystem.step(
+			world.spawner,
+			world.stage,
+			aliveCount(world, "Enemy") >= world.limits.enemyCap
+		)
+		if id then
+			assert(spawnEnemy(world, id), "admitted stage spawn must succeed")
+		end
 	end
 	mark(world, "move")
 	Movement.moveHero(world, if input and input.axis then input.axis else 0)
@@ -396,8 +397,12 @@ local function digest(world: World): string
 		),
 	}
 	local action = world.heroAction
-	if world.spawnsRemaining then
-		table.insert(parts, `spawn:{world.spawnsRemaining}:{world.nextSpawnTick}`)
+	if world.spawner then
+		local spawn = world.spawner
+		table.insert(
+			parts,
+			`spawn:{spawn.seed}:{spawn.rngState}:{spawn.successfulSpawnCount}:{spawn.nextSpawnTicks}`
+		)
 	end
 	table.insert(
 		parts,
@@ -487,6 +492,21 @@ local function digest(world: World): string
 	return string.format("%08x", hash)
 end
 
+-- Called only after an immutable result exists; retain hero/core for the result screen.
+local function clearBattle(world: World)
+	for id in world.entities do
+		if id ~= world.heroId and id ~= world.coreId then
+			world.entities[id] = nil
+		end
+	end
+	world.order = { world.heroId, world.coreId }
+	table.clear(world.projectiles)
+	table.clear(world.projectileOrder)
+	table.clear(world.projectileRequests)
+	world.projectileCount = 0
+	world.heroAction = { reservedProjectileSlot = false }
+end
+
 return table.freeze({
 	PHASES = PHASES,
 	SLOT_UNITS = SLOT_UNITS,
@@ -499,4 +519,5 @@ return table.freeze({
 	snapshotProjectiles = snapshotProjectiles,
 	snapshotHeroAction = snapshotHeroAction,
 	digest = digest,
+	clearBattle = clearBattle,
 })

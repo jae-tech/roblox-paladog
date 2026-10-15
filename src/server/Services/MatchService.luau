@@ -1,7 +1,8 @@
 --!strict
--- Per-owner session/phase state and command admission (ARCHITECTURE §6.1, §7). P2 skeleton: accepted
--- Summon/Cast commands are queued for the P3 simulation; settlement arrives with P7/P8.
+-- Per-owner admission and P6 stage/result flow. Currency/XP rewards remain P7 work.
 local ProfileService = require("./ProfileService")
+local ProfileSchema = require("./ProfileSchema")
+local ServerTypes = require("../ServerTypes")
 local World = require("../Simulation/World")
 local SimTypes = require("../Simulation/SimTypes")
 
@@ -21,6 +22,7 @@ export type Message = {
 	serverTick: number,
 	profileRevision: number?,
 	matchId: string?,
+	profileSummary: any?,
 }
 
 type Ack = { commandSeq: number, message: Message }
@@ -39,6 +41,7 @@ type Session = {
 	pending: { any },
 	snapshotSeq: number,
 	world: SimTypes.World?,
+	result: ServerTypes.MatchResult?,
 }
 
 export type Deps = {
@@ -50,11 +53,18 @@ export type Deps = {
 	maxMatches: number,
 	ackCacheSize: number,
 	moveTtlTicks: number,
-	playableMvp: boolean?,
+	stageFlow: boolean?,
+	newSeed: (() -> number)?,
 }
 
 local ACTIVE: { [Phase]: boolean } =
 	{ Preparing = true, Running = true, Settling = true, Settled = true }
+
+-- Freeze in one boundary so both pinned Luau analyzers retain the declared DTO type.
+local function freezeResult(result: ServerTypes.MatchResult)
+	table.freeze(result.killCounts)
+	table.freeze(result)
+end
 
 local function new(deps: Deps)
 	local sessions: { [number]: Session } = {}
@@ -72,6 +82,7 @@ local function new(deps: Deps)
 		if extra then
 			message.profileRevision = extra.profileRevision
 			message.matchId = extra.matchId
+			message.profileSummary = extra.profileSummary
 		end
 		deps.send(userId, message)
 		return message
@@ -217,10 +228,6 @@ local function new(deps: Deps)
 	end
 
 	local function startStage(userId: number, session: Session, command: any)
-		if deps.playableMvp and command.stageId ~= "s01" then
-			reply(userId, command.requestId, "Rejected", "LockedStage")
-			return
-		end
 		if session.phase ~= "LobbyReady" then
 			reply(userId, command.requestId, "Rejected", "WrongPhase")
 			return
@@ -255,7 +262,8 @@ local function new(deps: Deps)
 			local world =
 				World.new({ -- built first: a config error must not leave a Running session without a world
 					stageId = run.stageId,
-					spawnEncounter = deps.playableMvp,
+					stageSpawns = deps.stageFlow,
+					seed = if deps.newSeed then deps.newSeed() else 12345,
 					unitLevels = loaded.unitLevels,
 					heroTraits = loaded.heroTraits, -- copied by World: growth is fixed for the whole match
 				})
@@ -264,6 +272,7 @@ local function new(deps: Deps)
 			session.commandHigh, session.moveSeq, session.moveAxis, session.snapshotSeq = 0, 0, 0, 0
 			session.acks, session.ackOrder, session.pending = {}, {}, {} -- request cache is scoped to one match
 			session.world = world
+			session.result = nil
 			owners[run.matchId] = userId
 			reply(userId, command.requestId, "Committed", nil, {
 				matchId = run.matchId,
@@ -278,15 +287,7 @@ local function new(deps: Deps)
 			return
 		end
 		local kind = command.kind
-		if
-			deps.playableMvp
-			and (
-				kind == "Cast"
-				or kind == "UpgradeUnit"
-				or kind == "AllocatePoint"
-				or (kind == "Summon" and command.slot ~= 1)
-			)
-		then
+		if deps.stageFlow and (kind == "UpgradeUnit" or kind == "AllocatePoint") then
 			reply(userId, command.requestId, "Rejected", "WrongPhase")
 			return
 		end
@@ -314,9 +315,11 @@ local function new(deps: Deps)
 			session.phase, session.matchId, session.stageId, session.runOrdinal =
 				"LobbyReady", nil, nil, nil
 			session.world = nil
+			session.result = nil
 			local profile = deps.profiles.profileOf(userId)
 			reply(userId, command.requestId, "Accepted", nil, {
 				profileRevision = if profile then profile.revision else nil,
+				profileSummary = if profile then ProfileSchema.summary(profile) else nil,
 			})
 		end
 	end
@@ -385,6 +388,12 @@ local function new(deps: Deps)
 			projectiles = if world then World.snapshotProjectiles(world) else {},
 			heroAction = if world then World.snapshotHeroAction(world) else {},
 			outcome = if world then world.outcome else nil,
+			result = session.result,
+			settlementStatus = if session.phase == "Settling"
+				then "Pending"
+				elseif session.phase == "Settled" then "Committed"
+				elseif session.result then "Failed"
+				else nil,
 		}
 	end
 
@@ -413,17 +422,34 @@ local function new(deps: Deps)
 				end
 				if result.outcome then
 					session.phase = "Settling"
-					if deps.playableMvp then
-						deps.profiles.finishRun(
-							userId,
-							session.matchId :: string,
-							result.outcome,
-							function(profile)
-								if sessions[userId] == session and session.phase == "Settling" then
-									session.phase = if profile then "Settled" else "Unavailable"
-								end
+					if deps.stageFlow then
+						local frozen: ServerTypes.MatchResult = {
+							matchId = session.matchId :: string,
+							runOrdinal = session.runOrdinal :: number,
+							stageId = world.stageId,
+							balanceHash = deps.balanceHash,
+							seed = if world.spawner then world.spawner.seed else 12345,
+							outcome = result.outcome,
+							elapsedTicks = world.tick,
+							killCounts = table.clone(world.killCounts),
+							pendingKillGold = world.pendingKillGold,
+							pendingKillXp = world.pendingKillXp,
+						}
+						freezeResult(frozen)
+						session.result = frozen
+						World.clearBattle(world)
+						deps.profiles.finishRun(userId, frozen, function(profile)
+							if sessions[userId] == session and session.phase == "Settling" then
+								local saved = profile and profile.lastRunResult
+								local committed = profile ~= nil
+									and saved ~= nil
+									and saved.matchId == frozen.matchId
+									and saved.ordinal == frozen.runOrdinal
+									and saved.outcome == frozen.outcome
+									and not profile.activeRun
+								session.phase = if committed then "Settled" else "Unavailable"
 							end
-						)
+						end)
 					end
 				end
 			end
@@ -455,6 +481,10 @@ local function new(deps: Deps)
 			return if session then session.world else nil -- server diagnostics/tests only; never replicated
 		end,
 		activeMatches = activeMatches,
+		resultOf = function(userId: number): ServerTypes.MatchResult?
+			local session = sessions[userId]
+			return if session then session.result else nil
+		end,
 	})
 end
 

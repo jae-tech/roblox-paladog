@@ -5,6 +5,7 @@
 -- same busy flag, so a release never races an in-flight write.
 local ServerTypes = require("../ServerTypes")
 local Schema = require("./ProfileSchema")
+local Stages = require("../Config/Generated/Stages")
 
 type ProfileV1 = ServerTypes.ProfileV1
 type Session = ServerTypes.Session
@@ -363,31 +364,55 @@ local function new(deps: Deps)
 		})
 	end
 
-	-- MVP closes the server-owned result without currency, XP or progression rewards.
-	local function finishRun(userId: number, matchId: string, outcome: string, done: Done)
+	-- P6 commits stage completion only. Currency/XP reduction is deliberately deferred to P7.
+	local function finishRun(userId: number, result: ServerTypes.MatchResult, done: Done)
 		local profile = states[userId] and states[userId].profile
-		if not profile or not profile.activeRun then
+		if not profile then
 			done(nil, "WrongPhase")
 			return
 		end
-		local ordinal = profile.activeRun.ordinal
 		enqueue(userId, {
 			kind = "FinishRun",
-			requestId = `finish-{ordinal}-{matchId}`,
+			requestId = `finish-{result.runOrdinal}-{result.matchId}`,
 			expectedRevision = profile.revision,
 			done = done,
 			mutate = function(current)
 				local run = current.activeRun
-				if not run or run.matchId ~= matchId or run.ordinal ~= ordinal then
+				if
+					not run
+					or run.matchId ~= result.matchId
+					or run.ordinal ~= result.runOrdinal
+					or run.stageId ~= result.stageId
+					or run.balanceHash ~= result.balanceHash
+					or current.lastClosedRunOrdinal >= result.runOrdinal
+				then
 					return "WrongPhase"
-				elseif outcome ~= "Victory" and outcome ~= "Defeat" and outcome ~= "Timeout" then
+				elseif
+					result.outcome ~= "Victory"
+					and result.outcome ~= "Defeat"
+					and result.outcome ~= "Timeout"
+				then
 					return "WrongPhase"
 				end
-				current.lastClosedRunOrdinal = ordinal
+				local stage = (Stages :: any)[result.stageId]
+				if
+					result.elapsedTicks % 1 ~= 0
+					or result.elapsedTicks < 1
+					or result.elapsedTicks > stage.timeLimitTicks
+				then
+					return "WrongPhase"
+				end
+				if result.outcome == "Victory" then
+					local progress = current.stageProgress[result.stageId]
+					progress.wins += 1
+					progress.bestTicks =
+						math.min(progress.bestTicks or result.elapsedTicks, result.elapsedTicks)
+				end
+				current.lastClosedRunOrdinal = result.runOrdinal
 				current.lastRunResult = {
-					ordinal = ordinal,
-					matchId = matchId,
-					outcome = outcome :: string,
+					ordinal = result.runOrdinal,
+					matchId = result.matchId,
+					outcome = result.outcome :: string,
 					awardedGold = 0,
 					awardedXp = 0,
 				}

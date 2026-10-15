@@ -1,5 +1,5 @@
 --!strict
--- Actual MVP server composition. No debug remotes, DataStore or publishing APIs.
+-- Session-only stage gameplay. No debug remotes, DataStore or publishing APIs.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -45,6 +45,9 @@ local function start(): any
 		newMatchId = function()
 			return HttpService:GenerateGUID(false)
 		end,
+		newSeed = function()
+			return math.max(1, tonumber(string.sub(HttpService:GenerateGUID(false), 1, 8), 16) or 1)
+		end,
 		balanceHash = catalog.balanceHash,
 		send = function(userId, message)
 			send(userId, "ServerMessage", message)
@@ -52,7 +55,7 @@ local function start(): any
 		maxMatches = protocol.LIMITS.maxMatches,
 		ackCacheSize = protocol.LIMITS.ackCacheSize,
 		moveTtlTicks = protocol.LIMITS.moveTtlTicks,
-		playableMvp = true,
+		stageFlow = true,
 	})
 	local core = RemoteGateway.newCore({
 		protocol = protocol,

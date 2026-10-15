@@ -3,7 +3,7 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "$attributes": { "PlayableMvp": true },
+      "$attributes": { "StageGameplay": true },
       "Shared": {
         "$path": "src/shared"
       }

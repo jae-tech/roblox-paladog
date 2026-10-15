@@ -67,7 +67,7 @@ local function cooldown(ready: number?, tick: number): string
 	return if ticks > 0 then string.format("%.1f초", ticks / 20) else "준비"
 end
 
-local function new(playerGui: PlayerGui, onAction: (string) -> (), playableMvp: boolean?)
+local function new(playerGui: PlayerGui, onAction: (string) -> (), stageGameplay: boolean?)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "LanternExpedition"
 	gui.ResetOnSpawn = false
@@ -100,7 +100,7 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), playableMvp: 
 	local modalText = label(modal, "MenuText", 18, Tokens.text)
 	modalText.Size, modalText.Position = UDim2.new(1, -32, 1, -100), UDim2.fromOffset(16, 16)
 	modalText.Text =
-		"원정 메뉴\n메뉴 중에도 서버 전투는 계속됩니다.\n영구 저장·보상 없음\nA/D 이동 · 1 전위병 소환 · 적 핵 파괴 시 승리"
+		"원정 메뉴\n메뉴 중에도 서버 전투는 계속됩니다.\n서버 메모리 · 영구 저장·보상 없음\nA/D 이동 · 1/2/3 소환 · Q 시전 · 적 핵 파괴 시 승리"
 	modalText.ZIndex = 11
 	local close = button(modal, "CloseMenu", "전투로 돌아가기", Tokens.amber)
 	close.ZIndex = 11
@@ -153,9 +153,6 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), playableMvp: 
 		buttons["Summon" .. slot] =
 			button(controls, "Summon" .. slot, slot .. " · 소환", Tokens.teal)
 	end
-	if playableMvp then
-		buttons.Summon2.Visible, buttons.Summon3.Visible, buttons.Cast.Visible = false, false, false
-	end
 	local folder = Instance.new("Folder")
 	folder.Name, folder.Parent = "LanternClientVisuals", workspace
 	local view, camera = EntityView.new(folder), CameraController.new()
@@ -190,10 +187,6 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), playableMvp: 
 		stageTitle.Position, stageTitle.Size = UDim2.fromOffset(12, 4), UDim2.new(1, -24, 0, 28)
 		stageNote.Position, stageNote.Size = UDim2.fromOffset(12, 32), UDim2.new(1, -24, 0, 28)
 		for slot, item in starts do
-			if playableMvp and slot == 1 then
-				item.Position, item.Size = UDim2.fromOffset(12, 64), UDim2.new(1, -24, 0, 48)
-				continue
-			end
 			if layout.portrait then
 				item.Position, item.Size =
 					UDim2.fromOffset(12, 64 + (slot - 1) * 56), UDim2.new(1, -24, 0, 48)
@@ -246,21 +239,15 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), playableMvp: 
 			)
 			else "영웅 HP —   ·   핵 HP —"
 		resources.Text = if running or model.heroHp ~= nil
-			then if playableMvp
-				then string.format(
-					"식량 %s/%s",
-					milli(model.foodMilli),
-					milli(model.foodMaxMilli or 40000)
-				)
-				else string.format(
-					"식량 %s/%s   ·   마나 %s/%s",
-					milli(model.foodMilli),
-					milli(model.foodMaxMilli or 40000),
-					milli(model.manaMilli),
-					milli(model.manaMaxMilli or 100000)
-				)
+			then string.format(
+				"식량 %s/%s   ·   마나 %s/%s",
+				milli(model.foodMilli),
+				milli(model.foodMaxMilli or 40000),
+				milli(model.manaMilli),
+				milli(model.manaMaxMilli or 100000)
+			)
 			else "식량 —   ·   마나 —"
-		status.Text = if playableMvp
+		status.Text = if stageGameplay
 			then string.format(
 				"%s · %s",
 				model.storage or "서버 메모리",
@@ -282,8 +269,8 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), playableMvp: 
 			then outcomeText or "전투 종료"
 			elseif model.reason then (REASONS[model.reason] or tostring(model.reason))
 			elseif
-				playableMvp and running
-			then "A/D 이동 · 1 전위병(식량 10) · 적 핵 파괴 시 승리"
+				stageGameplay and running
+			then "A/D 이동 · 1/2/3 소환 · Q 시전 · 적 핵 파괴 시 승리"
 			else ""
 		controls.Visible = running
 		stage.Visible = not running
@@ -298,12 +285,19 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), playableMvp: 
 			stageTitle.Text = outcomeText or "전투 종료"
 		end
 		stageNote.Text = if model.phase == "LobbyReady"
-			then (if playableMvp
+			then (if stageGameplay
 				then "서버 메모리 · 영구 저장·보상 없음"
 				else "Mock/InMemory · 영구 저장 아님")
 			else tostring(model.phase or "연결 대기") .. " · " .. tostring(
 				model.network or "대기"
 			)
+		if model.outcome and stageGameplay then
+			stageNote.Text = ({
+				Pending = "결과 기록 중 · 다음 경기 잠금",
+				Committed = "기록 완료 · 영구 저장·보상 없음",
+				Failed = "기록 실패 · 다음 경기 잠금",
+			})[model.settlementStatus] or "결과 확인 중"
+		end
 		local catalog = model.catalog or {}
 		local progress = model.stageProgress or {}
 		for slot, item in starts do
@@ -322,9 +316,9 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), playableMvp: 
 			item.Active, item.Selectable =
 				model.phase == "LobbyReady" and unlocked, model.phase == "LobbyReady" and unlocked
 			item.TextColor3 = if item.Active then Tokens.text else Tokens.muted
-			item.Visible = (not playableMvp or slot == 1) and not model.outcome
+			item.Visible = not model.outcome
 		end
-		retry.Visible = playableMvp == true and model.phase == "Settled"
+		retry.Visible = stageGameplay == true and model.phase == "Settled"
 		for slot, id in ORDER do
 			local def = (catalog.units or {})[id] or {}
 			local item = buttons["Summon" .. slot] :: TextButton
