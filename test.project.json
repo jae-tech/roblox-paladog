@@ -1,0 +1,48 @@
+{
+  "name": "LanternExpeditionTest",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      },
+      "$attributes": {
+        "P0TestBuild": true
+      }
+    },
+    "ServerScriptService": {
+      "GameServer": {
+        "$path": "src/server"
+      },
+      "TestSupport": {
+        "$path": "test-support",
+        "Tests": {
+          "$path": "tests"
+        }
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "GameClient": {
+          "$path": "src/client"
+        },
+        "TestSupport": {
+          "$className": "Folder",
+          "ClientHarness": {
+            "$path": "test-support-client/ClientHarness.luau"
+          }
+        }
+      }
+    },
+    "Workspace": {
+      "Environment": {
+        "$className": "Folder"
+      }
+    },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": false
+      }
+    }
+  }
+}

@@ -1,5 +1,6 @@
 # Local OMX runtime and verification artifacts
 .omx/
+.omc/
 artifacts/
 
 # Research-only original binaries/assets are never release inputs
@@ -21,3 +22,10 @@ reference/
 *.pfx
 .DS_Store
 Thumbs.db
+
+# Reproducible local tool cache and Python caches
+.tools/
+__pycache__/
+*.pyc
+*.rbxl
+*.rbxlx

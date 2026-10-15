@@ -1,0 +1,23 @@
+{
+  "platform": "Darwin-arm64",
+  "assets": [
+    {
+      "name": "luau",
+      "version": "0.742",
+      "url": "https://github.com/luau-lang/luau/releases/download/0.742/luau-macos.zip",
+      "sha256": "bdd415766fbe03bc090b65fa6141531a4a54608db95a5350a5a0b49862bdac83"
+    },
+    {
+      "name": "stylua",
+      "version": "2.6.0",
+      "url": "https://github.com/JohnnyMorganz/StyLua/releases/download/v2.6.0/stylua-macos-aarch64.zip",
+      "sha256": "dab9b66d340ca5ffc8225211f1dcf89b84783e09b8cbec8c518497eba81f3c42"
+    },
+    {
+      "name": "roblox-types",
+      "version": "luau-lsp-1.70.1",
+      "url": "https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/0382dc76ca9b73df3c8e7c9cd85a8dd493cbd0ae/scripts/globalTypes.d.luau",
+      "sha256": "2857efa8245485f8c25c19c018ee1ef9b46afab4efd2ea70fc3257cd3faf7080"
+    }
+  ]
+}

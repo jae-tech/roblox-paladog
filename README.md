@@ -1,7 +1,9 @@
 # 등불 원정 — Roblox 게임 설계 (가칭)
 
 Paladog의 메커니즘을 참고하는 **오리지널 2.5D 횡스크롤 전략 액션** 프로젝트입니다.
-현재는 설계·구현 계획 단계이며 Luau 게임, Rojo 프로젝트, 데이터 변환기와 실행 테스트는 아직 구현되지 않았습니다.
+현재 P0 로컬 기반(Rojo production/test tree, strict bootstrap, assert runner·mock fixtures·품질 gate)을 구현했습니다. Studio MCP로 승인된 테스트 universe에서 실제 server/client boot와 harness 실행을 검증해 full gate가 PASS입니다(P0.1 Git 정책 미확정, production 런타임 require 확인은 정적 audit으로 대체). **게임/MVP가 완성된 상태가 아닙니다.** 데이터 변환과 P1~P9는 아직 시작하지 않았습니다.
+
+재현 명령·도구 버전·승인 경계·미검증 항목은 [개발 안내](docs/DEVELOPMENT.md)를 확인하세요. `python3 tools/verify_p0.py --local-only`는 로컬 검사이며, `python3 tools/verify_p0.py --studio-evidence <json>`은 MCP로 수집한 Studio 증거를 검증하며, 증거가 없으면 exit2/BLOCKED입니다.
 
 ## 설계 문서
 
