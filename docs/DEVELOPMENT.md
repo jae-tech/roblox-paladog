@@ -18,7 +18,7 @@ python3 tools/verify_p0.py --studio-evidence artifacts/P0/studio/<file>.json  # 
 
 `rokit.toml`: Rojo7.7.1, selene0.32.0, luau-lsp1.70.1. `tools/toolchain-lock.json`: Luau0.742, StyLua2.6.0, 고정 Roblox 타입 정의 다운로드 URL/SHA256. 설치 위치는 무시되는 `.tools/`뿐이다. LSP 내장 Luau는 CLI0.742와 다른 버전(c0e346edd89066b44dca174c9f54ce84c746a540)이므로 두 분석을 분리한다. 캐시/도구 누락은 BLOCKED, 검사 오류는 FAIL; 조용히 skip하지 않는다. Luau/LSP `--formatter=plain`은 오류에도 exit0인 버전 특성이 있어 사용하지 않는다. 의도적 타입 오류의 nonzero도 매번 검사한다.
 
-신규 commit이 없는 현재 상태에서 clean committed checkout 재현은 NOT_RUN이다. 별도로 로컬 fresh clone + 미커밋 P0 소스 snapshot overlay + 공유 pinned tool cache로 로컬 gate PASS를 검증했고 `artifacts/P0/snapshot-reproduction/`에 로그/보고서를 남겼다. 이는 실제 Studio 테스트나 커밋된 checkout 검증을 대신하지 않는다.
+2026-10-15 commit `dea9708`(branch `p0-foundation`)을 새로 clone해 `setup_tools.py`로 도구를 처음부터 받은 뒤 `--local-only` PASS, `--studio-evidence` PASS/P0Complete=true를 재현했다(gate 자체의 `cleanCheckoutReproduction` 필드는 자동 판별하지 않아 NOT_RUN으로 남는다). 이전 기록: 별도로 로컬 fresh clone + 미커밋 P0 소스 snapshot overlay + 공유 pinned tool cache로 로컬 gate PASS를 검증했고 `artifacts/P0/snapshot-reproduction/`에 로그/보고서를 남겼다. 이는 실제 Studio 테스트나 커밋된 checkout 검증을 대신하지 않는다.
 
 실행별 `artifacts/P0/<UTC runId>/`에 report/toolchain/environment, CLI JSON/raw log, 분석/lint/format/build 로그와 `production.rbxlx`, `test.rbxlx`를 남긴다. CLI intentional failure는 JSON FAIL + process exit1이 **기대 동작**이며 상위 gate는 이 둘을 확인한다. 종료코드0=해당 scope 검증 통과, 1=FAIL, 2=BLOCKED. 테스트 개수0은 실패다. gate는 Studio를 직접 구동하지 못한다. MCP로 수집한 `p0-studio-evidence/1` JSON을 `--studio-evidence`로 넘기면 TestPolicy allowlist(GameId≠0), sourcemap 기준 소스 바이트 길이 일치, server/client boot marker, 캐릭터 미생성, `ServerHarness` 정상 PASS·의도적 FAIL·미지원 suite 거부, client oracle을 검사한다. 하나라도 어긋나면 FAIL(exit1)이다.
 

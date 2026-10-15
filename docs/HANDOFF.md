@@ -60,6 +60,8 @@ python3 tools/verify_p0.py  # 현재 runtime 미검증은 exit 2
 
 고정 버전: Rojo 7.7.1, selene 0.32.0, luau-lsp 1.70.1 (`rokit.toml`), Luau CLI 0.742, StyLua 2.6.0, 고정 Roblox 타입 정의 (`tools/toolchain-lock.json`, URL/SHA256 포함). 설치는 `.tools/`와 기존 rokit 도구 사용 범위다. Python 외부 패키지/테스트 패키지를 추가하지 않았다. 자세한 정책은 [DEVELOPMENT](DEVELOPMENT.md)를 읽는다.
 
+clean checkout 재현: commit `dea9708`을 새로 clone해 도구 설치부터 local PASS, full gate PASS/P0Complete=true 확인.
+
 ## 다음 작업
 
 1. 검토자가 위 증거로 P0 완료 조건을 확인한다.
