@@ -84,6 +84,16 @@ export type ProfileSummary = {
 	heroTraits: { vitality: number, provisions: number, focus: number },
 	unitLevels: { vanguard: number, slinger: number, bulwark: number },
 	stageProgress: { [string]: StageProgress },
+	unlockedStages: { [string]: boolean }?,
+	unitUpgradeCosts: { [string]: number }?,
+	nextLevelXp: number?,
+	lastRunResult: {
+		ordinal: number,
+		matchId: string,
+		outcome: string,
+		awardedGold: number,
+		awardedXp: number,
+	}?,
 }
 
 -- Complete owner-facing simulation snapshot. Projectile damage/reservations stay server-only.
@@ -126,6 +136,9 @@ export type MatchSnapshot = {
 		pendingKillXp: number,
 	}?,
 	settlementStatus: ("Pending" | "Committed" | "Failed")?,
+	profileRevision: number?,
+	profileSummary: ProfileSummary?,
+	rewards: { gold: number, xp: number }?,
 }
 
 export type BootstrapStatus =

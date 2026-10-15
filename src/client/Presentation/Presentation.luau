@@ -5,6 +5,7 @@ local CameraController = require("./CameraController")
 local EntityView = require("./EntityView")
 
 local ORDER = { "vanguard", "slinger", "bulwark" }
+local TRAITS = { "vitality", "provisions", "focus" }
 local REASONS: { [string]: string } = {
 	InsufficientFood = "식량이 부족합니다",
 	InsufficientMana = "마나가 부족합니다",
@@ -22,6 +23,10 @@ local REASONS: { [string]: string } = {
 	StorageUnavailable = "저장소를 사용할 수 없습니다",
 	ProtocolMismatch = "버전이 달라 연결할 수 없습니다",
 	InvalidPhase = "현재 상태에서는 사용할 수 없습니다",
+	InsufficientGold = "골드가 부족합니다",
+	NoPoints = "사용할 특성 포인트가 없습니다",
+	MaxLevel = "최대 레벨입니다",
+	StaleRevision = "최신 보유량으로 갱신했습니다. 다시 선택하세요",
 }
 
 local function bounds(gui: GuiObject, rect: Layout.Rect)
@@ -100,11 +105,34 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), stageGameplay
 	local modalText = label(modal, "MenuText", 18, Tokens.text)
 	modalText.Size, modalText.Position = UDim2.new(1, -32, 1, -100), UDim2.fromOffset(16, 16)
 	modalText.Text =
-		"원정 메뉴\n메뉴 중에도 서버 전투는 계속됩니다.\n서버 메모리 · 영구 저장·보상 없음\nA/D 이동 · 1/2/3 소환 · Q 시전 · 적 핵 파괴 시 승리"
+		"원정 메뉴\n메뉴 중에도 서버 전투는 계속됩니다.\n임시 보상은 승리 기록 후 반영됩니다.\nA/D 이동 · 1/2/3 소환 · Q 시전"
 	modalText.ZIndex = 11
 	local close = button(modal, "CloseMenu", "전투로 돌아가기", Tokens.amber)
 	close.ZIndex = 11
 	close.Size, close.Position = UDim2.new(1, -32, 0, 48), UDim2.new(0, 16, 1, -64)
+	local growth = Instance.new("ScrollingFrame")
+	growth.Name, growth.BackgroundTransparency, growth.BorderSizePixel = "Growth", 1, 0
+	growth.Position, growth.Size = UDim2.fromOffset(16, 88), UDim2.new(1, -32, 1, -168)
+	growth.CanvasSize, growth.ScrollBarThickness = UDim2.fromOffset(0, 384), 4
+	growth.ZIndex, growth.Visible, growth.Parent = 11, false, modal
+	local growthButtons: { [string]: TextButton } = {}
+	for index = 1, 6 do
+		local action = if index <= 3
+			then "Upgrade_" .. ORDER[index]
+			else "Trait_" .. TRAITS[index - 3]
+		local item = button(growth, action, "서버 프로필 대기", Tokens.teal)
+		item.Position, item.Size = UDim2.fromOffset(0, (index - 1) * 64), UDim2.new(1, -8, 0, 56)
+		item.ZIndex, item.TextSize = 12, 13
+		growthButtons[action] = item
+		table.insert(
+			connections,
+			item.Activated:Connect(function()
+				if item.Active and model.phase == "LobbyReady" then
+					onAction(action)
+				end
+			end)
+		)
+	end
 	table.insert(
 		connections,
 		menu.Activated:Connect(function()
@@ -127,6 +155,8 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), stageGameplay
 			connections,
 			item.Activated:Connect(function()
 				if item.Active and model.phase == "LobbyReady" then
+					modal.Visible = false
+					onAction("CloseMenu")
 					onAction("Start_" .. stageId)
 				end
 			end)
@@ -206,8 +236,10 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), stageGameplay
 				layout.width - 32,
 				if layout.compact and not layout.portrait then 20 else 28
 			)
-		modal.Size =
-			UDim2.fromOffset(math.min(360, layout.width - 32), math.min(240, layout.height - 32))
+		modal.Size = UDim2.fromOffset(
+			math.min(360, layout.width - 32),
+			math.min(if model.phase == "LobbyReady" then 520 else 240, layout.height - 32)
+		)
 		modal.Position = UDim2.fromOffset(
 			(layout.width - modal.Size.X.Offset) / 2,
 			(layout.height - modal.Size.Y.Offset) / 2
@@ -220,6 +252,63 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), stageGameplay
 		end
 		model = nextModel
 		local running = model.phase == "Running"
+		local lobby = model.phase == "LobbyReady"
+		local profile = model.profileSummary or {}
+		growth.Visible = lobby
+		menu.Text, close.Text =
+			if lobby then "성장" else "메뉴",
+			if lobby then "닫기" else "전투로 돌아가기"
+		modalText.Size, modalText.TextSize =
+			if lobby then UDim2.new(1, -32, 0, 68) else UDim2.new(1, -32, 1, -100),
+			if lobby then 14 else 18
+		modalText.Text = if lobby
+			then string.format(
+				"성장 · %dG · Lv.%d\n누적 XP %d/%s · 남은 포인트 %d\n%s",
+				profile.gold or 0,
+				profile.heroLevel or 1,
+				profile.totalXp or 0,
+				tostring(profile.nextLevelXp or "MAX"),
+				profile.unspentPoints or 0,
+				if model.profileBusy
+					then "서버 처리 중…"
+					else "변경은 다음 원정부터 적용 · 서버 메모리"
+			)
+			else "원정 메뉴\n메뉴 중에도 서버 전투는 계속됩니다.\n임시 보상은 승리 기록 후 반영됩니다.\nA/D 이동 · 1/2/3 소환 · Q 시전"
+		for _, id in ORDER do
+			local item = growthButtons["Upgrade_" .. id]
+			local def = ((model.catalog or {}).units or {})[id] or {}
+			local cost = (profile.unitUpgradeCosts or {})[id]
+			item.Text = string.format(
+				"%s Lv.%d · %s",
+				def.displayName or id,
+				(profile.unitLevels or {})[id] or 1,
+				if cost then string.format("강화 %dG", cost) else "최고 레벨"
+			)
+			item.Active = lobby
+				and not model.profileBusy
+				and cost ~= nil
+				and (profile.gold or 0) >= cost
+			item.Selectable, item.AutoButtonColor = item.Active, item.Active
+			item.TextColor3 = if item.Active then Tokens.text else Tokens.muted
+		end
+		for _, id in TRAITS do
+			local item = growthButtons["Trait_" .. id]
+			local def = ((model.catalog or {}).traits or {})[id] or {}
+			local points = (profile.heroTraits or {})[id] or 0
+			item.Text = string.format(
+				"%s %d/%d · +1 포인트\n%s",
+				def.displayName or id,
+				points,
+				def.maxPoints or 3,
+				def.description or ""
+			)
+			item.Active = lobby
+				and not model.profileBusy
+				and (profile.unspentPoints or 0) > 0
+				and points < (def.maxPoints or 3)
+			item.Selectable, item.AutoButtonColor = item.Active, item.Active
+			item.TextColor3 = if item.Active then Tokens.text else Tokens.muted
+		end
 		local tick = model.tick or 0
 		local seconds = math.floor(tick / 20)
 		title.Text = if model.tick ~= nil
@@ -247,11 +336,26 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), stageGameplay
 				milli(model.manaMaxMilli or 100000)
 			)
 			else "식량 —   ·   마나 —"
+		if lobby and model.profileSummary then
+			hp.Text = string.format(
+				"Lv.%d · 누적 XP %d/%s · 남은 포인트 %d",
+				profile.heroLevel or 1,
+				profile.totalXp or 0,
+				tostring(profile.nextLevelXp or "MAX"),
+				profile.unspentPoints or 0
+			)
+			resources.Text = string.format(
+				"보유 골드 %dG · 성장 변경은 다음 원정부터",
+				profile.gold or 0
+			)
+		end
 		status.Text = if stageGameplay
 			then string.format(
-				"%s · %s",
+				"%s · %s | 임시 %dG / %dXP",
 				model.storage or "서버 메모리",
-				model.network or "연결 대기"
+				model.network or "연결 대기",
+				model.pendingKillGold or 0,
+				model.pendingKillXp or 0
 			)
 			else string.format(
 				"%s · %s | 잠정 보상 %dG / %dXP",
@@ -286,7 +390,9 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), stageGameplay
 		end
 		stageNote.Text = if model.phase == "LobbyReady"
 			then (if stageGameplay
-				then "서버 메모리 · 영구 저장·보상 없음"
+				then (if model.profileBusy
+					then "서버 처리 중 · 원정 시작 잠금"
+					else "우측 상단 성장 · 서버 종료 시 초기화")
 				else "Mock/InMemory · 영구 저장 아님")
 			else tostring(model.phase or "연결 대기") .. " · " .. tostring(
 				model.network or "대기"
@@ -294,7 +400,13 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), stageGameplay
 		if model.outcome and stageGameplay then
 			stageNote.Text = ({
 				Pending = "결과 기록 중 · 다음 경기 잠금",
-				Committed = "기록 완료 · 영구 저장·보상 없음",
+				Committed = if model.rewards
+					then string.format(
+						"기록 완료 · +%dG / +%dXP · 서버 메모리",
+						model.rewards.gold,
+						model.rewards.xp
+					)
+					else "기록 완료 · 서버 메모리",
 				Failed = "기록 실패 · 다음 경기 잠금",
 			})[model.settlementStatus] or "결과 확인 중"
 		end
@@ -304,8 +416,10 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), stageGameplay
 			local id = string.format("s%02d", slot)
 			local previous = string.format("s%02d", slot - 1)
 			local previousProgress = progress[previous]
-			local unlocked = slot == 1
-				or (type(previousProgress) == "table" and (previousProgress.wins or 0) > 0)
+			local unlocked = if profile.unlockedStages
+				then profile.unlockedStages[id]
+				else slot == 1
+					or (type(previousProgress) == "table" and (previousProgress.wins or 0) > 0)
 			local def = (catalog.stages or {})[id] or {}
 			item.Text = string.format(
 				"%02d  %s%s",
@@ -314,7 +428,16 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), stageGameplay
 				if unlocked then "" else " · 잠김"
 			)
 			item.Active, item.Selectable =
-				model.phase == "LobbyReady" and unlocked, model.phase == "LobbyReady" and unlocked
+				lobby and unlocked and not model.profileBusy,
+				lobby and unlocked and not model.profileBusy
+			local record = progress[id]
+			if record and record.wins > 0 then
+				item.Text ..= string.format(
+					"\n승리 %d · 최고 %.1f초",
+					record.wins,
+					(record.bestTicks or 0) / 20
+				)
+			end
 			item.TextColor3 = if item.Active then Tokens.text else Tokens.muted
 			item.Visible = not model.outcome
 		end
@@ -429,6 +552,7 @@ local function new(playerGui: PlayerGui, onAction: (string) -> (), stageGameplay
 			reasonText = message.Text,
 			stageVisible = stage.Visible,
 			menuVisible = modal.Visible,
+			growthVisible = modal.Visible and growth.Visible,
 			rotateHintVisible = rotate.Visible,
 			entities = view.inspect(),
 			visualCount = #folder:GetDescendants(),

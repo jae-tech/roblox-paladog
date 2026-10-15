@@ -207,13 +207,28 @@ local function validate(value: any, receiptCap: number?): (boolean, string?)
 	return true, nil
 end
 
+local function upgradeCost(unitId: string, currentLevel: number): number?
+	local unit = (Units :: any)[unitId]
+	local nextLevel = unit and unit.levels[currentLevel + 1]
+	return nextLevel and nextLevel.purchaseCostGold
+end
+
 local function summary(profile: ProfileV1)
 	local stageProgress = {}
+	local unlockedStages: { [string]: boolean } = {}
+	local unitUpgradeCosts: { [string]: number } = {}
 	for _, id in STAGE_IDS do
 		stageProgress[id] = {
 			wins = profile.stageProgress[id].wins,
 			bestTicks = profile.stageProgress[id].bestTicks,
 		}
+		unlockedStages[id] = isUnlocked(profile, id)
+	end
+	for _, id in UNIT_IDS do
+		local cost = upgradeCost(id, profile.unitLevels[id])
+		if cost then
+			unitUpgradeCosts[id] = cost
+		end
 	end
 	return {
 		gold = profile.gold,
@@ -223,6 +238,12 @@ local function summary(profile: ProfileV1)
 		heroTraits = table.clone(profile.heroTraits),
 		unitLevels = table.clone(profile.unitLevels),
 		stageProgress = stageProgress,
+		unlockedStages = unlockedStages,
+		unitUpgradeCosts = unitUpgradeCosts,
+		nextLevelXp = if profile.heroLevel < progression.heroLevelCap
+			then progression.xpCurveBase * profile.heroLevel * profile.heroLevel
+			else nil,
+		lastRunResult = if profile.lastRunResult then table.clone(profile.lastRunResult) else nil,
 	}
 end
 
@@ -235,12 +256,6 @@ local function deepClone(value: any): any
 		copy[key] = deepClone(item)
 	end
 	return copy
-end
-
-local function upgradeCost(unitId: string, currentLevel: number): number?
-	local unit = (Units :: any)[unitId]
-	local nextLevel = unit and unit.levels[currentLevel + 1]
-	return nextLevel and nextLevel.purchaseCostGold
 end
 
 return table.freeze({

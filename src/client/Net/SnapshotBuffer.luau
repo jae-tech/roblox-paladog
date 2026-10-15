@@ -51,6 +51,19 @@ local function valid(snapshot: any, hash: string): boolean
 	if type(snapshot.resources) ~= "table" then
 		return false
 	end
+	if snapshot.profileRevision ~= nil and not integer(snapshot.profileRevision) then
+		return false
+	end
+	if
+		snapshot.rewards ~= nil
+		and (
+			type(snapshot.rewards) ~= "table"
+			or not integer(snapshot.rewards.gold)
+			or not integer(snapshot.rewards.xp)
+		)
+	then
+		return false
+	end
 	for _, key in { "foodMilli", "manaMilli" } do
 		if not integer(snapshot.resources[key]) then
 			return false

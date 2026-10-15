@@ -5,7 +5,8 @@
 -- same busy flag, so a release never races an in-flight write.
 local ServerTypes = require("../ServerTypes")
 local Schema = require("./ProfileSchema")
-local Stages = require("../Config/Generated/Stages")
+local Growth = require("./ProgressionService")
+local ResultReducer = require("../Simulation/ResultReducer")
 
 type ProfileV1 = ServerTypes.ProfileV1
 type Session = ServerTypes.Session
@@ -323,18 +324,7 @@ local function new(deps: Deps)
 			expectedRevision = op.expectedRevision,
 			done = done,
 			mutate = function(profile: ProfileV1): string?
-				local level = profile.unitLevels[op.unitId]
-				local cost = Schema.upgradeCost(op.unitId, level)
-				if profile.activeRun then
-					return "WrongPhase"
-				elseif level >= Schema.unitMaxLevel or cost == nil then
-					return "MaxLevel"
-				elseif profile.gold < cost then
-					return "InsufficientGold"
-				end
-				profile.gold -= cost
-				profile.unitLevels[op.unitId] = level + 1
-				return nil
+				return Growth.upgradeUnit(profile, op.unitId)
 			end,
 		})
 	end
@@ -350,21 +340,12 @@ local function new(deps: Deps)
 			expectedRevision = op.expectedRevision,
 			done = done,
 			mutate = function(profile: ProfileV1): string?
-				if profile.activeRun then
-					return "WrongPhase"
-				elseif profile.unspentPoints < 1 then
-					return "NoPoints"
-				elseif profile.heroTraits[op.traitId] >= Schema.maxTraitPoints(op.traitId) then
-					return "MaxLevel"
-				end
-				profile.unspentPoints -= 1
-				profile.heroTraits[op.traitId] += 1
-				return nil
+				return Growth.allocatePoint(profile, op.traitId)
 			end,
 		})
 	end
 
-	-- P6 commits stage completion only. Currency/XP reduction is deliberately deferred to P7.
+	-- One transaction closes the run and applies rewards/growth/progression together.
 	local function finishRun(userId: number, result: ServerTypes.MatchResult, done: Done)
 		local profile = states[userId] and states[userId].profile
 		if not profile then
@@ -377,46 +358,15 @@ local function new(deps: Deps)
 			expectedRevision = profile.revision,
 			done = done,
 			mutate = function(current)
-				local run = current.activeRun
-				if
-					not run
-					or run.matchId ~= result.matchId
-					or run.ordinal ~= result.runOrdinal
-					or run.stageId ~= result.stageId
-					or run.balanceHash ~= result.balanceHash
-					or current.lastClosedRunOrdinal >= result.runOrdinal
-				then
-					return "WrongPhase"
-				elseif
-					result.outcome ~= "Victory"
-					and result.outcome ~= "Defeat"
-					and result.outcome ~= "Timeout"
-				then
-					return "WrongPhase"
+				local reduced, reason = ResultReducer.reduce(current, result)
+				if not reduced then
+					return reason
 				end
-				local stage = (Stages :: any)[result.stageId]
-				if
-					result.elapsedTicks % 1 ~= 0
-					or result.elapsedTicks < 1
-					or result.elapsedTicks > stage.timeLimitTicks
-				then
-					return "WrongPhase"
-				end
-				if result.outcome == "Victory" then
-					local progress = current.stageProgress[result.stageId]
-					progress.wins += 1
-					progress.bestTicks =
-						math.min(progress.bestTicks or result.elapsedTicks, result.elapsedTicks)
-				end
-				current.lastClosedRunOrdinal = result.runOrdinal
-				current.lastRunResult = {
-					ordinal = result.runOrdinal,
-					matchId = result.matchId,
-					outcome = result.outcome :: string,
-					awardedGold = 0,
-					awardedXp = 0,
-				}
-				current.activeRun = nil
+				current.gold, current.totalXp = reduced.gold, reduced.totalXp
+				current.heroLevel, current.unspentPoints = reduced.heroLevel, reduced.unspentPoints
+				current.stageProgress = reduced.stageProgress
+				current.lastClosedRunOrdinal = reduced.lastClosedRunOrdinal
+				current.lastRunResult, current.activeRun = reduced.lastRunResult, nil
 				return nil
 			end,
 		})

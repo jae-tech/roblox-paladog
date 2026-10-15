@@ -1,5 +1,5 @@
 --!strict
--- Per-owner admission and P6 stage/result flow. Currency/XP rewards remain P7 work.
+-- Per-owner admission, stage/result flow and atomic progression command boundaries.
 local ProfileService = require("./ProfileService")
 local ProfileSchema = require("./ProfileSchema")
 local ServerTypes = require("../ServerTypes")
@@ -209,20 +209,22 @@ local function new(deps: Deps)
 			reply(userId, command.requestId, "Rejected", "WrongPhase")
 			return
 		end
+		reply(userId, command.requestId, "Pending")
 		start(function(profile, reason)
 			if sessions[userId] ~= session then
 				return
 			end
 			if profile then
-				reply(
-					userId,
-					command.requestId,
-					"Committed",
-					nil,
-					{ profileRevision = profile.revision }
-				)
+				reply(userId, command.requestId, "Committed", nil, {
+					profileRevision = profile.revision,
+					profileSummary = ProfileSchema.summary(profile),
+				})
 			else
-				reply(userId, command.requestId, "Rejected", reason)
+				local current = deps.profiles.profileOf(userId)
+				reply(userId, command.requestId, "Rejected", reason, {
+					profileRevision = if current then current.revision else nil,
+					profileSummary = if current then ProfileSchema.summary(current) else nil,
+				})
 			end
 		end)
 	end
@@ -287,10 +289,6 @@ local function new(deps: Deps)
 			return
 		end
 		local kind = command.kind
-		if deps.stageFlow and (kind == "UpgradeUnit" or kind == "AllocatePoint") then
-			reply(userId, command.requestId, "Rejected", "WrongPhase")
-			return
-		end
 		if kind == "Summon" or kind == "Cast" then
 			battleCommand(userId, session, command)
 		elseif kind == "StartStage" then
@@ -360,6 +358,10 @@ local function new(deps: Deps)
 		end
 		session.snapshotSeq += 1
 		local world = session.world
+		local committedProfile = if session.phase == "Settled"
+			then deps.profiles.profileOf(userId)
+			else nil
+		local ledger = if committedProfile then committedProfile.lastRunResult else nil
 		return {
 			matchId = session.matchId,
 			snapshotSeq = session.snapshotSeq,
@@ -389,6 +391,15 @@ local function new(deps: Deps)
 			heroAction = if world then World.snapshotHeroAction(world) else {},
 			outcome = if world then world.outcome else nil,
 			result = session.result,
+			profileRevision = if committedProfile then committedProfile.revision else nil,
+			profileSummary = if committedProfile
+				then ProfileSchema.summary(committedProfile)
+				else nil,
+			rewards = if ledger
+					and ledger.matchId == session.matchId
+					and ledger.ordinal == session.runOrdinal
+				then { gold = ledger.awardedGold, xp = ledger.awardedXp }
+				else nil,
 			settlementStatus = if session.phase == "Settling"
 				then "Pending"
 				elseif session.phase == "Settled" then "Committed"

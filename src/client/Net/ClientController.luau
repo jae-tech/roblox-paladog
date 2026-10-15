@@ -33,6 +33,16 @@ local function new(deps: Deps)
 	local preparingAt = 0
 	local correction, correctionAt = 0, 0
 	local renderedHero: number? = nil
+	local function applyProfile(revision: any, summary: any)
+		if type(revision) ~= "number" or revision % 1 ~= 0 or revision < state.profileRevision then
+			return
+		end
+		state.profileRevision = revision
+		if type(summary) == "table" then
+			state.profileSummary = summary
+			state.stageProgress = summary.stageProgress or {}
+		end
+	end
 	local function switchMatch(id: string?, now: number)
 		if state.matchId ~= id then
 			epoch += 1
@@ -87,6 +97,7 @@ local function new(deps: Deps)
 		end
 		lastSnapshot = now
 		state.phase = payload.phase
+		applyProfile(payload.profileRevision, payload.profileSummary)
 		state.moveSeq = math.max(state.moveSeq, payload.inputAckSeq)
 		state.commandSeq = math.max(state.commandSeq, payload.commandAckSeq or 0)
 		local keep = {}
@@ -137,11 +148,10 @@ local function new(deps: Deps)
 			return false
 		end
 		state.reason = nil
-		if (payload.profileRevision or 0) >= state.profileRevision then
-			state.profileRevision = payload.profileRevision or state.profileRevision
-			state.stageProgress = if payload.profileSummary
-				then payload.profileSummary.stageProgress
-				else {}
+		applyProfile(payload.profileRevision or 0, payload.profileSummary)
+		if state.profileRequest and now - state.profileBusyAt >= 3 then
+			-- Release only the UI wait after an authoritative read, not the server transaction.
+			state.profileRequest = nil
 		end
 		local snapshot = payload.currentMatch
 		if snapshot then
@@ -153,10 +163,13 @@ local function new(deps: Deps)
 		end
 		return true
 	end
-	local function sendCommand(payload: any)
+	local function sendCommand(payload: any, now: number?)
 		local id = deps.requestId()
 		payload.protocolVersion, payload.requestId = deps.protocol.VERSION, id
 		pending[id] = { kind = payload.kind, matchId = payload.matchId, epoch = epoch }
+		if payload.kind == "UpgradeUnit" or payload.kind == "AllocatePoint" then
+			state.profileRequest, state.profileBusyAt = id, now or 0
+		end
 		table.insert(order, id)
 		if #order > 128 then
 			local expired = table.remove(order, 1)
@@ -177,9 +190,32 @@ local function new(deps: Deps)
 			sendCommand({ kind = "ReturnToLobby", matchId = state.matchId })
 			return true
 		end
+		local upgrade = if string.sub(name, 1, 8) == "Upgrade_" then string.sub(name, 9) else nil
+		local trait = if string.sub(name, 1, 6) == "Trait_" then string.sub(name, 7) else nil
+		if upgrade or trait then
+			if
+				state.phase ~= "LobbyReady"
+				or state.profileRequest
+				or (upgrade and not deps.catalog.units[upgrade])
+				or (trait and not deps.catalog.traits[trait])
+			then
+				return false
+			end
+			sendCommand({
+				kind = if upgrade then "UpgradeUnit" else "AllocatePoint",
+				unitId = upgrade,
+				traitId = trait,
+				expectedRevision = state.profileRevision,
+			}, now)
+			return true
+		end
 		if string.sub(name, 1, 6) == "Start_" then
 			local stage = string.sub(name, 7)
-			if state.phase ~= "LobbyReady" or not deps.catalog.stages[stage] then
+			if
+				state.phase ~= "LobbyReady"
+				or state.profileRequest
+				or not deps.catalog.stages[stage]
+			then
 				return false
 			end
 			sendCommand({
@@ -225,11 +261,9 @@ local function new(deps: Deps)
 			return false
 		end
 		state.reason = message.reason
-		if message.profileRevision and message.profileRevision >= state.profileRevision then
-			state.profileRevision = message.profileRevision
-			if message.profileSummary then
-				state.stageProgress = message.profileSummary.stageProgress
-			end
+		applyProfile(message.profileRevision, message.profileSummary)
+		if state.profileRequest == message.requestId and message.status ~= "Pending" then
+			state.profileRequest = nil
 		end
 		if command.kind == "StartStage" then
 			if message.status == "Committed" and type(message.matchId) == "string" then
@@ -281,6 +315,8 @@ local function new(deps: Deps)
 			storage = state.storage,
 			profileRevision = state.profileRevision,
 			stageProgress = state.stageProgress,
+			profileSummary = state.profileSummary,
+			profileBusy = state.profileRequest ~= nil,
 			catalog = deps.catalog,
 			reason = state.reason,
 			matchId = state.matchId,
@@ -294,6 +330,7 @@ local function new(deps: Deps)
 		if snapshot then
 			m.tick, m.heroAction, m.outcome = snapshot.tick, snapshot.heroAction, snapshot.outcome
 			m.result, m.settlementStatus = snapshot.result, snapshot.settlementStatus
+			m.rewards = snapshot.rewards
 			for k, v in snapshot.resources or {} do
 				m[k] = v
 			end
@@ -341,6 +378,7 @@ local function new(deps: Deps)
 				and now >= nextBootstrap
 				and (
 					state.phase == "ProfileLoading"
+					or (state.profileRequest ~= nil and now - state.profileBusyAt >= 3)
 					or (state.phase == "Preparing" and now - preparingAt >= 1)
 					or (state.matchId ~= nil and now - matchStarted >= 1 and buffer.age(now) >= 1)
 				)

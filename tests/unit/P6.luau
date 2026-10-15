@@ -242,12 +242,8 @@ return function(env: any, check: any)
 	check("snapshot-committed", "Committed", match.snapshot(1).settlementStatus, tick)
 	check("wins-once", 1, profiles.profileOf(1).stageProgress.s01.wins, tick)
 	check("result-revision-once", 2, profiles.profileOf(1).revision, tick)
-	check(
-		"no-p7-currency-or-xp",
-		0,
-		profiles.profileOf(1).gold + profiles.profileOf(1).totalXp,
-		tick
-	)
+	check("committed-victory-gold", 218, profiles.profileOf(1).gold, tick)
+	check("committed-victory-xp", 72, profiles.profileOf(1).totalXp, tick)
 	command("ReturnToLobby")
 	check("lobby-after-commit", "LobbyReady", match.phaseOf(1), tick)
 	check(
