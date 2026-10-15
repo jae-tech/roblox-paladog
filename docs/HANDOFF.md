@@ -148,6 +148,8 @@ P0의 GameId0 guard 음성 대조는 **1052Z 결과를 이월**했다. Guard/Tes
 
 위 증거는 현재 Windows checkout의 무시 파일이며 원격에 포함되지 않는다. 이전 macOS Studio 증거를 재사용한 것이 아니다. P5 full gate 전에는 P6로 진행하지 않는다.
 
+**커밋된 clean checkout 재현**: `e48f7b2`를 `git clone --no-hardlinks --config core.autocrlf=true --branch p5-windows-verification`으로 `.tools/windows-reproduction/`에 새로 복제했다. SHA 고정 다운로드 캐시만 복사하고 bootstrap으로 실행파일을 다시 추출했다. 원문7개 SHA 일치, P0 local PASS(`artifacts/P0/20261015T221319853335Z/report.json`), P1 PASS(`artifacts/P1/20261015T221330421003Z/report.json`), P5 CLI613 PASS/full BLOCKED(`artifacts/P5/20261015T221333404814Z/report.json`), 검증 후 `git status --short` 빈 출력을 확인했다. 이 세 증거 경로는 재현 checkout 내부 기준이다. 새 네트워크 다운로드·Studio·macOS 재현을 뜻하지 않으며 P0 report의 자동 `cleanCheckoutReproduction` 필드는 여전히 NOT_RUN이다.
+
 ## 다음 작업
 
 1. 검토자가 P0/P1 증거와 overlay 결정(`data/overlay/mvp-proto-001.json`)을 확인한다.

@@ -20,6 +20,7 @@ python tools/verify_p5.py  # Studio 증거 없으면 exit 2/BLOCKED
 - 최초 checkout의 `core.autocrlf=true`가 원문 2개의 SHA와 생성물 바이트 비교를 깨뜨렸다. `.gitattributes`에 LF checkout 정책을 추가하고, 줄바꿈만 달라진 파일을 기존 Git blob의 정확한 바이트로 복원했다. 원문/생성물/밸런스 값은 바꾸지 않았다. 검사에서 CRLF를 정규화해 허용하거나 SHA를 갱신하지 않는다.
 - 검증 도구의 파일·subprocess 텍스트는 UTF-8을 명시해 Windows CP949에 의존하지 않는다. 실행파일 경로 선택을 공유하며 검사 assertion/Studio 증거 요구사항은 유지했다.
 - 호스트 선택/기존 버전 보존/명시적 `.exe`/미지원 BLOCKED/체크섬 선검증/경로 탈출 거부/캐시·타입 정의 설치/실제 Git autocrlf clone 회귀10개를 추가했다. 전체 Python96개, P0 local/P1, P2/P3/P4/P5 CLI132/123/134/613개, 타입/lint/format/build PASS다. full gates는 Studio MCP가 이 세션에 노출되지 않아 BLOCKED다. Windows Studio 실행·화면·touch 또는 macOS 재실행 PASS를 뜻하지 않는다.
+- 커밋 `e48f7b2`의 새 Windows clone(`core.autocrlf=true`, 다운로드 캐시만 공유)에서도 bootstrap·원문 SHA·P0 local/P1 PASS, P5 CLI613 PASS/full BLOCKED와 clean 작업 트리를 확인했다. 상세 증거 경로는 HANDOFF에 있다. 로컬 gate 재현이지 Studio 완료 재현이 아니다.
 
 ## 새 checkout 재현 (macOS ARM64)
 
