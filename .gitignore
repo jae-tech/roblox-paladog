@@ -1,0 +1,23 @@
+# Local OMX runtime and verification artifacts
+.omx/
+artifacts/
+
+# Research-only original binaries/assets are never release inputs
+reference/
+*.apk
+*.dex
+*.so
+*.JA
+*.mae
+*.mce
+*.mje
+
+# Local credentials and editor/OS debris
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+.DS_Store
+Thumbs.db
