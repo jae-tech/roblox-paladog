@@ -112,3 +112,14 @@
 - Studio(소스 91개, 길이 해시 일치): 서버 T-P2~P9 PASS(P9 83), CLI 해시 일치. client T-P5 613 PASS. 10분 부하: p50 5.05 / p95 5.87 / p99 7.16 / max 20.11ms, cap 초과 0, 탄 최대 128. 엔진의 Remote 직렬화는 포함하지 않았다.
 - `verify_p9.py` BLOCKED(exit 2): CLI 8개·studio·perf PASS. 실 DataStore(미승인)·실기기 멀티터치(도구 없음)만 남았다.
 - 사용자만 처리할 수 있는 항목: 실 DataStore 승인, Android 실기기 터치 검증, overlay 결정 승인(approvedBy), Rojo 플러그인 패치 미적용·place 재열림 확인.
+
+## 실 DataStore 검증 (2026-10-16, 사용자 승인)
+
+- 조건: 사용자가 테스트 universe `10771015944`의 "Studio API 서비스 액세스"를 켜고 QA 키 검증을 승인. namespace `LanternExpedition_P8_QA_v1`, 키 `qa:u:-1792115857`(음수 id라 실제 사용자와 겹치지 않음).
+- 실행 방식: MCP playtest 시작이 반복 실패하고 Studio가 한 번 연결 해제돼, Studio **편집 모드**에서 실행했다. `PersistencePolicy.enabled`는 저장하지 않은 Studio 사본에서만 켰다가 원래대로 되돌렸다(저장소는 계속 false). 이 사이 place가 다시 열렸을 때 켜 둔 값이 남아 있어 자동 저장된 것으로 보이며, 되돌린 뒤 길이가 545로 원본과 같은 것을 확인했다.
+- 세션 A(실제 binding/어댑터 + Gateway·MatchService·ProfileService): 새 프로필 lock(fence 1) → StartStage Committed → 승리(핵 HP 0 fixture) 정산 Committed → slinger 강화 Committed → 해제. 캐시 없는 원본 읽기: 골드 150 / XP 60 / slinger 2 / 승리 1 / revision 3, lease·activeRun 비어 있음.
+- 세션 B(새 서비스): 같은 값으로 복원, fence 2, 스키마 유효. 세션 B가 lease를 잡은 동안 세션 C 획득은 `locked`, 세션 A의 옛 토큰 쓰기(골드 999999)는 `stale`, 원본 골드 150 유지.
+- 정리: RemoveAsync 후 값 nil. ListKeysAsync에는 같은 키 이름이 남는다(DataStore 버전 보관으로 추정). 다른 QA 키는 없다.
+- 한계: Studio 프로세스 하나 안의 서로 다른 세션이며 Studio 두 개를 쓴 경합이 아니다. 강제 종료(crash) 시험은 하지 않았다.
+- `verify_p9.py`: datastore-live PASS. 전체는 **BLOCKED(exit 2)**: device-touch(실기기 멀티터치)만 남음.
+- 사용자 조치: 검증이 끝났으므로 "Studio API 서비스 액세스"는 다시 꺼도 된다.
