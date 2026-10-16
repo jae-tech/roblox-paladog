@@ -104,3 +104,11 @@
 - 부하: 4경기·아군30/적40·탄 128 유지, 측정 12000 tick(게임 10분). p50 5.10 / p95 6.09 / p99 8.36 / max 13.18ms, cap 초과 0. gcinfo 2651→3221KB(강제 GC 없음, 누수 판정 아님). Remote·snapshot 미포함.
 - `verify_p9.py`(P2~P9 CLI + Studio 해시 비교로 확장): **BLOCKED(exit 2)**. CLI 8개·studio-suites·perf PASS. 실 DataStore(미승인)·실기기 멀티터치(도구 없음) BLOCKED.
 - 미해결: Rojo 패치 미적용(rbxm import로 우회), place 반복 재열림, 실 DataStore·실기기, 100회 경기 생성/종료 누수 측정, Remote 포함 부하, 밸런스 승인(approvedBy null).
+
+## 수명주기·snapshot 부하 (2026-10-16, 커밋 7f09782 기준)
+
+- T-P9에 경기 100회 생성→종결→정산→로비 반복 추가. 진단용 `MatchService.ownedMatchCount` 추가. 반복 후 활성 경기·소유 맵 0, world/result/snapshot nil, activeRun 닫힘, 영수증 상한 이내, 승리 100회 모두 기록. 처음 실패는 0.1초당 1경기 속도라 gateway rate limit이 StartStage를 정상적으로 버린 것이었고, 반복마다 1초씩 진행하도록 고쳤다.
+- 부하 측정에 10Hz owner snapshot 생성(entities/projectiles/heroAction)을 포함했다.
+- Studio(소스 91개, 길이 해시 일치): 서버 T-P2~P9 PASS(P9 83), CLI 해시 일치. client T-P5 613 PASS. 10분 부하: p50 5.05 / p95 5.87 / p99 7.16 / max 20.11ms, cap 초과 0, 탄 최대 128. 엔진의 Remote 직렬화는 포함하지 않았다.
+- `verify_p9.py` BLOCKED(exit 2): CLI 8개·studio·perf PASS. 실 DataStore(미승인)·실기기 멀티터치(도구 없음)만 남았다.
+- 사용자만 처리할 수 있는 항목: 실 DataStore 승인, Android 실기기 터치 검증, overlay 결정 승인(approvedBy), Rojo 플러그인 패치 미적용·place 재열림 확인.
