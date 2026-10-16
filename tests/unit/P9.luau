@@ -95,7 +95,7 @@ return function(env: any, check: any)
 	end
 
 	-- ------------------------------------------------- P9.1 normal-input campaign (E2E Mock)
-	local store = env.newStore()
+	local store = env.SessionStore.new()
 	local a = server(store, "session-A")
 	a.gateway.playerAdded(1)
 	a.frame()
@@ -198,7 +198,8 @@ return function(env: any, check: any)
 	check("rejoin-schema-valid", true, restored ~= nil and env.Schema.validate(restored), b.tick)
 
 	-- ------------------------------------------------- P9.2 attack matrix vs. an untouched control
-	local attacked, control = server(env.newStore(), "atk"), server(env.newStore(), "ctl")
+	local attacked, control =
+		server(env.SessionStore.new(), "atk"), server(env.SessionStore.new(), "ctl")
 	for _, s in { attacked, control } do
 		s.gateway.playerAdded(1)
 		s.gateway.playerAdded(2)
@@ -308,7 +309,13 @@ return function(env: any, check: any)
 		attacked.tick
 	)
 	local rejects = attacked.gateway.rejectCounts(1)
-	check("attack-not-owner-reported", true, (rejects.NotOwner or 0) >= 2, attacked.tick)
+	local notOwner = 0 -- ownership is judged by MatchService, which replies directly (not in gateway counts)
+	for _, entry in attacked.sent do
+		if entry.userId == 1 and entry.payload.reason == "NotOwner" then
+			notOwner += 1
+		end
+	end
+	check("attack-not-owner-reported", 2, notOwner, attacked.tick)
 	check("attack-invalid-reported", true, (rejects.InvalidPayload or 0) >= 10, attacked.tick)
 	check("attack-no-rate-drops", 0, rejects.RateLimited or 0, attacked.tick)
 	check(

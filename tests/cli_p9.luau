@@ -10,7 +10,7 @@ local report = Runner.run("PureLuau", "cli-p9", 12345, function(check)
 		ProfileService = require("../src/server/Services/ProfileService"),
 		Schema = require("../src/server/Services/ProfileSchema"),
 		World = require("../src/server/Simulation/World"),
-		newStore = require("./fixtures/InMemoryStoreAdapter"),
+		SessionStore = require("../src/server/Services/SessionStore"), -- the store Runtime ships
 	}, check)
 end, "T-P9")
 print(Runner.toJson(report))

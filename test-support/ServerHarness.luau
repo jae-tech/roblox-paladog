@@ -63,6 +63,7 @@ function Harness.runSuite(suiteId: string, seed: number)
 			local p9: any = p2Env()
 			p9.Schema = p9.ProfileSchema
 			p9.World = require(GameServer.Simulation.World)
+			p9.SessionStore = require(GameServer.Services.SessionStore)
 			require(tests.unit.P9)(p9, check)
 			return
 		end

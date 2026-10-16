@@ -61,3 +61,11 @@
 - 정적 확인: luau-analyze(tests), luau-lsp Roblox 분석, selene 0경고, StyLua, production/test Rojo 빌드 PASS. **T-P9는 한 번도 실행하지 않았다**(s01 승리·p95 기준은 미측정 가정).
 - 미작성: `verify_p9.py` gate, P9.3 실기기/멀티터치, P9.5 production 에셋 audit 확장, 100회 경기 생성/종료 누수 측정. P6~P8 실행 회귀가 선행 미완료다.
 - 브랜치: `p9-acceptance-suite`(P8 위). 실행 전이므로 PASS·main 병합으로 처리하지 않는다.
+
+## CLI 실행 결과 (2026-10-16, 새 테스트 정책)
+
+- P6 162 / P7 74 / P8 52 / P9 78 cases PASS (`tests/cli_p6~p9.luau`). 저장 무결성·서버 권한·중복 보상 케이스 포함. 제품 코드 변경 없음.
+- P9 수정 2건(테스트 쪽): ① P2용 Mock 어댑터는 lease를 갱신하지 않아 180초 넘는 경기의 결과 저장이 `stale`가 됐다. Runtime 기본값인 `SessionStore`로 교체했다. ② `NotOwner`는 MatchService가 직접 응답하므로 게이트웨이 집계 대신 응답 메시지로 센다.
+- 봇 결과(seed 12345): s01 첫 도전 승리, s02 3회 모두 패배 → s03 잠김 유지 확인. 정상 입력 기준 s02 난이도가 봇 전략보다 높다. 밸런스/봇 판단은 미결.
+- 부하 축소판(4경기·cap·1200tick) p95≤10ms PASS(CLI 환경 한정).
+- NOT_RUN: P6·P8·P9 Studio 검증, 실 DataStore(승인 필요), 10분 부하, 실기기/멀티터치, `verify_p9.py`.
