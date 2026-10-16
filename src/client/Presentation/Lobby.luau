@@ -4,6 +4,7 @@
 local Theme = require("./Theme")
 local Widgets = require("./Widgets")
 local Text = require("./Text")
+local HudLayout = require("./HudLayout")
 
 export type Handlers = {
 	lobby: (string, { [string]: any }?) -> (),
@@ -22,6 +23,22 @@ local NAV = {
 local function new(parent: Instance, catalog: any, handlers: Handlers)
 	local root = Widgets.frame(parent, "Lobby", Theme.background)
 	root.Size = UDim2.fromScale(1, 1)
+	-- phones: shrink the 912x544 layout to the screen; the frame grows by 1/scale so it still fills it
+	local scaler = Instance.new("UIScale")
+	scaler.Parent = root
+	if parent:IsA("GuiBase2d") then
+		local screen = parent :: GuiBase2d
+		local function fit()
+			local size = screen.AbsoluteSize
+			if size.X > 0 and size.Y > 0 then
+				local scale = HudLayout.lobbyScale(size.X, size.Y)
+				scaler.Scale = scale
+				root.Size = UDim2.fromScale(1 / scale, 1 / scale)
+			end
+		end
+		screen:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+		fit()
+	end
 	root.ZIndex = 30
 	local header = Widgets.frame(root, "Header", Theme.panel)
 	header.Size = UDim2.new(1, 0, 0, 48)

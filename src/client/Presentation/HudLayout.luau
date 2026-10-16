@@ -26,4 +26,16 @@ local function plan(width: number): any
 	}
 end
 
-return table.freeze({ plan = plan })
+-- Lobby layout is authored at 912x544 px (nav 140 + widest content 762, header 54 + stage grid/detail 460 +
+-- toast 30). Smaller screens shrink the whole lobby uniformly so every tab and button stays on screen.
+local LOBBY_WIDTH, LOBBY_HEIGHT = 912, 544
+local function lobbyScale(width: number, height: number): number
+	return math.clamp(math.min(width / LOBBY_WIDTH, height / LOBBY_HEIGHT), 0.25, 1)
+end
+
+return table.freeze({
+	plan = plan,
+	lobbyScale = lobbyScale,
+	LOBBY_WIDTH = LOBBY_WIDTH,
+	LOBBY_HEIGHT = LOBBY_HEIGHT,
+})

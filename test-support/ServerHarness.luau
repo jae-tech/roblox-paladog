@@ -53,11 +53,12 @@ local SUITES = {
 	["T-R3"] = true,
 	["T-R5"] = true,
 	["T-R6"] = true,
+	["T-R7"] = true,
 	["T-3D"] = true,
 }
 
 local Harness = {}
-function Harness.runSuite(suiteId: string, seed: number)
+function Harness.runSuite(suiteId: string, seed: number, options: { loadTicks: number? }?)
 	guard()
 	assert(SUITES[suiteId], "unsupported suite")
 	return Runner.run("StudioServer", HttpService:GenerateGUID(false), seed, function(check)
@@ -127,6 +128,26 @@ function Harness.runSuite(suiteId: string, seed: number)
 				RemoteGateway = require(GameServer.Net.RemoteGateway),
 				SessionStore = require(GameServer.Services.SessionStore),
 			}, check)
+			return
+		elseif suiteId == "T-R7" then
+			local env: { [string]: any } = {
+				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				Schema = require(GameServer.Services.ProfileSchema),
+				Settlement = require(GameServer.Services.Settlement),
+				Battle = battle.Battle,
+				Rules = battle.Rules,
+				Db = require(GameServer.Config.Remake.Db),
+				ProfileService = require(GameServer.Services.ProfileService),
+				MatchService = require(GameServer.Services.MatchService),
+				RemoteGateway = require(GameServer.Net.RemoteGateway),
+				SessionStore = require(GameServer.Services.SessionStore),
+				loadTicks = options and options.loadTicks,
+				yield = function()
+					task.wait()
+				end,
+			}
+			require(tests.unit.R7)(env, check)
+			Harness.lastMetrics = env.metrics
 			return
 		elseif suiteId == "T-P8" then
 			require(tests.unit.P8)({

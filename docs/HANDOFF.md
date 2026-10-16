@@ -2,7 +2,13 @@
 
 ## 현재 상태 (2026-10-16)
 
-### 최신: R6 서바이벌 구현 + 3D 실제 플레이 재검증 (브랜치 r6-survival)
+### 최신: R7 통합 검증 (브랜치 r7-integration)
+
+- `python3 tools/verify_r7.py --studio-evidence artifacts/R7/studio/r7-studio-evidence.json`은 **BLOCKED(exit 2)**. CLI 10개 suite·P0 local·diff0·출시 감사·Python·Studio(suite 해시 동일·10분 4경기 부하 p95 11.9ms·실제 입력 플레이 3종)는 PASS. 남은 BLOCKED: 실 QA DataStore v2(사용자 승인 필요), Android 실기기 멀티터치(알려진 제한).
+- 휴대폰 로비 잘림을 고쳤다(912×544 기준 UIScale). 상세·미해결은 `docs/PROGRESS.md` 마지막 절.
+- Studio 실제 입력 팁: 클릭 좌표 = GUI AbsolutePosition + 상단 inset(58). Studio 창이 포커스를 잃으면 입력 라우터가 막히니 `osascript -e 'tell application "RobloxStudio" to activate'`로 활성화한다. 결과는 eval 사이에 사라질 수 있어 ServerStorage StringValue에 남긴다.
+
+### 이전: R6 서바이벌 구현 + 3D 실제 플레이 재검증 (브랜치 r6-survival)
 
 - 3D 동행 전투 화면/물리 입력 검증은 **PASS로 해소**: 원인은 macOS 화면 잠금(displaysleep 2분)이었다. 실제 W/D/Q·GUI 소환·교전·자연 패배·결과·로비 복귀 확인. 숫자 키와 일시정지 버튼은 MCP 입력 오류로 NOT_RUN.
 - R6 서바이벌: 전투·서버 입장/정산·로비/HUD/결과 구현. CLI R6 118 + 기존 회귀 전부 PASS, Studio T-R6/T-R3가 CLI와 assertion 해시 동일, 실제 GUI로 입장·웨이브 HUD·해금 이벤트·해금 반영 확인(일부 상태는 메모리 fixture). 상세·미해결은 `docs/PROGRESS.md` 마지막 절.

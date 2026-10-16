@@ -342,5 +342,16 @@ return function(env: any, check: any)
 			)
 			check("hud-compact-" .. width, width < 900, p.compact, 0)
 		end
+		-- Regression: a 667x375 phone cut off the lobby nav and the 6-tab chapter row (762 px).
+		local L = env.HudLayout
+		for _, size in { { 667, 375 }, { 844, 390 }, { 375, 667 }, { 912, 544 }, { 1920, 1080 } } do
+			local w, h = size[1], size[2]
+			local scale = L.lobbyScale(w, h)
+			local tag = w .. "x" .. h
+			check("lobby-fits-width-" .. tag, true, L.LOBBY_WIDTH * scale <= w, 0)
+			check("lobby-fits-height-" .. tag, true, L.LOBBY_HEIGHT * scale <= h, 0)
+			check("lobby-no-upscale-" .. tag, true, scale <= 1, 0)
+		end
+		check("lobby-desktop-unscaled", 1, L.lobbyScale(1920, 1080), 0)
 	end
 end
