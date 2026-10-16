@@ -127,3 +127,7 @@
 ## 밸런스 결정 승인 (2026-10-16)
 
 - 사용자 승인: overlay 결정 14개 전체(MVP-STAGE-02 포함), approvedBy "jaetech". 재생성 결과 바뀐 것은 balance JSON의 overlayFileSha256뿐이고 생성 Luau·balanceHash는 그대로다. P1 gate·Python 테스트 PASS.
+
+## 실기기 터치 (2026-10-16)
+
+- 사용자가 Android 실기기를 확인할 수 없어 device-touch는 **BLOCKED(알려진 제한)**로 둔다. PASS·WAIVED로 바꾸지 않았다. 출시 전에 실기기에서 이동+소환+시전 동시 터치, 버튼 밖 release/취소, safe area를 확인해야 한다.

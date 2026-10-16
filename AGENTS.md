@@ -17,9 +17,13 @@ Codex·Claude 등 코딩 에이전트용 작업 안내. 상세 근거는 아래 
 | P2 원격 프로토콜·세션·프로필 골격 | gate PASS (Luau 132 cases, Studio 2-client 격리) |
 | P3 헤드리스 전투 시뮬레이션 | gate PASS (Luau 123 cases, Studio suite + 라이브 경기) |
 | P4 탄·영웅 무기 스킬 | gate PASS (Luau 134 cases, Studio 동일 suite + 실제 Remote 시전·이동·피해) |
-| **진행 중: P5 입력·뷰·카메라** | CLI/Studio 서버/클라이언트 동일613 cases PASS. 2026-10-16 장치 화면5종·renderer 교체/cleanup/카메라 복원 PASS. 실제 PC 입력·Q·GUI 소환·focus77ms 정지 PASS. 독립 멀티터치 증거 부족으로 full gate BLOCKED. 다음은 touch 검증 재개 |
+| P5 입력·뷰·카메라 | PC 입력·장치 화면·renderer·Studio suite PASS. 실기기 멀티터치만 BLOCKED |
+| P6 3스테이지·결과 | CLI/Studio T-P6 162 PASS |
+| P7 성장·보상 | CLI/Studio T-P7 74 PASS |
+| P8 저장·lease | CLI/Studio T-P8 52 PASS, 실 QA DataStore 복원·경합 PASS(2026-10-16, 사용자 승인) |
+| P9 통합·보안·부하 | `verify_p9.py` BLOCKED: CLI/Studio P2~P9 회귀·10분 부하·실 DataStore PASS, **Android 실기기 멀티터치는 알려진 제한(출시 전 실기기 확인 필요)** |
 
-P0~P4 full PASS는 P4 기준선 기록이다. 현재 P5 브랜치에서는 P0 로컬 gate와 P1 PASS, Studio의 P0/P2/P3/P4 원시 suite PASS를 확인했지만 full evidence 재수집은 끝내지 않았다. 이전 P4 소스 길이 증거를 현재 빌드의 PASS로 재사용하지 않는다.
+진행 상세와 미해결 사항은 `docs/PROGRESS.md`가 최신이다(HANDOFF는 P5 체크포인트 기록). 밸런스 overlay 결정 14개는 2026-10-16 "jaetech"가 승인했다. Studio 동기화는 Rojo가 기존 스크립트를 갱신하지 못하는 문제가 있어, `rojo build`로 만든 rbxm을 MCP `import_rbxm`으로 넣고 이름=길이 해시로 일치를 확인한다(저장 안 함).
 
 ## 환경과 명령 (macOS arm64 / Windows AMD64 bootstrap)
 
