@@ -1,5 +1,6 @@
 --!strict
--- Production-safe client composition. No mock store/debug endpoint: wait for real server remotes.
+-- Production client composition (remake): server remotes, controller, input and the remake UI.
+-- No mock store or debug endpoint: the client waits for real server remotes.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -7,7 +8,7 @@ local HttpService = game:GetService("HttpService")
 local ActionRouter = require("./Input/ActionRouter")
 local DeviceAdapter = require("./Input/DeviceAdapter")
 local ClientController = require("./Net/ClientController")
-local Presentation = require("./Presentation/Presentation")
+local Ui = require("./Presentation/Ui")
 
 local active: any = nil
 local function start(): any
@@ -16,8 +17,7 @@ local function start(): any
 	end
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui") :: PlayerGui
 	local protocol = require(ReplicatedStorage.Shared.Protocol)
-	local catalog = require(ReplicatedStorage.Shared.PublicCatalog)
-	local stageGameplay = ReplicatedStorage:GetAttribute("StageGameplay") == true
+	local catalog = require(ReplicatedStorage.Shared.RemakeCatalog)
 	local folder: Instance? = nil
 	local connections: { RBXScriptConnection } = {}
 	local remoteConnections: { RBXScriptConnection } = {}
@@ -31,7 +31,6 @@ local function start(): any
 	local function makeController(): any
 		return ClientController.new({
 			protocol = protocol,
-			catalog = catalog,
 			send = send,
 			requestId = function()
 				return HttpService:GenerateGUID(false)
@@ -39,26 +38,49 @@ local function start(): any
 		})
 	end
 	local controller = makeController()
-	local router: any = nil
-	local presentation = Presentation.new(playerGui, function(action)
-		if action == "Menu" or action == "CloseMenu" then
-			if router then
-				router.setBlocked("menu", action == "Menu")
+	local lastUnit = 1
+	local ui = Ui.new(playerGui, catalog, {
+		battle = function(kind, fields)
+			if fields and kind == "Summon" then
+				lastUnit = fields.unit or lastUnit
 			end
-		else
-			controller.action(action, os.clock())
-		end
-	end, stageGameplay)
-	router = ActionRouter.new({
+			controller.battle(kind, fields, os.clock())
+		end,
+		lobby = function(kind, fields)
+			controller.lobby(kind, fields, os.clock())
+		end,
+		start = function(stage)
+			controller.start(stage, os.clock())
+		end,
+		returnToLobby = function()
+			controller.returnToLobby(os.clock())
+		end,
+	})
+	local router = ActionRouter.new({
 		onAxis = function(axis)
 			controller.move(axis, os.clock())
 		end,
 		onAction = function(action)
-			controller.action(action, os.clock())
+			local now = os.clock()
+			local summon = tonumber(string.match(action, "^Summon(%d)$"))
+			local mace = tonumber(string.match(action, "^Mace(%d)$"))
+			local model = controller.model(now)
+			local tower = model.battle and model.battle.mode == "Tower"
+			if summon then
+				lastUnit = summon
+				-- Keyboard summons in the tower use the middle lane; the lane picker covers touch.
+				controller.battle("Summon", { unit = summon, lane = if tower then 3 else 0 }, now)
+			elseif mace then
+				controller.battle(
+					"Mace",
+					{ slot = mace, unit = lastUnit, lane = if tower then 3 else 0 },
+					now
+				)
+			end
 		end,
 	})
 	router.setBlocked("transport", true)
-	local adapter = DeviceAdapter.new(router, presentation.buttons)
+	local adapter = DeviceAdapter.new(router, ui.moveButtons)
 	local function detach()
 		router.setBlocked("transport", true)
 		for _, connection in remoteConnections do
@@ -109,19 +131,6 @@ local function start(): any
 		)
 		router.setBlocked("transport", false)
 	end
-	local function visible(): boolean
-		local current: Instance? = presentation.buttons.Left
-		while current and current ~= playerGui do
-			if current:IsA("GuiObject") and not current.Visible then
-				return false
-			end
-			if current:IsA("ScreenGui") and not current.Enabled then
-				return false
-			end
-			current = current.Parent
-		end
-		return current == playerGui
-	end
 	local hudAt = -math.huge
 	table.insert(
 		connections,
@@ -150,13 +159,17 @@ local function start(): any
 			local model = controller.model(now)
 			router.setBlocked("phase", model.phase ~= "Running")
 			router.setBlocked("network", model.network ~= "연결됨")
-			router.setBlocked("controls-hidden", model.phase == "Running" and not visible())
+			router.setBlocked(
+				"modal",
+				model.battle ~= nil
+					and (model.battle.offer ~= nil or model.battle.reviveOffer == true)
+			)
 			router.step(now)
 			if now - hudAt >= 0.1 then
-				presentation.update(model)
+				ui.update(model)
 				hudAt = now
 			end
-			presentation.render(controller.frame(now), dt)
+			ui.render(controller.frame(now), dt)
 		end)
 	)
 	table.insert(connections, ReplicatedStorage.ChildAdded:Connect(attach))
@@ -177,7 +190,7 @@ local function start(): any
 			connection:Disconnect()
 		end
 		controller.destroy()
-		presentation.destroy()
+		ui.destroy()
 		active = nil
 	end
 	active = {
@@ -186,7 +199,7 @@ local function start(): any
 				input = router.inspect(),
 				controller = controller.inspect(os.clock()),
 				model = controller.model(os.clock()),
-				presentation = presentation.inspect(),
+				ui = ui.inspect(),
 			}
 		end,
 		destroy = destroy,

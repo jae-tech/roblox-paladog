@@ -4,6 +4,7 @@
 local Types = require("./Types")
 
 local VERSION = 2
+local BALANCE_HASH = "remake-db-1" -- data generator version; client and server must agree
 local MAX_KEYS = 8
 local MAX_INTEGER = 2147483647
 
@@ -259,6 +260,7 @@ local BATTLE_KINDS = table.freeze({
 
 return table.freeze({
 	VERSION = VERSION,
+	BALANCE_HASH = BALANCE_HASH,
 	LIMITS = LIMITS,
 	REASONS = REASONS,
 	BATTLE_KINDS = BATTLE_KINDS,

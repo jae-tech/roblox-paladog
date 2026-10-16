@@ -25,20 +25,18 @@ end
 return {
 	runSuite = function(suiteId: string, seed: number)
 		guard()
-		assert(suiteId == "T-P5", "unsupported client suite")
+		assert(suiteId == "T-R4", "unsupported client suite")
 		local client = Players.LocalPlayer.PlayerScripts.GameClient
 		local tests = script.Parent.Tests
 		local Runner = require(tests.Runner)
-		return Runner.run("StudioClient", "studio-client-p5", seed, function(check)
-			require(tests.unit.P5)({
-				ActionRouter = require(client.Input.ActionRouter),
-				SnapshotBuffer = require(client.Net.SnapshotBuffer),
-				ClientController = require(client.Net.ClientController),
+		return Runner.run("StudioClient", "studio-client-r4", seed, function(check)
+			require(tests.unit.R4)({
 				Protocol = require(ReplicatedStorage.Shared.Protocol),
-				catalog = require(ReplicatedStorage.Shared.PublicCatalog),
-				Layout = require(client.Presentation.Layout),
-				CameraMath = require(client.Presentation.CameraMath),
-				ViewDefinitions = require(client.Presentation.ViewDefinitions),
+				ClientController = require(client.Net.ClientController),
+				SnapshotBuffer = require(client.Net.SnapshotBuffer),
+				ActionRouter = require(client.Input.ActionRouter),
+				Text = require(client.Presentation.Text),
+				catalog = require(ReplicatedStorage.Shared.RemakeCatalog),
 			}, check)
 		end, suiteId)
 	end,
@@ -48,7 +46,7 @@ return {
 	end,
 	inspectHUD = function(): any
 		guard()
-		return require(Players.LocalPlayer.PlayerScripts.GameClient.Runtime).inspect().presentation
+		return require(Players.LocalPlayer.PlayerScripts.GameClient.Runtime).inspect().ui
 	end,
 	inspectInputState = function(): any
 		guard()

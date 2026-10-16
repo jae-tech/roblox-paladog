@@ -15,10 +15,18 @@ local KEYS: { [string]: { Enum.KeyCode } } = {
 	Summon1 = { Enum.KeyCode.One },
 	Summon2 = { Enum.KeyCode.Two },
 	Summon3 = { Enum.KeyCode.Three },
-	Cast = { Enum.KeyCode.Q },
+	Summon4 = { Enum.KeyCode.Four },
+	Summon5 = { Enum.KeyCode.Five },
+	Summon6 = { Enum.KeyCode.Six },
+	Summon7 = { Enum.KeyCode.Seven },
+	Summon8 = { Enum.KeyCode.Eight },
+	Summon9 = { Enum.KeyCode.Nine },
+	Mace1 = { Enum.KeyCode.Q },
+	Mace2 = { Enum.KeyCode.W },
+	Mace3 = { Enum.KeyCode.E },
 }
 
-function DeviceAdapter.new(router: Router, buttons: { [string]: GuiButton })
+function DeviceAdapter.new(router: Router, buttons: { [string]: any })
 	local connections: { RBXScriptConnection } = {}
 	local touches: { [InputObject]: RBXScriptConnection } = {}
 	local names: { string } = {}

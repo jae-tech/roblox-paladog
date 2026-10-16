@@ -1,0 +1,35 @@
+--!strict
+-- Remake palette: warm lantern light against a dusky undead frontier (original art direction).
+return table.freeze({
+	background = Color3.fromRGB(20, 22, 34),
+	panel = Color3.fromRGB(34, 38, 56),
+	panelLight = Color3.fromRGB(52, 58, 82),
+	button = Color3.fromRGB(64, 72, 102),
+	buttonHot = Color3.fromRGB(240, 176, 72),
+	border = Color3.fromRGB(120, 128, 160),
+	text = Color3.fromRGB(242, 238, 228),
+	muted = Color3.fromRGB(170, 172, 190),
+	gold = Color3.fromRGB(255, 205, 80),
+	gem = Color3.fromRGB(110, 220, 255),
+	food = Color3.fromRGB(236, 132, 84),
+	mana = Color3.fromRGB(98, 150, 255),
+	hp = Color3.fromRGB(110, 214, 110),
+	enemyHp = Color3.fromRGB(232, 84, 84),
+	locked = Color3.fromRGB(80, 80, 92),
+	good = Color3.fromRGB(120, 220, 140),
+	bad = Color3.fromRGB(240, 110, 110),
+	chapterSky = {
+		Color3.fromRGB(126, 148, 168),
+		Color3.fromRGB(96, 128, 112),
+		Color3.fromRGB(150, 176, 206),
+		Color3.fromRGB(150, 88, 70),
+		Color3.fromRGB(72, 60, 96),
+	},
+	chapterGround = {
+		Color3.fromRGB(110, 104, 86),
+		Color3.fromRGB(70, 92, 66),
+		Color3.fromRGB(196, 210, 222),
+		Color3.fromRGB(92, 64, 52),
+		Color3.fromRGB(58, 52, 66),
+	},
+})

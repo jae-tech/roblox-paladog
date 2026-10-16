@@ -19,7 +19,7 @@ local function start(): any
 	end
 	local protocol = require(ReplicatedStorage.Shared.Protocol)
 	local catalog = require(ReplicatedStorage.Shared.RemakeCatalog)
-	local balanceHash = "remake-db-1"
+	local balanceHash = protocol.BALANCE_HASH
 	local tick = 0
 	local stopping = false
 	local forward: ((number, string, any) -> ())? = nil

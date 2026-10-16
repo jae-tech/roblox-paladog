@@ -1,5 +1,9 @@
 --!strict
--- Full-state owner snapshots and presentation-only interpolation. No simulation or engine dependency.
+-- Full-state owner snapshots (remake protocol v2) and presentation-only interpolation of battle positions.
+-- No simulation or engine dependency; everything is validated before it is kept.
+local MAX_ENTITIES, MAX_OBJECTS = 320, 256
+local TICKS_PER_SECOND = 30
+
 local function finite(n: any): boolean
 	return type(n) == "number" and n == n and math.abs(n) < math.huge
 end
@@ -8,88 +12,58 @@ local function integer(n: any): boolean
 	return finite(n) and n >= 0 and n % 1 == 0
 end
 
-local function copy(snapshot: any): any
-	if type(snapshot) ~= "table" then
-		return snapshot
+local function copy(value: any): any
+	if type(value) ~= "table" then
+		return value
 	end
 	local result: { [any]: any } = {}
-	for k, v in snapshot do
+	for k, v in value do
 		result[k] = if type(v) == "table" then copy(v) else v
 	end
 	return result
 end
 
-local function valid(snapshot: any, hash: string): boolean
+local function validBattle(battle: any): boolean
 	if
-		type(snapshot) ~= "table"
-		or snapshot.balanceHash ~= hash
-		or type(snapshot.matchId) ~= "string"
-		or not integer(snapshot.snapshotSeq)
-		or not integer(snapshot.tick)
-		or not integer(snapshot.inputAckSeq)
-		or type(snapshot.entities) ~= "table"
-		or #snapshot.entities > 72
-		or type(snapshot.projectiles) ~= "table"
-		or #snapshot.projectiles > 128
+		type(battle) ~= "table"
+		or not integer(battle.tick)
+		or type(battle.entities) ~= "table"
+		or #battle.entities > MAX_ENTITIES
+		or type(battle.objects) ~= "table"
+		or #battle.objects > MAX_OBJECTS
 	then
 		return false
 	end
-	for _, list in { snapshot.entities, snapshot.projectiles } do
+	for _, key in { "food", "mana", "maxFood", "maxMana", "heroSpeed", "heroMinX", "heroMaxX" } do
+		if not finite(battle[key]) then
+			return false
+		end
+	end
+	for _, list in { battle.entities, battle.objects } do
 		local seen: { [number]: boolean } = {}
 		for _, e in list do
-			if
-				type(e) ~= "table"
-				or not integer(e.entityId)
-				or not finite(e.x)
-				or seen[e.entityId]
-			then
+			if type(e) ~= "table" or not integer(e.id) or not finite(e.x) or seen[e.id] then
 				return false
 			end
-			seen[e.entityId] = true
+			seen[e.id] = true
 		end
 	end
-	if type(snapshot.resources) ~= "table" then
-		return false
-	end
-	if snapshot.profileRevision ~= nil and not integer(snapshot.profileRevision) then
-		return false
-	end
-	if
-		snapshot.rewards ~= nil
-		and (
-			type(snapshot.rewards) ~= "table"
-			or not integer(snapshot.rewards.gold)
-			or not integer(snapshot.rewards.xp)
-		)
-	then
-		return false
-	end
-	for _, key in { "foodMilli", "manaMilli" } do
-		if not integer(snapshot.resources[key]) then
-			return false
-		end
-	end
-	for _, key in { "stageLength", "advanceLimitX", "heroMoveSpeed", "commandAckSeq" } do
-		if snapshot[key] ~= nil and (not finite(snapshot[key]) or snapshot[key] < 0) then
-			return false
-		end
-	end
-	for _, key in { "foodMaxMilli", "manaMaxMilli", "skillReadyTick" } do
-		if snapshot.resources[key] ~= nil and not integer(snapshot.resources[key]) then
-			return false
-		end
-	end
-	for _, e in snapshot.entities do
-		if not integer(e.hp) or not integer(e.maxHp) or e.maxHp < 1 or e.hp > e.maxHp then
-			return false
-		end
-	end
-	for _, p in snapshot.projectiles do
-		if not finite(p.previousX) or (p.direction ~= 1 and p.direction ~= -1) then
+	for _, e in battle.entities do
+		if not finite(e.hp) or not finite(e.maxHp) or e.maxHp <= 0 then
 			return false
 		end
 	end
 	return true
+end
+
+local function valid(snapshot: any, hash: string): boolean
+	return type(snapshot) == "table"
+		and snapshot.balanceHash == hash
+		and type(snapshot.matchId) == "string"
+		and integer(snapshot.snapshotSeq)
+		and integer(snapshot.inputAckSeq)
+		and (snapshot.profileRevision == nil or integer(snapshot.profileRevision))
+		and (snapshot.battle == nil or validBattle(snapshot.battle))
 end
 
 local function new(balanceHash: string)
@@ -106,9 +80,7 @@ local function new(balanceHash: string)
 		if not finite(now) or not valid(snapshot, balanceHash) or snapshot.matchId ~= matchId then
 			return false
 		end
-		if
-			latest and (snapshot.snapshotSeq <= latest.snapshotSeq or snapshot.tick < latest.tick)
-		then
+		if latest and snapshot.snapshotSeq <= latest.snapshotSeq then
 			return false
 		end
 		previous, latest, receivedAt = latest, copy(snapshot), now
@@ -117,53 +89,29 @@ local function new(balanceHash: string)
 	local function age(now: number): number
 		return math.max(0, now - receivedAt)
 	end
+	-- Positions between the last two snapshots, rendered ~0.1 s behind the newest tick.
 	local function frame(now: number): any
-		if not latest then
-			return {
-				entities = {},
-				projectiles = {},
-				heroX = 10,
-				stageLength = 102.4,
-				advanceLimitX = 86.4,
-			}
+		local battle = latest and latest.battle
+		if not battle then
+			return nil
 		end
-		local renderTick = latest.tick + (math.min(age(now), 0.25) - 0.1) * 20
-		local result = {
-			entities = {},
-			projectiles = {},
-			heroX = 10,
-			stageLength = latest.stageLength or 102.4,
-			advanceLimitX = latest.advanceLimitX or 86.4,
-		}
-		for _, key in { "entities", "projectiles" } do
-			local old: { [number]: any } = {}
-			if previous then
-				for _, e in previous[key] do
-					old[e.entityId] = e
+		local before = previous and previous.battle
+		local result = copy(battle)
+		if before and before.tick < battle.tick and latest.phase == "Running" then
+			local renderTick = battle.tick + (math.min(age(now), 0.25) - 0.1) * TICKS_PER_SECOND
+			local alpha =
+				math.clamp((renderTick - before.tick) / (battle.tick - before.tick), 0, 1.5)
+			for _, key in { "entities", "objects" } do
+				local old: { [number]: any } = {}
+				for _, e in before[key] do
+					old[e.id] = e
 				end
-			end
-			for _, e in latest[key] do
-				local visual = copy(e)
-				local before = old[e.entityId]
-				if before and previous.tick < latest.tick then
-					local alpha = math.clamp(
-						(renderTick - previous.tick) / (latest.tick - previous.tick),
-						0,
-						1 + 3 / (latest.tick - previous.tick)
-					)
-					visual.x = before.x + (e.x - before.x) * alpha
-				end
-				-- Terminal authoritative positions snap immediately, never drift during settlement.
-				if latest.phase ~= "Running" then
-					visual.x = e.x
-				end
-				if key == "entities" then
-					visual.x = math.clamp(visual.x, 0, result.stageLength)
-					if e.kind == "Hero" then
-						result.heroX = e.x
+				for _, e in result[key] do
+					local prior = old[e.id]
+					if prior then
+						e.x = prior.x + (e.x - prior.x) * alpha
 					end
 				end
-				table.insert((result :: any)[key], visual)
 			end
 		end
 		return result
@@ -179,4 +127,4 @@ local function new(balanceHash: string)
 	})
 end
 
-return table.freeze({ new = new, finite = finite })
+return table.freeze({ new = new, finite = finite, TICKS_PER_SECOND = TICKS_PER_SECOND })

@@ -1,26 +1,32 @@
 --!strict
--- Intent building, snapshot authority, bounded local hero prediction and one in-flight bootstrap.
+-- Remake client controller: bootstrap, lobby/battle intents, server message/snapshot authority and bounded
+-- local hero prediction. The server decides everything; this only builds requests and views.
 local SnapshotBuffer = require("./SnapshotBuffer")
 
 export type Deps = {
 	protocol: any,
-	catalog: any,
 	send: (string, any) -> (),
 	requestId: () -> string,
 }
 
+local PREDICTION_LEAD = 0.15 -- seconds of unacknowledged input the hero may lead the server
+
 local function new(deps: Deps)
-	local buffer = SnapshotBuffer.new(deps.catalog.balanceHash)
+	local protocol = deps.protocol
+	local buffer = SnapshotBuffer.new(protocol.BALANCE_HASH)
 	local state: any = {
 		phase = "ProfileLoading",
 		storage = "연결 대기",
 		profileRevision = 0,
-		stageProgress = {},
+		summary = nil,
 		matchId = nil,
 		commandSeq = 0,
 		moveSeq = 0,
 		axis = 0,
 		reason = nil,
+		reasonAt = -math.huge,
+		profileRequest = nil,
+		profileBusyAt = 0,
 	}
 	local pending: { [string]: any } = {}
 	local order: { string } = {}
@@ -31,16 +37,14 @@ local function new(deps: Deps)
 	local lastSnapshot = -math.huge
 	local matchStarted = 0
 	local preparingAt = 0
-	local correction, correctionAt = 0, 0
-	local renderedHero: number? = nil
+
 	local function applyProfile(revision: any, summary: any)
 		if type(revision) ~= "number" or revision % 1 ~= 0 or revision < state.profileRevision then
 			return
 		end
 		state.profileRevision = revision
 		if type(summary) == "table" then
-			state.profileSummary = summary
-			state.stageProgress = summary.stageProgress or {}
+			state.summary = summary
 		end
 	end
 	local function switchMatch(id: string?, now: number)
@@ -51,45 +55,10 @@ local function new(deps: Deps)
 			table.clear(history)
 			buffer.setMatch(id)
 			lastSnapshot, matchStarted = -math.huge, now
-			correction, renderedHero = 0, nil
 		end
 	end
-	local function predicted(now: number): number
-		local snapshot = buffer.latest()
-		if not snapshot then
-			return 10
-		end
-		local hero: any = nil
-		for _, e in snapshot.entities do
-			if e.kind == "Hero" then
-				hero = e
-				break
-			end
-		end
-		if not hero then
-			return 10
-		end
-		if snapshot.phase ~= "Running" or buffer.age(now) >= 0.5 then
-			return hero.x
-		end
-		local start = lastSnapshot
-		if #history > 0 then
-			start = math.min(start, history[1].time)
-		end
-		start = math.max(start, now - 0.15)
-		local axis = if #history > 0 then history[1].axis else state.axis
-		local delta, cursor = 0, start
-		for _, input in history do
-			local at = math.clamp(input.time, start, now)
-			delta += axis * (at - cursor)
-			cursor, axis = at, input.axis
-		end
-		delta += axis * (now - cursor)
-		return math.clamp(
-			hero.x + delta * (snapshot.heroMoveSpeed or 6),
-			0,
-			snapshot.advanceLimitX or 86.4
-		)
+	local function setReason(reason: string?, now: number)
+		state.reason, state.reasonAt = reason, now
 	end
 	local function receiveSnapshot(payload: any, now: number): boolean
 		if destroyed or not buffer.accept(payload, now) then
@@ -107,10 +76,6 @@ local function new(deps: Deps)
 			end
 		end
 		history = keep
-		local target = predicted(now)
-		local error = if renderedHero then (renderedHero :: number) - target else 0
-		correction = if payload.phase == "Running" and math.abs(error) <= 0.1 then error else 0
-		correctionAt = now
 		return true
 	end
 	local function beginBootstrap(now: number): number?
@@ -132,19 +97,20 @@ local function new(deps: Deps)
 			return false
 		end
 		if type(payload) ~= "table" then
-			state.reason = "StorageUnavailable"
+			setReason("StorageUnavailable", now)
 			return false
 		end
 		if
-			payload.protocolVersion ~= deps.protocol.VERSION
-			or payload.balanceHash ~= deps.catalog.balanceHash
+			payload.protocolVersion ~= protocol.VERSION
+			or payload.balanceHash ~= protocol.BALANCE_HASH
 		then
-			state.phase, state.reason = "Unavailable", "ProtocolMismatch"
+			state.phase = "Unavailable"
+			setReason("ProtocolMismatch", now)
 			return false
 		end
 		state.storage = payload.storage or "Unknown"
 		if payload.status ~= "Ready" then
-			state.reason = payload.status
+			setReason(payload.status, now)
 			if payload.status == "Unavailable" then
 				state.profileRequest = nil
 				switchMatch(nil, now)
@@ -152,11 +118,9 @@ local function new(deps: Deps)
 			end
 			return false
 		end
-		state.reason = nil
 		applyProfile(payload.profileRevision or 0, payload.profileSummary)
 		if state.profileRequest and now - state.profileBusyAt >= 3 then
-			-- Release only the UI wait after an authoritative read, not the server transaction.
-			state.profileRequest = nil
+			state.profileRequest = nil -- release only the UI wait after an authoritative read
 		end
 		local snapshot = payload.currentMatch
 		if snapshot then
@@ -168,12 +132,12 @@ local function new(deps: Deps)
 		end
 		return true
 	end
-	local function sendCommand(payload: any, now: number?)
+	local function sendCommand(payload: any, now: number, profileOp: boolean)
 		local id = deps.requestId()
-		payload.protocolVersion, payload.requestId = deps.protocol.VERSION, id
+		payload.protocolVersion, payload.requestId = protocol.VERSION, id
 		pending[id] = { kind = payload.kind, matchId = payload.matchId, epoch = epoch }
-		if payload.kind == "UpgradeUnit" or payload.kind == "AllocatePoint" then
-			state.profileRequest, state.profileBusyAt = id, now or 0
+		if profileOp then
+			state.profileRequest, state.profileBusyAt = id, now
 		end
 		table.insert(order, id)
 		if #order > 128 then
@@ -184,68 +148,59 @@ local function new(deps: Deps)
 		end
 		deps.send("ClientCommand", payload)
 	end
-	local function action(name: string, now: number): boolean
-		if destroyed then
+
+	-- Lobby transaction (CreateSlot, UpgradeUnit, Equip, ...): one in flight at a time, revision-guarded.
+	local function lobby(kind: string, fields: { [string]: any }?, now: number): boolean
+		if destroyed or state.phase ~= "LobbyReady" or state.profileRequest then
 			return false
 		end
-		if name == "ReturnToLobby" then
-			if state.phase ~= "Settled" or not state.matchId then
-				return false
-			end
-			sendCommand({ kind = "ReturnToLobby", matchId = state.matchId })
-			return true
+		local payload: { [string]: any } = { kind = kind, expectedRevision = state.profileRevision }
+		local extra: { [string]: any } = fields or {}
+		for k, v in extra do
+			payload[k] = v
 		end
-		local upgrade = if string.sub(name, 1, 8) == "Upgrade_" then string.sub(name, 9) else nil
-		local trait = if string.sub(name, 1, 6) == "Trait_" then string.sub(name, 7) else nil
-		if upgrade or trait then
-			if
-				state.phase ~= "LobbyReady"
-				or state.profileRequest
-				or (upgrade and not deps.catalog.units[upgrade])
-				or (trait and not deps.catalog.traits[trait])
-			then
-				return false
-			end
-			sendCommand({
-				kind = if upgrade then "UpgradeUnit" else "AllocatePoint",
-				unitId = upgrade,
-				traitId = trait,
-				expectedRevision = state.profileRevision,
-			}, now)
-			return true
-		end
-		if string.sub(name, 1, 6) == "Start_" then
-			local stage = string.sub(name, 7)
-			if
-				state.phase ~= "LobbyReady"
-				or state.profileRequest
-				or not deps.catalog.stages[stage]
-			then
-				return false
-			end
-			sendCommand({
-				kind = "StartStage",
-				stageId = stage,
-				expectedRevision = state.profileRevision,
-			})
-			state.phase = "Preparing"
-			preparingAt = now
-			return true
-		end
-		if state.phase ~= "Running" or not state.matchId or buffer.age(now) >= 0.5 then
+		sendCommand(payload, now, true)
+		return true
+	end
+	local function start(stage: number, now: number): boolean
+		if destroyed or state.phase ~= "LobbyReady" or state.profileRequest then
 			return false
 		end
-		local slot = ({ Summon1 = 1, Summon2 = 2, Summon3 = 3 })[name]
-		if not slot and name ~= "Cast" then
+		sendCommand(
+			{ kind = "StartStage", stage = stage, expectedRevision = state.profileRevision },
+			now,
+			false
+		)
+		state.phase, preparingAt = "Preparing", now
+		return true
+	end
+	local function returnToLobby(now: number): boolean
+		if destroyed or state.phase ~= "Settled" or not state.matchId then
+			return false
+		end
+		sendCommand({ kind = "ReturnToLobby", matchId = state.matchId }, now, false)
+		return true
+	end
+	-- Battle command (Summon/Mace/Box/PickSkill/Revive/GiveUp/Retreat); refused on a stale view.
+	local function battle(kind: string, fields: { [string]: any }?, now: number): boolean
+		if
+			destroyed
+			or not protocol.BATTLE_KINDS[kind]
+			or state.phase ~= "Running"
+			or not state.matchId
+			or buffer.age(now) >= 0.5
+		then
 			return false
 		end
 		state.commandSeq += 1
-		sendCommand({
-			kind = if slot then "Summon" else "Cast",
-			slot = slot or 1,
-			matchId = state.matchId,
-			commandSeq = state.commandSeq,
-		})
+		local payload: { [string]: any } =
+			{ kind = kind, matchId = state.matchId, commandSeq = state.commandSeq }
+		for _, name in protocol.FIELDS[kind] do
+			if payload[name] == nil then
+				payload[name] = if fields and fields[name] ~= nil then fields[name] else 0
+			end
+		end
+		sendCommand(payload, now, false)
 		return true
 	end
 	local function receiveMessage(message: any, now: number): boolean
@@ -265,7 +220,9 @@ local function new(deps: Deps)
 		then
 			return false
 		end
-		state.reason = message.reason
+		if message.status == "Rejected" then
+			setReason(message.reason, now)
+		end
 		applyProfile(message.profileRevision, message.profileSummary)
 		if state.profileRequest == message.requestId and message.status ~= "Pending" then
 			state.profileRequest = nil
@@ -273,13 +230,11 @@ local function new(deps: Deps)
 		if command.kind == "StartStage" then
 			if message.status == "Committed" and type(message.matchId) == "string" then
 				switchMatch(message.matchId, now)
-				local snapshot = buffer.latest()
-				state.phase = if snapshot then snapshot.phase else "Running"
+				state.phase = "Running"
 			elseif message.status == "Rejected" and state.phase == "Preparing" then
 				state.phase = "LobbyReady"
 			end
-		end
-		if command.kind == "ReturnToLobby" and message.status == "Accepted" then
+		elseif command.kind == "ReturnToLobby" and message.status == "Accepted" then
 			switchMatch(nil, now)
 			state.phase = "LobbyReady"
 		end
@@ -306,62 +261,80 @@ local function new(deps: Deps)
 			table.remove(history, 1)
 		end
 		deps.send("MoveIntent", {
-			protocolVersion = deps.protocol.VERSION,
+			protocolVersion = protocol.VERSION,
 			matchId = state.matchId,
 			seq = state.moveSeq,
 			axis = axis,
 		})
 		return true
 	end
+	local function currentSlot(): any
+		local summary = state.summary
+		if not summary or summary.currentSlot == 0 then
+			return nil
+		end
+		local slot = summary.slots[summary.currentSlot]
+		return if type(slot) == "table" then slot else nil
+	end
 	local function model(now: number): any
-		local snapshot = buffer.latest()
-		local m: any = {
+		local latest = buffer.latest()
+		return {
 			phase = state.phase,
 			storage = state.storage,
 			profileRevision = state.profileRevision,
-			stageProgress = state.stageProgress,
-			profileSummary = state.profileSummary,
-			profileBusy = state.profileRequest ~= nil,
-			catalog = deps.catalog,
-			reason = state.reason,
+			summary = state.summary,
+			slot = currentSlot(),
+			busy = state.profileRequest ~= nil,
+			reason = if now - state.reasonAt < 3 then state.reason else nil,
 			matchId = state.matchId,
+			stage = latest and latest.stage,
+			battle = latest and latest.battle,
+			result = latest and latest.result,
+			rewards = latest and latest.rewards,
+			settlementStatus = latest and latest.settlementStatus,
 			network = if inflight and now - inflight.time >= 3
 				then "응답 지연"
-				elseif state.matchId and buffer.age(now) >= 0.5 then "연결 불안"
+				elseif
+					state.matchId
+					and state.phase == "Running"
+					and buffer.age(now) >= 0.5
+				then "연결 불안"
 				elseif inflight then "동기화 중"
 				elseif state.phase == "ProfileLoading" then "연결 대기"
 				else "연결됨",
 		}
-		if snapshot then
-			m.tick, m.heroAction, m.outcome = snapshot.tick, snapshot.heroAction, snapshot.outcome
-			m.result, m.settlementStatus = snapshot.result, snapshot.settlementStatus
-			m.rewards = snapshot.rewards
-			for k, v in snapshot.resources or {} do
-				m[k] = v
+	end
+	-- Interpolated field with the hero led by unacknowledged input (bounded; snaps back on correction).
+	local function frame(now: number): any
+		local view = buffer.frame(now)
+		if not view then
+			return nil
+		end
+		local latest = buffer.latest()
+		if latest and latest.phase == "Running" and not view.paused and buffer.age(now) < 0.5 then
+			local lead = 0
+			local cursor = math.max(lastSnapshot, now - PREDICTION_LEAD)
+			local axis = state.axis
+			for index = #history, 1, -1 do
+				if history[index].time <= cursor then
+					axis = history[index].axis
+					break
+				end
 			end
-			m.pendingKillGold, m.pendingKillXp =
-				snapshot.pendingKillGold or 0, snapshot.pendingKillXp or 0
-			for _, e in snapshot.entities do
+			for _, input in history do
+				if input.time > cursor then
+					lead += axis * (input.time - cursor)
+					cursor, axis = input.time, input.axis
+				end
+			end
+			lead += axis * (now - cursor)
+			for _, e in view.entities do
 				if e.kind == "Hero" then
-					m.heroHp, m.heroMaxHp = e.hp, e.maxHp
-				elseif e.kind == "Objective" then
-					m.coreHp, m.coreMaxHp = e.hp, e.maxHp
+					e.x = math.clamp(e.x + lead * view.heroSpeed, view.heroMinX, view.heroMaxX)
 				end
 			end
 		end
-		return m
-	end
-	local function frame(now: number): any
-		local f = buffer.frame(now)
-		local x = predicted(now) + correction * math.clamp(1 - (now - correctionAt) / 0.1, 0, 1)
-		f.heroX = math.clamp(x, 0, f.advanceLimitX)
-		for _, e in f.entities do
-			if e.kind == "Hero" then
-				e.x = f.heroX
-			end
-		end
-		renderedHero = f.heroX
-		return f
+		return view
 	end
 	return table.freeze({
 		beginBootstrap = beginBootstrap,
@@ -369,7 +342,10 @@ local function new(deps: Deps)
 		receiveSnapshot = receiveSnapshot,
 		receiveMessage = receiveMessage,
 		move = move,
-		action = action,
+		lobby = lobby,
+		start = start,
+		battle = battle,
+		returnToLobby = returnToLobby,
 		model = model,
 		frame = frame,
 		step = function(now: number)

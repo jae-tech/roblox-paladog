@@ -36,10 +36,7 @@
             "Runner": { "$path": "tests/Runner.luau" },
             "unit": {
               "$className": "Folder",
-              "P5": { "$path": "tests/unit/P5.luau" },
-              "P5Input": { "$path": "tests/unit/P5Input.luau" },
-              "P5Net": { "$path": "tests/unit/P5Net.luau" },
-              "P5View": { "$path": "tests/unit/P5View.luau" }
+              "R4": { "$path": "tests/unit/R4.luau" }
             }
           }
         }

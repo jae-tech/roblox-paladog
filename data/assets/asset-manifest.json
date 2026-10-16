@@ -9,7 +9,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
     },
     {
       "presentationId": "vanguard_placeholder",
@@ -19,7 +19,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
     },
     {
       "presentationId": "slinger_placeholder",
@@ -29,7 +29,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
     },
     {
       "presentationId": "bulwark_placeholder",
@@ -39,7 +39,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
     },
     {
       "presentationId": "scrapper_placeholder",
@@ -49,7 +49,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
     },
     {
       "presentationId": "spitter_placeholder",
@@ -59,7 +59,7 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
     },
     {
       "presentationId": "brute_placeholder",
@@ -69,57 +69,447 @@
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE \u00a73.2 Placeholder)"
+      "licenseRecord": "none: code-built geometry, no asset file (ASSET_PIPELINE §3.2 Placeholder)"
     },
     {
-      "presentationId": "core_placeholder",
+      "presentationId": "boss_10_placeholder",
       "renderer": "Placeholder",
       "provenanceKind": "Original",
       "status": "placeholder",
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: original code-built geometry, no asset file (P5 DESIGN.md)"
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
     },
     {
-      "presentationId": "ally_bolt_placeholder",
+      "presentationId": "boss_1_placeholder",
       "renderer": "Placeholder",
       "provenanceKind": "Original",
       "status": "placeholder",
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: original code-built geometry, no asset file (P5 DESIGN.md)"
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
     },
     {
-      "presentationId": "enemy_bolt_placeholder",
+      "presentationId": "boss_2_placeholder",
       "renderer": "Placeholder",
       "provenanceKind": "Original",
       "status": "placeholder",
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: original code-built geometry, no asset file (P5 DESIGN.md)"
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
     },
     {
-      "presentationId": "pulse_placeholder",
+      "presentationId": "boss_3_placeholder",
       "renderer": "Placeholder",
       "provenanceKind": "Original",
       "status": "placeholder",
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: original code-built geometry, no asset file (P5 DESIGN.md)"
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
     },
     {
-      "presentationId": "environment_placeholder",
+      "presentationId": "boss_4_placeholder",
       "renderer": "Placeholder",
       "provenanceKind": "Original",
       "status": "placeholder",
       "assetId": null,
       "originalFileHash": null,
       "approvedBy": null,
-      "licenseRecord": "none: original code-built geometry, no asset file (P5 DESIGN.md)"
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "boss_5_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "boss_6_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "boss_7_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "boss_8_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "boss_9_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "castle_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_10_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_11_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_12_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_13_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_14_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_15_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_16_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_17_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_18_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_19_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_1_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_20_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_2_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_3_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_4_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_5_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_6_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_7_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_8_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "enemy_9_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "field_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "hero_light_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "projectile_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "unit_1_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "unit_2_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "unit_3_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "unit_4_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "unit_5_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "unit_6_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "unit_7_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "unit_8_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "unit_9_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "wagon_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
     }
   ]
 }

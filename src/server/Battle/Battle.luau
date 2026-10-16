@@ -2099,6 +2099,7 @@ local function snapshot(b: any): any
 			x = o.x,
 			line = o.line,
 			dir = o.dir,
+			t = if o.duration > 0 then math.min(o.ticks / o.duration, 1) else 0, -- lob/drop progress
 		})
 	end
 	local boxes = {}
@@ -2106,9 +2107,16 @@ local function snapshot(b: any): any
 		local box = b.boxes[i]
 		boxes[i] = if box then box.kind .. ":" .. box.id else ""
 	end
+	local heroView = b.entities[b.heroId]
 	return {
 		tick = b.tick,
 		mode = b.mode,
+		heroSpeed = if heroCanMove(b) then b.stats.moveSpeed + b.stats.moveSpeedRing else 0,
+		heroMinX = -40,
+		heroMaxX = heroLimit(b),
+		heroState = heroView.state,
+		auraRadius = if b.mode ~= "Tower" then b.stats.auraRadius else nil,
+		paused = b.reviveOffer or #b.pendingPicks > 0,
 		food = b.food,
 		mana = b.mana,
 		maxFood = b.stats.maxFood,
