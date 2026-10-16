@@ -40,6 +40,7 @@ python3 tools/verify_p1.py                 # 데이터 golden·재생성 diff0·
 .tools/luau-0.742/luau tests/cli_r3.luau   # REMAKE 성장·서버 흐름·공격 매트릭스·생명주기
 .tools/luau-0.742/luau tests/cli_r6.luau   # REMAKE 서바이벌 웨이브·보석·해금 이벤트·정산
 .tools/luau-0.742/luau tests/cli_r7.luau   # REMAKE 통합: 전 스테이지 smoke·서바이벌 장기 진행·4경기 부하(약 70초)
+.tools/luau-0.742/luau tests/cli_r8.luau   # 광장 리더보드 집계
 python3 tools/verify_r7.py                 # R7 전체 회귀 gate (Studio 증거 없으면 BLOCKED)
 .tools/luau-0.742/luau tests/cli_p2.luau   # 프로토콜 v2 허용목록·격리·세션·lease (P2 이식)
 .tools/luau-0.742/luau tests/cli_p8.luau   # 저장 어댑터·lease·장애 주입 (P8 이식)

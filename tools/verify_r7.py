@@ -28,6 +28,7 @@ CLI_SUITES = {
     "T-R5": "tests/cli_r5.luau",
     "T-R6": "tests/cli_r6.luau",
     "T-R7": "tests/cli_r7.luau",
+    "T-R8": "tests/cli_r8.luau",
     "T-3D": "tests/cli_3d.luau",
     "T-P2": "tests/cli_p2.luau",
     "T-P8": "tests/cli_p8.luau",

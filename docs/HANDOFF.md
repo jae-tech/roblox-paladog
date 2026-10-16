@@ -2,7 +2,13 @@
 
 ## 현재 상태 (2026-10-16)
 
-### 최신: R7 통합 검증 (브랜치 r7-integration)
+### 최신: 버튼별 오토 + R8 광장·아바타 전투
+
+- 소환/무기 버튼(키)을 누를 때마다 그 칸 오토가 켜지고 꺼진다(D-AUTO-01, 클라이언트가 같은 명령을 보냄, 보상 그대로).
+- 접속 시 로블록스 아바타로 광장에 나오고, 던전 입구(E)로 원정 메뉴를 열며, 던전 안 영웅도 내 아바타가 싸운다. 리더보드는 서버 단위(leaderstats + 게시판). 상세는 `docs/PROGRESS.md` 마지막 두 절.
+- `verify_r7.py` 로컬 항목 전부 PASS(R8 포함). studio 항목은 이 변경 전 증거라 재캡처 필요. 2인 동시 접속 확인은 아직 안 했다.
+
+### 이전: R7 통합 검증 (브랜치 r7-integration)
 
 - `python3 tools/verify_r7.py --studio-evidence artifacts/R7/studio/r7-studio-evidence.json`은 **BLOCKED(exit 2)**. CLI 10개 suite·P0 local·diff0·출시 감사·Python·Studio(suite 해시 동일·10분 4경기 부하 p95 11.9ms·실제 입력 플레이 3종)·실 QA DataStore v2(사용자 승인, 저장·복원·lease 경합·옛 토큰 거절·정리)는 PASS. 남은 BLOCKED: Android 실기기 멀티터치(알려진 제한).
 - 사용자 조치: 실 DataStore 검증이 끝났으니 테스트 universe의 "Studio API 서비스 액세스"는 다시 꺼도 된다. 출시 전 남은 일: Android 실기기 터치, 에셋 시각·라이선스 검토, 출시 universe에서 `PersistencePolicy` 활성화(승인 필요), place publish.
