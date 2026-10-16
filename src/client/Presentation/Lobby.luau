@@ -1,6 +1,8 @@
 --!strict
 -- Lobby screens: records (3 slots), campaign stage select (5 chapters x 24), units, equipment/shop, skills,
 -- achievements. Content is rebuilt only when the profile revision or the selection changes.
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 local Theme = require("./Theme")
 local Widgets = require("./Widgets")
 local Text = require("./Text")
@@ -502,6 +504,90 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		end
 	end
 
+	-- Avatar preview: a copy of the player's real character with the gear the server put on it (D-GEAR-01).
+	-- It refreshes when the server finishes re-dressing the character (GearKey attribute).
+	local previewConn: RBXScriptConnection? = nil
+	local function stopPreview()
+		if previewConn then
+			previewConn:Disconnect()
+			previewConn = nil
+		end
+	end
+	local function avatarPreview(panel: Frame)
+		stopPreview()
+		local view = Instance.new("ViewportFrame")
+		view.Name = "Avatar"
+		view.Size = UDim2.new(1, -8, 1, -30)
+		view.Position = UDim2.fromOffset(4, 4)
+		view.BackgroundColor3 = Theme.panelDeep
+		view.Ambient = Color3.fromRGB(160, 160, 170)
+		view.LightColor = Color3.new(1, 1, 1)
+		view.LightDirection = Vector3.new(-0.5, -1, 0.6)
+		Widgets.corner(view, 8)
+		view.Parent = panel
+		local camera = Instance.new("Camera")
+		camera.FieldOfView = 40
+		camera.Parent = view
+		view.CurrentCamera = camera
+		local world = Instance.new("WorldModel")
+		world.Parent = view
+		local caption = Widgets.label(panel, "Caption", "착용 모습", 13, Theme.muted)
+		caption.Size = UDim2.new(1, 0, 0, 22)
+		caption.Position = UDim2.new(0, 0, 1, -24)
+		local function still(copy: Instance)
+			for _, item in copy:GetDescendants() do
+				if item:IsA("LuaSourceContainer") or item:IsA("ForceField") then
+					item:Destroy()
+				elseif item:IsA("BasePart") then
+					item.Anchored = true
+				end
+			end
+		end
+		local function refresh()
+			if not view.Parent then
+				return
+			end
+			world:ClearAllChildren()
+			local player = Players.LocalPlayer
+			local character = player.Character
+			local body = character and character:FindFirstChild("HumanoidRootPart")
+			if not character or not body or not body:IsA("BasePart") then
+				caption.Text = "캐릭터를 불러오는 중..."
+				return
+			end
+			local archivable = character.Archivable
+			character.Archivable = true
+			local copy = character:Clone()
+			character.Archivable = archivable
+			if not copy then
+				return
+			end
+			still(copy)
+			copy.Parent = world
+			local folder = Workspace:FindFirstChild("GearCompanions")
+			local companion = folder and folder:FindFirstChild(tostring(player.UserId))
+			if companion then
+				local pet = companion:Clone()
+				still(pet)
+				pet.Parent = world
+			end
+			caption.Text = if companion then "착용 모습 · 탈것 동행" else "착용 모습"
+			local focus = body.CFrame
+			local side = if companion then 1.8 else 0
+			local target = (focus * CFrame.new(side, 0.3, 0)).Position
+			local eye = (focus * CFrame.new(side + 3, 1.2, if companion then -17 else -12.5)).Position
+			camera.CFrame = CFrame.lookAt(eye, target)
+		end
+		refresh()
+		local character = Players.LocalPlayer.Character
+		if character then
+			previewConn = character:GetAttributeChangedSignal("GearKey"):Connect(function()
+				-- let the replicated gear parts arrive before copying
+				task.delay(0.25, refresh)
+			end)
+		end
+	end
+
 	-- Equipment / shop ------------------------------------------------------------------------------------
 	local function equipment(slot: any, summary: any)
 		local kind = slot.heroKind
@@ -552,7 +638,10 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			end)
 		end
 		local list = Widgets.list(content, "List", 4)
-		place(list, 390, 40, 290, 300)
+		place(list, 566, 40, 196, 300)
+		local preview = Widgets.card(content, "Preview", Theme.panel, 10)
+		place(preview, 390, 40, 168, 300)
+		avatarPreview(preview)
 		if ui.tab == "Bag" then
 			local sub = Widgets.label(
 				list,
@@ -851,6 +940,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	end
 
 	local function rebuild(model: any)
+		stopPreview()
 		Widgets.clear(content)
 		local summary = model.summary
 		if not summary then

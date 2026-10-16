@@ -14,6 +14,7 @@ local PersistencePolicy = require("./Persistence/PersistencePolicy")
 local Plaza = require("./World/Plaza")
 local Arena = require("./World/Arena")
 local PlazaBoard = require("./World/PlazaBoard")
+local AvatarGear = require("./World/AvatarGear")
 
 local active: any = nil
 local function start(): any
@@ -22,6 +23,7 @@ local function start(): any
 	end
 	local protocol = require(ReplicatedStorage.Shared.Protocol)
 	local catalog = require(ReplicatedStorage.Shared.RemakeCatalog)
+	local GearLook = require(ReplicatedStorage.Shared.GearLook)
 	local balanceHash = protocol.BALANCE_HASH
 	local tick = 0
 	local stopping = false
@@ -143,8 +145,35 @@ local function start(): any
 			end
 		end,
 	}
+	-- Equipment on the avatar (D-GEAR-01): rebuilt when the current record's equipped codes change.
+	local gear = AvatarGear.new()
 	Players.PlayerRemoving:Connect(function(player)
 		arenas.release(player.UserId)
+		gear.release(player.UserId)
+	end)
+	task.spawn(function()
+		while not stopping do
+			for _, player in Players:GetPlayers() do
+				local character = player.Character
+				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+				if character and humanoid and humanoid.Health > 0 then
+					local profile = profiles.profileOf(player.UserId)
+					local slot = profile
+						and profile.currentSlot
+						and profile.slots[profile.currentSlot]
+					local equip = if type(slot) == "table" then slot.equip else {}
+					local _, codes = GearLook.look(equip)
+					local key = (if type(slot) == "table" then slot.heroKind else "none")
+						.. "|"
+						.. codes
+					if character:GetAttribute("GearKey") ~= key then
+						gear.apply(player, character, equip, key)
+					end
+					gear.keepUp(player)
+				end
+			end
+			task.wait(0.3)
+		end
 	end)
 	local function leaderstats(player: Player): Folder
 		local folder = player:FindFirstChild("leaderstats") :: Folder?

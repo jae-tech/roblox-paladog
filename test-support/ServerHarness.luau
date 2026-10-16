@@ -155,6 +155,7 @@ function Harness.runSuite(suiteId: string, seed: number, options: { loadTicks: n
 				PlazaBoard = require(GameServer.World.PlazaBoard),
 				Schema = require(GameServer.Services.ProfileSchema),
 				ArenaSpace = require(ReplicatedStorage.Shared.ArenaSpace),
+				GearLook = require(ReplicatedStorage.Shared.GearLook),
 				Protocol = require(ReplicatedStorage.Shared.Protocol),
 				Battle = battle.Battle,
 				ProfileService = require(GameServer.Services.ProfileService),

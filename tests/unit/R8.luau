@@ -192,4 +192,85 @@ return function(env: any, check: any)
 			check("follow-none-stands", free, h.x, srv.tick)
 		end
 	end
+
+	-- D-GEAR-01: every item has a valid, distinct look on the avatar
+	local Gear = env.GearLook
+	check("gear-module-present", true, Gear ~= nil, 0)
+	if not Gear then
+		return
+	end
+	local SLOT_OF = { 1, 4, 7, 8, 9, 1, 4, 7, 8, 9 }
+	local valid, distinct, cored, total = true, true, true, 0
+	local problem = ""
+	for category = 1, 10 do
+		local seen: { [string]: boolean } = {}
+		for num = 1, Gear.CATEGORY_COUNT[category] do
+			total += 1
+			local code = category * 100000 + num * 1000
+			local pieces = Gear.pieces(SLOT_OF[category], code)
+			local signature = {}
+			local hasCore = false
+			if #pieces == 0 then
+				valid, problem = false, "no pieces " .. code
+			end
+			for _, piece in pieces do
+				if not Gear.ANCHORS[piece.anchor] then
+					valid, problem = false, "anchor " .. piece.anchor
+				end
+				for _, part in piece.parts do
+					hasCore = hasCore or part.core == true
+					if not Gear.SHAPES[part.shape] then
+						valid, problem = false, "shape " .. tostring(part.shape)
+					end
+					for axis = 1, 3 do
+						if not (part.size[axis] > 0) or part.at[axis] ~= part.at[axis] then
+							valid, problem = false, "size " .. code
+						end
+						if part.color[axis] < 0 or part.color[axis] > 255 then
+							valid, problem = false, "color " .. code
+						end
+					end
+					local view: any = part
+					table.insert(
+						signature,
+						tostring(piece.anchor)
+							.. tostring(view.shape)
+							.. table.concat(view.size, ",")
+							.. table.concat(view.color, ",")
+					)
+				end
+			end
+			local key = table.concat(signature, "|")
+			if seen[key] then
+				distinct, problem = false, "same look " .. code
+			end
+			seen[key] = true
+			cored = cored and hasCore
+		end
+	end
+	check("gear-all-items-valid", "", if valid then "" else problem, 0)
+	check("gear-item-count", 82, total, 0)
+	check("gear-looks-distinct", true, distinct, 0)
+	check("gear-every-item-glows-with-grade", true, cored, 0)
+	check("gear-empty-slot", 0, #Gear.pieces(1, 0), 0)
+	check("gear-unknown-code", 0, #Gear.pieces(1, 199000), 0)
+	check("gear-weapon-hand", "RightHand", Gear.pieces(1, 101000)[1].anchor, 0)
+	check("gear-weapon-back", "UpperTorso", Gear.pieces(2, 101000)[1].anchor, 0)
+	check("gear-weapon-hip", "LowerTorso", Gear.pieces(3, 601000)[1].anchor, 0)
+	check("gear-grade-carried", 4, Gear.pieces(1, 101004)[1].grade, 0)
+	check("gear-helmet-hides-hair", true, Gear.pieces(7, 301000)[1].hidesHair == true, 0)
+	check("gear-mount-companion", true, Gear.pieces(9, 503000)[1].companion == true, 0)
+	check("gear-circlet-keeps-hair", false, Gear.pieces(7, 804000)[1].hidesHair == true, 0)
+	check("gear-boots-both-feet", 4, #Gear.pieces(9, 1001000), 0)
+	local fresh = Schema.newSlot("light", 1)
+	local look, key = Gear.look(fresh.equip)
+	local inHand = false
+	for _, piece in look do
+		inHand = inHand or piece.anchor == "RightHand"
+	end
+	check("gear-new-record-holds-weapon", true, inHand, 0)
+	local changed = table.clone(fresh.equip)
+	changed[7] = 301000
+	local _, key2 = Gear.look(changed)
+	check("gear-key-follows-equip", true, key ~= key2, 0)
 end

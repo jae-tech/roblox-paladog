@@ -640,6 +640,16 @@
       "originalFileHash": null,
       "approvedBy": null,
       "licenseRecord": "none: original code-built plaza (floor, fountain, lanterns, board, dungeon gate), no asset file"
+    },
+    {
+      "presentationId": "avatar_gear_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: original code-built equipment worn on avatars (weapons, rings, amulets, helmets, armour, boots, companion mounts), no asset file"
     }
   ]
 }
