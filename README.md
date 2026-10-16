@@ -1,6 +1,13 @@
 # 등불 원정 — Roblox 게임 설계 (가칭)
 
-Paladog의 메커니즘을 참고하는 **오리지널 2.5D 횡스크롤 전략 액션** 프로젝트입니다.
+Paladog의 소환 전투를 바탕으로 하는 **오리지널 3D 동행 전투** 프로젝트입니다. 식량으로 용병을 소환하고, 직접 영웅을 움직여 마나 마법을 쏘며 함께 전진합니다.
+
+- 조작: **W/S 전진·후퇴, A/D 횡이동, 1~9 용병 소환, Q/E/R 또는 좌클릭 마법**. 터치 버튼도 제공합니다.
+- 현재: 3D 전장·모델·추적 카메라와 서버 공간 전투 구현. CLI/Studio 논리·엔진 검증 PASS, **Studio 흰 화면으로 실제 화면/키·GUI 플레이 검증은 BLOCKED**. 실 저장은 기본 비활성, 아트는 코드 placeholder입니다.
+- 최신 범위/남은 일: [3D 계획](docs/3D_PLAN.md), [인수인계](docs/HANDOFF.md).
+
+## 이전 MVP 검증 기록
+
 P0~P9 구현과 CLI/Studio 회귀(P2~P9), 10분 부하, 실 QA DataStore 복원·경합 검증을 마쳤습니다. **Android 실기기 멀티터치 검증은 하지 못해 P9 gate는 BLOCKED이며, 출시 전 실기기 확인이 필요합니다.** 진행 상세는 [진행 기록](docs/PROGRESS.md)을 보세요. 운영 저장은 기본 비활성(서버 메모리)이고 공개 publish는 하지 않았습니다.
 
 재현 명령·도구 버전·승인 경계·미검증 항목은 [개발 안내](docs/DEVELOPMENT.md)를 확인하세요. `python3 tools/verify_p0.py --local-only`는 로컬 검사이며, `python3 tools/verify_p0.py --studio-evidence <json>`은 MCP로 수집한 Studio 증거를 검증하며, 증거가 없으면 exit2/BLOCKED입니다.

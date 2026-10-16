@@ -201,7 +201,7 @@ local function validateCommand(payload: unknown): (Types.ClientCommand?, Types.R
 	return table.freeze(command) :: any, nil
 end
 
-local MOVE_KEYS = { protocolVersion = true, matchId = true, seq = true, axis = true }
+local MOVE_KEYS = { protocolVersion = true, matchId = true, seq = true, axis = true, strafe = true }
 
 local function validateMove(payload: unknown): (Types.MoveIntent?, Types.Reason?)
 	local fields = flatFields(payload)
@@ -218,11 +218,18 @@ local function validateMove(payload: unknown): (Types.MoveIntent?, Types.Reason?
 		or not isToken(fields.matchId, 1, 64)
 		or not isInteger(fields.seq, 1, MAX_INTEGER)
 		or not (axis == -1 or axis == 0 or axis == 1)
+		or (
+			fields.strafe ~= nil
+			and fields.strafe ~= -1
+			and fields.strafe ~= 0
+			and fields.strafe ~= 1
+		)
 	then
 		return nil, "InvalidPayload"
 	end
 	local intent: Types.MoveIntent =
 		{ protocolVersion = VERSION, matchId = fields.matchId, seq = fields.seq, axis = axis }
+	intent.strafe = fields.strafe :: number?
 	return table.freeze(intent) :: Types.MoveIntent, nil
 end
 

@@ -57,8 +57,9 @@ local function start(): any
 		end,
 	})
 	local router = ActionRouter.new({
-		onAxis = function(axis)
-			controller.move(axis, os.clock())
+		onAxis = function(_axis) end,
+		onMove = function(axis, strafe)
+			controller.move(axis, os.clock(), strafe)
 		end,
 		onAction = function(action)
 			local now = os.clock()

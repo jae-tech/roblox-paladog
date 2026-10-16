@@ -32,6 +32,7 @@ function Shadow.spawnTotem(api: any, b: any, n: number): any
 	e.skillAnim = e.atkAnim
 	e.x = h.x + (row.spawnOffset or 0) -- totems appear relative to the hero (E02 §5)
 	e.line = h.line
+	e.z = h.z
 	e.y = api.depthY(b, row.createLine)
 	e.lifetime = row.lifetime or 0
 	e.hold = row.moveSpeed <= 0 -- every totem but the boar stands where it was placed
@@ -51,7 +52,7 @@ local function shout(api: any, b: any, level: number)
 			break
 		end
 		if c and c.team == 2 and api.targetable(c) and c.kind == "Enemy" and c.line == h.line then
-			if math.abs(c.x - h.x) <= OBJECTS.r279.range + c.hitDist then
+			if api.distanceAt(b, h, h.x, c) <= OBJECTS.r279.range + c.hitDist then
 				api.knockdown(c)
 				c.knockWaitTicks = math.floor(seconds * 30)
 				hit += 1
@@ -102,7 +103,7 @@ function Shadow.summon(api: any, b: any, n: number): string?
 			return "InsufficientMana"
 		end
 		b.mana -= cost
-		table.insert(b.traps, { row = trapRow, x = h.x + TRAP_OFFSET, line = h.line })
+		table.insert(b.traps, { row = trapRow, x = h.x + TRAP_OFFSET, z = h.z, line = h.line })
 		return nil
 	end
 	if b.summonPast[n] < row.cooldown * 30 - 1e-6 then
@@ -200,7 +201,10 @@ function Shadow.updateAura(api: any, b: any)
 	for _, id in b.order do
 		local e = b.entities[id]
 		if e and e.team == 2 and (e.kind == "Enemy" or e.kind == "Boss") then
-			e.aura = live and api.alive(e) and e.line == h.line and math.abs(h.x - e.x) <= radius
+			e.aura = live
+				and api.alive(e)
+				and e.line == h.line
+				and api.distanceAt(b, h, h.x, e) <= radius
 			if e.aura then
 				inside += 1
 				if thorns then
@@ -234,7 +238,7 @@ local function swordDamage(b: any, base: number): number
 	return dmg
 end
 
-local function inFront(b: any, h: any, reach: number): { any }
+local function inFront(api: any, b: any, h: any, reach: number): { any }
 	local list = {}
 	for _, id in b.order do
 		local c = b.entities[id]
@@ -243,7 +247,7 @@ local function inFront(b: any, h: any, reach: number): { any }
 			and c.team == 2
 			and c.line == h.line
 			and c.x > h.x
-			and c.x - h.x <= c.hitDist + reach
+			and api.distanceAt(b, h, h.x, c) <= c.hitDist + reach
 		then
 			if c.state ~= "Ghost" and c.state ~= "Blink" and c.state ~= "Dead" and c.hp > 0 then
 				table.insert(list, c)
@@ -271,7 +275,7 @@ function Shadow.swordEffect(api: any, b: any, sword: any)
 		return
 	end
 	local first = true
-	for _, c in inFront(b, h, row.range) do
+	for _, c in inFront(api, b, h, row.range) do
 		local dmg = swordDamage(b, base)
 		api.strike(b, h, c, dmg, false, false, num == 11)
 		if api.alive(c) then
@@ -350,7 +354,7 @@ function Shadow.stepHero(api: any, b: any)
 		if
 			b.dungeonTicks >= 15
 			and b.swordTicks == 0
-			and #inFront(b, h, Db.swords[1].range) > 0
+			and #inFront(api, b, h, Db.swords[1].range) > 0
 		then
 			b.dungeonTicks = 0
 			b.activeSword, b.swordTicks =
@@ -358,13 +362,15 @@ function Shadow.stepHero(api: any, b: any)
 		end
 		return
 	end
-	if b.axis ~= 0 then
-		h.dir = b.axis
+	if b.axis ~= 0 or (b.spatial and b.strafe ~= 0) then
+		if b.axis ~= 0 then
+			h.dir = b.axis
+		end
 		local speed = b.stats.moveSpeed + b.stats.moveSpeedRing
 		if b.transformTicks > 0 then
 			speed *= 1.2
 		end
-		h.x = math.clamp(h.x + b.axis * speed * DT, -40, api.heroLimit(b))
+		api.moveHero(b, speed)
 		h.state = "Move"
 	else
 		h.state = "Idle"
@@ -394,7 +400,7 @@ function Shadow.stepTraps(api: any, b: any)
 		for _, id in b.order do
 			local c = b.entities[id]
 			if c and c.team == 2 and c.kind == "Enemy" and api.alive(c) and c.line == trap.line then
-				if math.abs(c.x - trap.x) <= row.range + c.hitDist then
+				if api.distanceAt(b, trap, trap.x, c) <= row.range + c.hitDist then
 					victim = c
 					break
 				end
@@ -408,7 +414,7 @@ function Shadow.stepTraps(api: any, b: any)
 				local h = api.hero(b)
 				api.area(b, h, trap.x, row.range, true, function(c)
 					api.strike(b, h, c, damage, false, false)
-				end)
+				end, nil, trap.z)
 			else
 				victim.burnTicks, victim.burnLeft, victim.burnDamage = 0, 10, damage
 			end

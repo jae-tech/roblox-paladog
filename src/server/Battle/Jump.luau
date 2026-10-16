@@ -96,6 +96,7 @@ local function new(options: any, row: any, stageNumber: number): any
 	end
 	return {
 		jump = true,
+		spatial = options.spatial == true,
 		mode = "Jump",
 		stageNumber = stageNumber,
 		stage = row,
@@ -251,6 +252,9 @@ local function snapshot(b: any): any
 	return {
 		tick = b.tick,
 		mode = "Jump",
+		spatial = b.spatial,
+		heroMinZ = 0,
+		heroMaxZ = 0,
 		heroKind = "shadow",
 		food = 0,
 		mana = 0,

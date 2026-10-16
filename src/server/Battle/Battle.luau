@@ -7,6 +7,7 @@ local Rng = require("./Rng")
 local Rules = require("./Rules")
 local Shadow = require("./Shadow")
 local Jump = require("./Jump")
+local Spatial = require("./Spatial")
 
 local DT = 1 / 30
 local SCROLL_MAX = 1024
@@ -48,6 +49,7 @@ export type Entity = {
 	n: number,
 	team: number, -- 1 ally, 2 enemy
 	x: number,
+	z: number,
 	line: number,
 	y: number,
 	dir: number,
@@ -107,6 +109,7 @@ export type Object = {
 	owner: number,
 	ownerKind: string,
 	x: number,
+	z: number,
 	line: number,
 	dir: number,
 	speed: number,
@@ -123,6 +126,10 @@ export type Object = {
 	deathChance: number,
 	fromX: number,
 	toX: number,
+	fromZ: number,
+	toZ: number,
+	aimX: number,
+	aimZ: number,
 	ticks: number,
 	duration: number,
 	oneGold: boolean,
@@ -132,6 +139,7 @@ export type Object = {
 export type Options = {
 	stage: number,
 	seed: number,
+	spatial: boolean?,
 	loadout: Rules.Loadout,
 	cleared: boolean?, -- stage already has a star: kill rewards x0.5 (E04 §2-2)
 	goldAvailable: number?, -- profile gold, for the gold weapon (E03 §3.1)
@@ -167,6 +175,7 @@ local function newEntity(b: any, kind: string, n: number, team: number): Entity
 		n = n,
 		team = team,
 		x = 0,
+		z = 0,
 		line = -1,
 		y = 0,
 		dir = if team == 1 then 1 else -1,
@@ -294,6 +303,13 @@ local function spawnUnit(b: any, n: number, lane: number?): Entity
 	else
 		e.y = depthY(b, row.createLine)
 	end
+	if b.spatial then
+		local h = b.entities[b.heroId]
+		e.x = if h then math.max(0, h.x - 30) else 0
+		e.z = if lane
+			then (lane - 3) * 40
+			else math.clamp((if h then h.z else 0) + (n % 3 - 1) * 12, -90, 90)
+	end
 	return add(b, e)
 end
 
@@ -339,6 +355,9 @@ local function spawnEnemy(
 		e.line, e.y = line, laneY(line)
 	else
 		e.y = depthY(b, 0)
+	end
+	if b.spatial then
+		e.z = if line and line > 0 then (line - 3) * 40 else (e.y - 160) * 3
 	end
 	return add(b, e)
 end
@@ -419,6 +438,8 @@ local function new(options: Options): any
 			else SCROLL_MAX,
 		dPattern = mode == "Destiny" or mode == "Dungeon", -- 60-enemy fixed rhythm (E04 §3-1)
 		shadow = shadow,
+		spatial = options.spatial == true,
+		strafe = 0,
 		traps = {},
 		thornTicks = 0,
 		transformTicks = 0,
@@ -753,8 +774,9 @@ local function nearestFront(b: any, e: Entity, reach: number): Entity?
 			and canHit(e.kind, e.n, c)
 		then
 			local dx = (c.x - e.x) * e.dir
-			if dx >= 0 and dx <= reach + c.hitDist and dx < bestDist then
-				best, bestDist = c, dx
+			local d = Spatial.distanceAt(b, e, e.x, c)
+			if dx >= 0 and d <= reach + c.hitDist and d < bestDist then
+				best, bestDist = c, d
 			end
 		end
 	end
@@ -768,7 +790,8 @@ local function area(
 	reach: number,
 	both: boolean,
 	fn: (Entity) -> (),
-	limit: number?
+	limit: number?,
+	centerZ: number?
 )
 	local hit: { Entity } = {}
 	for _, id in b.order do
@@ -781,7 +804,11 @@ local function area(
 			and canHit(e.kind, e.n, c)
 		then
 			local dx = (c.x - x) * e.dir
-			if (both or dx >= 0) and math.abs(dx) <= reach + c.hitDist then
+			if
+				(both or dx >= 0)
+				and Spatial.distanceAt(b, if centerZ then { z = centerZ } else e, x, c)
+					<= reach + c.hitDist
+			then
 				table.insert(hit, c)
 				if limit and #hit >= limit then
 					break
@@ -811,6 +838,9 @@ local function launch(b: any, spec: any): Object?
 		owner = spec.owner,
 		ownerKind = spec.ownerKind or "",
 		x = spec.x,
+		z = spec.z or (b.entities[spec.owner] and b.entities[spec.owner].z) or 0,
+		aimX = spec.aimX or spec.dir,
+		aimZ = spec.aimZ or 0,
 		line = spec.line,
 		dir = spec.dir,
 		speed = spec.speed or (if row then row.speed else 0),
@@ -826,6 +856,8 @@ local function launch(b: any, spec: any): Object?
 		single = spec.single or false,
 		deathChance = spec.deathChance or 0,
 		fromX = spec.x,
+		fromZ = spec.z or (b.entities[spec.owner] and b.entities[spec.owner].z) or 0,
+		toZ = spec.toZ or spec.z or (b.entities[spec.owner] and b.entities[spec.owner].z) or 0,
 		toX = spec.toX or spec.x,
 		ticks = 0,
 		duration = spec.duration or 0,
@@ -877,12 +909,15 @@ local function stepObjects(b: any)
 		end
 		o.ticks += 1
 		if o.kind == "Straight" then
-			o.x += o.dir * o.speed * DT
+			o.x += (if b.spatial then o.aimX else o.dir) * o.speed * DT
+			if b.spatial then
+				o.z += o.aimZ * o.speed * DT
+			end
 			local best: Entity?, bestDist = nil, math.huge
 			for _, eid in b.order do
 				local c: Entity? = b.entities[eid]
 				if c and hitsFrom(o, c) and not o.hit[c.id] then
-					local d = math.abs(c.x - o.x)
+					local d = Spatial.distanceAt(b, o, o.x, c)
 					if d <= PROJECTILE_HALF_WIDTH + c.hitDist and d < bestDist then
 						best, bestDist = c, d
 					end
@@ -894,17 +929,25 @@ local function stepObjects(b: any)
 				projectileHit(b, o, best)
 				done = o.pierce <= 0
 				if o.row == 283 then
-					o.kind, o.x, o.ticks, o.duration, o.area = "Gas", best.x, 0, 30, 25
+					o.kind, o.x, o.z, o.ticks, o.duration, o.area = "Gas", best.x, best.z, 0, 30, 25
 					done = false -- D-SWORD-04: one-second cloud, applies the documented ten-second poison.
 				end
 			end
-			if o.x < -PROJECTILE_HALF_WIDTH * 2 or o.x > SCROLL_MAX + PROJECTILE_HALF_WIDTH * 2 then
+			if
+				o.x < -PROJECTILE_HALF_WIDTH * 2
+				or o.x > SCROLL_MAX + PROJECTILE_HALF_WIDTH * 2
+				or (b.spatial and math.abs(o.z) > Spatial.HALF_WIDTH + 40)
+			then
 				done = true
 			end
 		elseif o.kind == "Gas" then
 			for _, eid in b.order do
 				local c = b.entities[eid]
-				if c and hitsFrom(o, c) and math.abs(c.x - o.x) <= o.area + c.hitDist then
+				if
+					c
+					and hitsFrom(o, c)
+					and Spatial.distanceAt(b, o, o.x, c) <= o.area + c.hitDist
+				then
 					c.poisonDps, c.poisonLeft = o.poison, 10 -- refresh duration, not the damage clock
 				end
 			end
@@ -912,6 +955,7 @@ local function stepObjects(b: any)
 		elseif o.kind == "Lob" or o.kind == "Drop" then
 			if o.kind == "Lob" then
 				o.x = o.fromX + (o.toX - o.fromX) * math.min(o.ticks / o.duration, 1)
+				o.z = o.fromZ + (o.toZ - o.fromZ) * math.min(o.ticks / o.duration, 1)
 			end
 			if o.ticks >= o.duration then
 				local owner = ownerOf(b, o)
@@ -921,7 +965,7 @@ local function stepObjects(b: any)
 					for _, eid in b.order do
 						local c: Entity? = b.entities[eid]
 						if c and hitsFrom(o, c) then
-							local d = math.abs(c.x - o.x)
+							local d = Spatial.distanceAt(b, o, o.x, c)
 							if d <= o.area + c.hitDist and d < bestDist then
 								best, bestDist = c, d
 							end
@@ -933,7 +977,11 @@ local function stepObjects(b: any)
 				else
 					for _, eid in b.order do
 						local c: Entity? = b.entities[eid]
-						if c and hitsFrom(o, c) and math.abs(c.x - o.x) <= o.area + c.hitDist then
+						if
+							c
+							and hitsFrom(o, c)
+							and Spatial.distanceAt(b, o, o.x, c) <= o.area + c.hitDist
+						then
 							table.insert(hitList, c)
 						end
 					end
@@ -978,6 +1026,12 @@ local function fire(b: any, e: Entity, row: number, ap: number, extra: any?)
 		ap = ap,
 		aura = e.aura,
 	}
+	if b.spatial then
+		local target = (e.target and b.entities[e.target]) or nearestFront(b, e, 600)
+		if target then
+			spec.aimX, spec.aimZ = Spatial.direction(target.x - spec.x, target.z - e.z)
+		end
+	end
 	if extra then
 		for k, v in extra do
 			spec[k] = v
@@ -1005,6 +1059,7 @@ local function lob(
 		ownerKind = e.kind,
 		x = e.x,
 		toX = e.x + (target.x - e.x) + e.dir * extraDist,
+		toZ = target.z,
 		line = e.line,
 		dir = e.dir,
 		ap = ap,
@@ -1029,6 +1084,13 @@ local function summonMinions(b: any, boss: Entity, enemyId: number)
 end
 
 local function bossRelease(b: any, e: Entity, target: Entity?)
+	if
+		b.spatial
+		and target
+		and Spatial.distanceAt(b, e, e.x, target) > e.attackDist + target.hitDist
+	then
+		target = nil
+	end
 	local n = e.n
 	if n == 1 then
 		summonMinions(b, e, 1)
@@ -1087,6 +1149,7 @@ local function bossRelease(b: any, e: Entity, target: Entity?)
 				owner = e.id,
 				ownerKind = e.kind,
 				x = c.x,
+				z = c.z,
 				line = e.line,
 				dir = e.dir,
 				ap = e.ap,
@@ -1096,7 +1159,14 @@ local function bossRelease(b: any, e: Entity, target: Entity?)
 				duration = OBJECTS.r303.frame,
 			})
 		end)
-	elseif target and alive(target) then
+	elseif
+		target
+		and alive(target)
+		and (
+			not b.spatial
+			or Spatial.distanceAt(b, e, e.x, target) <= e.attackDist + target.hitDist
+		)
+	then
 		strike(b, e, target, e.ap, false, false)
 	end
 end
@@ -1142,7 +1212,15 @@ local function release(b: any, e: Entity, skill: boolean)
 			area(b, e, e.x, e.skillDist, true, function(c)
 				strike(b, e, c, e.ap, true, e.aura)
 			end)
-		elseif target and alive(target) and not (n == 4 and skill) then -- kangaroo fists fire per frame
+		elseif
+			target
+			and alive(target)
+			and not (n == 4 and skill)
+			and (
+				not b.spatial
+				or Spatial.distanceAt(b, e, e.x, target) <= e.attackDist + target.hitDist
+			)
+		then -- kangaroo fists fire per frame
 			strike(b, e, target, e.ap, skill, e.aura)
 		end
 		return
@@ -1168,6 +1246,7 @@ local function release(b: any, e: Entity, skill: boolean)
 			owner = e.id,
 			ownerKind = e.kind,
 			x = target.x,
+			z = target.z,
 			line = e.line,
 			dir = e.dir,
 			ap = e.ap,
@@ -1182,7 +1261,14 @@ local function release(b: any, e: Entity, skill: boolean)
 		end)
 		e.removed, e.state = true, "Dead"
 		b.rewards.killTotal += 1
-	elseif target and alive(target) then
+	elseif
+		target
+		and alive(target)
+		and (
+			not b.spatial
+			or Spatial.distanceAt(b, e, e.x, target) <= e.attackDist + target.hitDist
+		)
+	then
 		strike(b, e, target, e.ap, false, false)
 	end
 end
@@ -1318,7 +1404,34 @@ local function stepEntity(b: any, e: Entity)
 			elseif b.shadow and e.team == 2 and e.aura then
 				speed *= b.stats.auraHinder -- hinder aura (x0.95 even at level 0, E03 §5.4)
 			end
-			e.x += e.dir * speed * DT
+			local ax, az = e.dir, 0
+			if b.spatial then
+				local closest: any = nil
+				local best = math.huge
+				for _, cid in b.order do
+					local c = b.entities[cid]
+					if
+						c
+						and c.team ~= e.team
+						and c.line == e.line
+						and targetable(c)
+						and canHit(e.kind, e.n, c)
+					then
+						local d = Spatial.distanceAt(b, e, e.x, c)
+						if d < best then
+							closest, best = c, d
+						end
+					end
+				end
+				if closest then
+					ax, az = Spatial.direction(closest.x - e.x, closest.z - e.z)
+					if ax ~= 0 then
+						e.dir = math.sign(ax)
+					end
+				end
+			end
+			e.x += ax * speed * DT
+			e.z = math.clamp(e.z + az * speed * DT, -Spatial.HALF_WIDTH, Spatial.HALF_WIDTH)
 			if towerScore(b, e) then
 				return
 			end
@@ -1336,7 +1449,7 @@ local function stepEntity(b: any, e: Entity)
 			not target
 			or not targetable(target)
 			or e.frogTicks > 0
-			or math.abs(target.x - e.x) > e.attackDist + target.hitDist
+			or Spatial.distanceAt(b, e, e.x, target) > e.attackDist + target.hitDist
 		then
 			e.target = nil
 			enter(e, "Move")
@@ -1422,8 +1535,8 @@ local function nearestEnemyWithin(b: any, h: Entity, reach: number): Entity?
 	for _, id in b.order do
 		local c = b.entities[id]
 		if c and c.team == 2 and targetable(c) and c.kind ~= "Castle" then
-			local d = c.x - h.x
-			if d >= 0 and d <= reach and d < bestDist then
+			local d = Spatial.distanceAt(b, h, h.x, c)
+			if c.x >= h.x and d <= reach and d < bestDist then
 				best, bestDist = c, d
 			end
 		end
@@ -1448,7 +1561,7 @@ local function maceEffect(b: any, mace: any)
 				and c.line == h.line
 				and (c.kind == "Unit" or c.kind == "Hero")
 			then
-				if math.abs(c.x - h.x) <= 150 + c.hitDist then
+				if Spatial.distanceAt(b, h, h.x, c) <= 150 + c.hitDist then
 					c.hp = math.min(c.hp + main, c.maxHp)
 				end
 			end
@@ -1459,7 +1572,7 @@ local function maceEffect(b: any, mace: any)
 			local c = b.entities[id]
 			if c and c.team == 2 and targetable(c) and c.kind ~= "Castle" then
 				local dx = c.x - h.x
-				if dx >= 0 and dx <= 300 + c.hitDist then
+				if dx >= 0 and Spatial.distanceAt(b, h, h.x, c) <= 300 + c.hitDist then
 					if c.kind ~= "Boss" and Rng.rand(b.rng) % 1000 < chance then
 						strike(b, h, c, c.hp + 1, false, false)
 					else
@@ -1483,7 +1596,7 @@ local function maceEffect(b: any, mace: any)
 					and targetable(c)
 					and c.kind ~= "Castle"
 					and c.x - h.x >= 0
-					and c.x - h.x <= 250
+					and Spatial.distanceAt(b, h, h.x, c) <= 250
 				then
 					table.insert(candidates, c)
 				end
@@ -1507,7 +1620,8 @@ local function maceEffect(b: any, mace: any)
 				and c.team == 2
 				and targetable(c)
 				and c.line == h.line
-				and c.x - h.x <= c.hitDist + 180
+				and c.x >= h.x
+				and Spatial.distanceAt(b, h, h.x, c) <= c.hitDist + 180
 			then
 				strike(b, h, c, main, false, false)
 			end
@@ -1525,7 +1639,7 @@ local function maceEffect(b: any, mace: any)
 				and c.team == 2
 				and targetable(c)
 				and c.kind == "Enemy"
-				and math.abs(c.x - h.x) <= 150 + c.hitDist
+				and Spatial.distanceAt(b, h, h.x, c) <= 150 + c.hitDist
 			then
 				knockdown(c, main / 96)
 				hits += 1
@@ -1550,6 +1664,22 @@ local function heroCanMove(b: any): boolean
 	return b.mode ~= "Destiny" and b.mode ~= "Tower" and b.mode ~= "Dungeon" and b.mode ~= "Jump"
 end
 
+local function moveHero(b: any, speed: number)
+	local h = hero(b)
+	if not heroCanMove(b) then
+		return
+	end
+	local ax, az = b.axis, 0
+	if b.spatial then
+		ax, az = Spatial.direction(b.axis, b.strafe)
+	end
+	h.x = math.clamp(h.x + ax * speed * DT, -40, heroLimit(b))
+	h.z = math.clamp(h.z + az * speed * DT, -Spatial.HALF_WIDTH, Spatial.HALF_WIDTH)
+	if b.axis ~= 0 then
+		h.dir = b.axis
+	end
+end
+
 local function stepHero(b: any)
 	local h = hero(b)
 	if not alive(h) then
@@ -1562,6 +1692,9 @@ local function stepHero(b: any)
 	if b.shadow then
 		Shadow.stepHero(api, b)
 		return
+	end
+	if b.spatial then
+		moveHero(b, b.stats.moveSpeed + b.stats.moveSpeedRing)
 	end
 	if h.state == "Mace" then
 		h.stateTicks += 1
@@ -1577,10 +1710,15 @@ local function stepHero(b: any)
 		end
 		return
 	end
-	if b.axis ~= 0 and heroCanMove(b) then
-		h.state, h.dir = "Move", b.axis
+	if (b.axis ~= 0 or (b.spatial and b.strafe ~= 0)) and heroCanMove(b) then
+		h.state = "Move"
+		if b.axis ~= 0 then
+			h.dir = b.axis
+		end
 		local speed = b.stats.moveSpeed + b.stats.moveSpeedRing
-		h.x = math.clamp(h.x + b.axis * speed * DT, -40, heroLimit(b))
+		if not b.spatial then
+			moveHero(b, speed)
+		end
 	else
 		h.state = "Idle"
 	end
@@ -2039,7 +2177,7 @@ local function updateAura(b: any)
 				and alive(e)
 				and alive(h)
 				and e.line == h.line
-				and math.abs(h.x - e.x) <= radius
+				and Spatial.distanceAt(b, h, h.x, e) <= radius
 			if e.aura then
 				inside += 1
 				if not was then
@@ -2178,7 +2316,7 @@ local function cleanup(b: any)
 	b.order = kept
 end
 
-export type Input = { commands: { any }?, axis: number? }
+export type Input = { commands: { any }?, axis: number?, strafe: number? }
 
 local function step(b: any, input: Input?): any
 	local commands: { any } = if input and input.commands then input.commands else {}
@@ -2193,6 +2331,7 @@ local function step(b: any, input: Input?): any
 		return { results = rejected, outcome = b.outcome }
 	end
 	b.axis = if input and input.axis then math.sign(input.axis) else 0
+	b.strafe = if input and input.strafe then math.sign(input.strafe) else 0
 	local results = runCommands(b, commands)
 	if b.outcome then
 		return { results = results, outcome = b.outcome }
@@ -2247,6 +2386,7 @@ local function snapshot(b: any): any
 			n = e.n,
 			team = e.team,
 			x = e.x,
+			z = e.z,
 			y = e.y,
 			line = e.line,
 			dir = e.dir,
@@ -2270,6 +2410,7 @@ local function snapshot(b: any): any
 			row = o.row,
 			team = o.team,
 			x = o.x,
+			z = o.z,
 			line = o.line,
 			dir = o.dir,
 			t = if o.duration > 0 then math.min(o.ticks / o.duration, 1) else 0, -- lob/drop progress
@@ -2284,12 +2425,15 @@ local function snapshot(b: any): any
 	return {
 		tick = b.tick,
 		mode = b.mode,
+		spatial = b.spatial,
+		heroMinZ = -Spatial.HALF_WIDTH,
+		heroMaxZ = Spatial.HALF_WIDTH,
 		heroKind = b.loadout.heroKind,
 		transform = b.transformTicks > 0,
 		traps = (function()
 			local placed = {}
 			for _, trap in b.traps do
-				table.insert(placed, { x = trap.x, row = trap.row })
+				table.insert(placed, { x = trap.x, z = trap.z, row = trap.row })
 			end
 			return placed
 		end)(),
@@ -2372,6 +2516,22 @@ local function digest(b: any): string
 			table.insert(parts, string.format("trap:%d:%.17g:%d", trap.row, trap.x, trap.line))
 		end
 	end
+	if b.spatial then
+		table.insert(parts, "spatial")
+		for _, trap in b.traps do
+			table.insert(parts, string.format("trapz:%.17g", trap.z))
+		end
+		for _, id in b.order do
+			table.insert(parts, string.format("z%d:%.17g", id, b.entities[id].z))
+		end
+		for _, id in b.objectOrder do
+			local o = b.objects[id]
+			table.insert(
+				parts,
+				string.format("oz%d:%.17g:%.17g:%.17g:%.17g", id, o.z, o.toZ, o.aimX, o.aimZ)
+			)
+		end
+	end
 	for n = 1, 9 do
 		local box = b.boxes[n]
 		table.insert(
@@ -2433,6 +2593,8 @@ local function digest(b: any): string
 	return string.format("%08x", hash)
 end
 
+api.moveHero = moveHero
+api.distanceAt = Spatial.distanceAt
 api.hero = hero
 api.count = count
 api.newEntity = newEntity

@@ -52,6 +52,7 @@ local SUITES = {
 	["T-R2"] = true,
 	["T-R3"] = true,
 	["T-R5"] = true,
+	["T-3D"] = true,
 }
 
 local Harness = {}
@@ -63,7 +64,19 @@ function Harness.runSuite(suiteId: string, seed: number)
 			Battle = require(GameServer.Battle.Battle),
 			Rules = require(GameServer.Battle.Rules),
 		}
-		if suiteId == "T-R1" then
+		if suiteId == "T-3D" then
+			require(tests.unit.Spatial3D)({
+				ClientController = require(GameClient.Net.ClientController),
+				ProfileService = require(GameServer.Services.ProfileService),
+				MatchService = require(GameServer.Services.MatchService),
+				SessionStore = require(GameServer.Services.SessionStore),
+				Battle = battle.Battle,
+				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				ActionRouter = require(GameClient.Input.ActionRouter),
+				SnapshotBuffer = require(GameClient.Net.SnapshotBuffer),
+			}, check)
+			return
+		elseif suiteId == "T-R1" then
 			require(tests.unit.R1)(battle, check)
 			return
 		elseif suiteId == "T-R2" then

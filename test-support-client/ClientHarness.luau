@@ -25,11 +25,18 @@ end
 return {
 	runSuite = function(suiteId: string, seed: number)
 		guard()
-		assert(suiteId == "T-R4", "unsupported client suite")
+		assert(suiteId == "T-R4" or suiteId == "T-3D-RENDER", "unsupported client suite")
 		local client = Players.LocalPlayer.PlayerScripts.GameClient
 		local tests = script.Parent.Tests
 		local Runner = require(tests.Runner)
 		return Runner.run("StudioClient", "studio-client-r4", seed, function(check)
+			if suiteId == "T-3D-RENDER" then
+				require(script.Parent.SpatialRender)({
+					WorldView = require(client.Presentation.WorldView),
+					catalog = require(ReplicatedStorage.Shared.RemakeCatalog),
+				}, check)
+				return
+			end
 			require(tests.unit.R4)({
 				Protocol = require(ReplicatedStorage.Shared.Protocol),
 				ClientController = require(client.Net.ClientController),

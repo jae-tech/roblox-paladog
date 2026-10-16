@@ -315,6 +315,7 @@ for n, id in TOTEM_IDS do
 end
 
 return table.freeze({
+	world3d = table.freeze({ presentationId = "dungeon_3d_placeholder" }),
 	hero = hero,
 	shadow = SHADOW,
 	totems = table.freeze(TOTEMS),

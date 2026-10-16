@@ -1,6 +1,10 @@
 # Design
 
 ## Source of truth
+
+**Active · 2026-10-16 · 3D 동행 전투**: 최신 사용자 지시와 `docs/3D_PLAN.md`가 아래 MVP 표현 계약보다 우선한다. 전장은 Workspace의 client-only 오리지널 도형 던전/영웅/용병/적/투사체이며 후방 추적 카메라를 쓴다. 식량 소환/별도 마나 마법·서버 확정 상태만 HUD에 표시한다. WASD 두 축, 1~9 소환, Q/E/R·좌클릭 시전, 터치 4방향을 지원한다. 작은 화면은 228px 하단 영역에서 소환 스크롤 행과 이동/마법 행을 나누고 이동 hit target은 48px 이상이다. 좁은 통로/단위 변환은 D-3D-01/02, 새 도형은 manifest의 dungeon_3d_placeholder다. 물리·피해 권한은 서버만 갖고, 카메라/인스턴스는 로비 복귀 시 복원/정리한다. 고품질 아트·자유 카메라 회전·협동은 이번 범위 아님. 엔진 smoke는 통과했으나 새 화면과 실제 조작은 Studio no-frame으로 BLOCKED다.
+
+### 이전 MVP 계약 (역사 기록)
 Active · 2026-10-15 · P5 전투 HUD/로비 선택/2.5D placeholder. 근거: `docs/PRD.md` §4, `docs/ARCHITECTURE.md` §6/9, `docs/TEST_PLAN.md` T-INPUT/T-NET/T-ASSET/T-DEVICE, 기존 PublicCatalog와 asset manifest. 기존 UI·이미지·스크린샷 기준선은 없다. 연구/설계 정본13개는 수정하지 않는다.
 
 ## Brand

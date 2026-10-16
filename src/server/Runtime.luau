@@ -43,6 +43,7 @@ local function start(): any
 		log = warn,
 	})
 	local match = MatchService.new({
+		spatial = true,
 		profiles = profiles,
 		tick = function()
 			return tick

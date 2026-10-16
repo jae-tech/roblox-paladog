@@ -23,6 +23,7 @@ local function new(deps: Deps)
 		commandSeq = 0,
 		moveSeq = 0,
 		axis = 0,
+		strafe = 0,
 		reason = nil,
 		reasonAt = -math.huge,
 		profileRequest = nil,
@@ -51,7 +52,7 @@ local function new(deps: Deps)
 		if state.matchId ~= id then
 			epoch += 1
 			state.matchId = id
-			state.moveSeq, state.commandSeq, state.axis = 0, 0, 0
+			state.moveSeq, state.commandSeq, state.axis, state.strafe = 0, 0, 0, 0
 			table.clear(history)
 			buffer.setMatch(id)
 			lastSnapshot, matchStarted = -math.huge, now
@@ -243,20 +244,22 @@ local function new(deps: Deps)
 		end
 		return true
 	end
-	local function move(axis: number, now: number): boolean
+	local function move(axis: number, now: number, side: number?): boolean
+		local strafe = side or 0
 		if
 			destroyed
 			or (axis ~= -1 and axis ~= 0 and axis ~= 1)
+			or (strafe ~= -1 and strafe ~= 0 and strafe ~= 1)
 			or not state.matchId
 			or state.phase ~= "Running"
 		then
 			return false
 		end
-		if axis ~= 0 and buffer.age(now) >= 0.5 then
+		if (axis ~= 0 or strafe ~= 0) and buffer.age(now) >= 0.5 then
 			return false
 		end
-		state.axis, state.moveSeq = axis, state.moveSeq + 1
-		table.insert(history, { seq = state.moveSeq, axis = axis, time = now })
+		state.axis, state.strafe, state.moveSeq = axis, strafe, state.moveSeq + 1
+		table.insert(history, { seq = state.moveSeq, axis = axis, strafe = strafe, time = now })
 		if #history > 32 then
 			table.remove(history, 1)
 		end
@@ -265,6 +268,7 @@ local function new(deps: Deps)
 			matchId = state.matchId,
 			seq = state.moveSeq,
 			axis = axis,
+			strafe = if strafe ~= 0 then strafe else nil,
 		})
 		return true
 	end
@@ -312,25 +316,38 @@ local function new(deps: Deps)
 		end
 		local latest = buffer.latest()
 		if latest and latest.phase == "Running" and not view.paused and buffer.age(now) < 0.5 then
-			local lead = 0
+			local lead, sideLead = 0, 0
 			local cursor = math.max(lastSnapshot, now - PREDICTION_LEAD)
-			local axis = state.axis
+			local axis: number = state.axis
+			local strafe: number = state.strafe
+			local function accumulate(seconds: number)
+				local n = math.max(1, math.sqrt(axis * axis + strafe * strafe))
+				lead += axis / n * seconds
+				sideLead += strafe / n * seconds
+			end
 			for index = #history, 1, -1 do
 				if history[index].time <= cursor then
-					axis = history[index].axis
+					axis, strafe = history[index].axis, history[index].strafe or 0
 					break
 				end
 			end
 			for _, input in history do
 				if input.time > cursor then
-					lead += axis * (input.time - cursor)
-					cursor, axis = input.time, input.axis
+					accumulate(input.time - cursor)
+					cursor, axis, strafe = input.time, input.axis, input.strafe or 0
 				end
 			end
-			lead += axis * (now - cursor)
+			accumulate(now - cursor)
 			for _, e in view.entities do
 				if e.kind == "Hero" then
 					e.x = math.clamp(e.x + lead * view.heroSpeed, view.heroMinX, view.heroMaxX)
+					if view.spatial then
+						e.z = math.clamp(
+							(e.z or 0) + sideLead * view.heroSpeed,
+							view.heroMinZ,
+							view.heroMaxZ
+						)
+					end
 				end
 			end
 		end
@@ -350,7 +367,7 @@ local function new(deps: Deps)
 		frame = frame,
 		step = function(now: number)
 			if buffer.age(now) >= 0.5 then
-				state.axis = 0
+				state.axis, state.strafe = 0, 0
 			end
 		end,
 		needsBootstrap = function(now: number): boolean
@@ -376,6 +393,7 @@ local function new(deps: Deps)
 				history = #history,
 				pending = #order,
 				axis = state.axis,
+				strafe = state.strafe,
 			}
 		end,
 		destroy = function()

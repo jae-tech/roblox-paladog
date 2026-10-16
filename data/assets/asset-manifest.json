@@ -620,6 +620,16 @@
       "originalFileHash": null,
       "approvedBy": null,
       "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "dungeon_3d_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: original code-built 3D dungeon, no asset file"
     }
   ]
 }

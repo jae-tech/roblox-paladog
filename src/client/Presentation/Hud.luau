@@ -40,12 +40,14 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	local bottom = Widgets.frame(root, "Bottom")
 	bottom.Size = UDim2.new(1, -16, 0, 128)
 	bottom.Position = UDim2.new(0, 8, 1, -134)
-	local left = Widgets.button(bottom, "Left", "◀", 26)
+	local left = Widgets.button(bottom, "Left", "후퇴", 15)
 	left.Size = UDim2.fromOffset(64, 64)
 	left.Position = UDim2.new(0, 0, 1, -64)
-	local right = Widgets.button(bottom, "Right", "▶", 26)
+	local right = Widgets.button(bottom, "Right", "전진", 15)
 	right.Size = UDim2.fromOffset(64, 64)
 	right.Position = UDim2.new(0, 70, 1, -64)
+	local strafeLeft = Widgets.button(bottom, "StrafeLeft", "좌", 20)
+	local strafeRight = Widgets.button(bottom, "StrafeRight", "우", 20)
 	local foodBar, setFood = Widgets.bar(bottom, "Food", Theme.food)
 	foodBar.Size = UDim2.new(1, -380, 0, 16)
 	foodBar.Position = UDim2.fromOffset(142, 0)
@@ -283,6 +285,9 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			UDim2.fromOffset(p.moveSize, p.moveSize), UDim2.fromOffset(p.moveSize, p.moveSize)
 		left.Position, right.Position =
 			UDim2.fromOffset(0, p.moveY), UDim2.fromOffset(p.moveSize + 8, p.moveY)
+		strafeLeft.Size, strafeRight.Size = left.Size, right.Size
+		strafeLeft.Position, strafeRight.Position =
+			UDim2.fromOffset(0, p.strafeY), UDim2.fromOffset(p.moveSize + 8, p.strafeY)
 		units.Size = UDim2.fromOffset(p.unitWidth, p.unitHeight)
 		units.Position = UDim2.fromOffset(p.unitX, p.unitY)
 		foodBar.Size, foodBar.Position =
@@ -328,6 +333,8 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			and view.mode ~= "Tower"
 			and view.mode ~= "Destiny"
 		right.Visible = left.Visible
+		strafeLeft.Visible = left.Visible and view.spatial == true
+		strafeRight.Visible = strafeLeft.Visible
 		for _, button in weapons do
 			button.Visible = not jumping
 		end
@@ -487,7 +494,12 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 
 	return {
 		root = root,
-		moveButtons = { Left = left, Right = right },
+		moveButtons = {
+			Left = left,
+			Right = right,
+			StrafeLeft = strafeLeft,
+			StrafeRight = strafeRight,
+		},
 		update = update,
 		inspect = function(): any
 			return { units = #unitButtons, lanePicker = lanePicker.Visible, result = result.Visible }

@@ -1,7 +1,12 @@
 --!strict
 -- Device-independent input state. Timing is supplied by the caller, never a clock.
 local ActionRouter = {}
-type Callbacks = { onAxis: (number) -> (), onAction: (string) -> () }
+type Callbacks = {
+	onAxis: (number) -> (),
+	onAction: (string) -> (),
+	onStrafe: ((number) -> ())?,
+	onMove: ((number, number) -> ())?,
+}
 local DISCRETE: { [string]: boolean } = { Mace1 = true, Mace2 = true, Mace3 = true, Jump = true }
 for n = 1, 9 do
 	DISCRETE["Summon" .. n] = true -- remake: up to nine unit buttons (E02 §5)
@@ -10,24 +15,33 @@ end
 function ActionRouter.new(callbacks: Callbacks)
 	local held: { [any]: string } = {}
 	local blockers: { [string]: boolean } = {}
-	local axis, now, lastSent = 0, 0, 0
+	local axis, strafe, now, lastSent = 0, 0, 0, 0
 	local destroyed = false
 	local function blocked(): boolean
 		return next(blockers) ~= nil or destroyed
 	end
-	local function send(value: number)
-		axis, lastSent = value, now
+	local function send(value: number, side: number)
+		axis, strafe, lastSent = value, side, now
 		callbacks.onAxis(value)
+		if callbacks.onStrafe then
+			callbacks.onStrafe(side)
+		end
+		if callbacks.onMove then
+			callbacks.onMove(value, side)
+		end
 	end
 	local function updateAxis()
-		local left, right = false, false
+		local left, right, sl, sr = false, false, false, false
 		for _, action in held do
 			left = left or action == "Left"
 			right = right or action == "Right"
+			sl = sl or action == "StrafeLeft"
+			sr = sr or action == "StrafeRight"
 		end
 		local value = if left == right then 0 elseif left then -1 else 1
-		if value ~= axis then
-			send(value)
+		local side = if sl == sr then 0 elseif sl then -1 else 1
+		if value ~= axis or side ~= strafe then
+			send(value, side)
 		end
 	end
 	local router = {}
@@ -35,7 +49,13 @@ function ActionRouter.new(callbacks: Callbacks)
 		if blocked() or token == nil or held[token] ~= nil then
 			return
 		end
-		if action ~= "Left" and action ~= "Right" and not DISCRETE[action] then
+		if
+			action ~= "Left"
+			and action ~= "Right"
+			and action ~= "StrafeLeft"
+			and action ~= "StrafeRight"
+			and not DISCRETE[action]
+		then
 			return
 		end
 		held[token] = action
@@ -67,7 +87,7 @@ function ActionRouter.new(callbacks: Callbacks)
 			end
 			blockers[reason] = true
 			table.clear(held)
-			send(0)
+			send(0, 0)
 		else
 			blockers[reason] = nil
 		end
@@ -77,8 +97,8 @@ function ActionRouter.new(callbacks: Callbacks)
 			return
 		end
 		now = timestamp
-		if axis ~= 0 and now - lastSent >= 0.1 then
-			send(axis)
+		if (axis ~= 0 or strafe ~= 0) and now - lastSent >= 0.1 then
+			send(axis, strafe)
 		end
 	end
 	function router.inspect()
@@ -86,7 +106,13 @@ function ActionRouter.new(callbacks: Callbacks)
 		for _ in held do
 			count += 1
 		end
-		return { axis = axis, heldCount = count, blocked = blocked(), destroyed = destroyed }
+		return {
+			axis = axis,
+			strafe = strafe,
+			heldCount = count,
+			blocked = blocked(),
+			destroyed = destroyed,
+		}
 	end
 	function router.destroy()
 		if destroyed then
@@ -94,7 +120,7 @@ function ActionRouter.new(callbacks: Callbacks)
 		end
 		table.clear(held)
 		destroyed = true
-		send(0)
+		send(0, 0)
 	end
 	return router
 end

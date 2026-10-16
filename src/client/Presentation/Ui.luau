@@ -1,6 +1,6 @@
 --!strict
 -- Root of the remake UI: one ScreenGui holding the battlefield, the battle HUD and the lobby.
-local Field = require("./Field")
+local Field = require("./WorldView")
 local Hud = require("./Hud")
 local Lobby = require("./Lobby")
 
@@ -20,7 +20,7 @@ local function new(playerGui: PlayerGui, catalog: any, handlers: Handlers)
 	gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
-	local field = Field.new(gui)
+	local field = Field.new(gui, catalog)
 	local hud =
 		Hud.new(gui, catalog, { battle = handlers.battle, returnToLobby = handlers.returnToLobby })
 	local lobby = Lobby.new(gui, catalog, { lobby = handlers.lobby, start = handlers.start })
@@ -48,6 +48,7 @@ local function new(playerGui: PlayerGui, catalog: any, handlers: Handlers)
 		inspect = function(): any
 			return {
 				phase = phase,
+				renderer = "3D",
 				fieldEntities = field.count(),
 				hud = hud.inspect(),
 				lobby = lobby.inspect(),

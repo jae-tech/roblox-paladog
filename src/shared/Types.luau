@@ -91,6 +91,7 @@ export type MoveIntent = {
 	matchId: string,
 	seq: number,
 	axis: number,
+	strafe: number?,
 }
 
 export type ProfileSummary = { [string]: any }

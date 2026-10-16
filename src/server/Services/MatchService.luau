@@ -40,6 +40,7 @@ type Session = {
 	ackOrder: { string },
 	moveSeq: number,
 	moveAxis: number,
+	moveStrafe: number,
 	moveTick: number,
 	pending: { any },
 	snapshotSeq: number,
@@ -58,6 +59,7 @@ export type Deps = {
 	ackCacheSize: number,
 	moveTtlTicks: number,
 	newSeed: (() -> number)?,
+	spatial: boolean?,
 }
 
 local ACTIVE: { [Phase]: boolean } =
@@ -161,6 +163,7 @@ local function new(deps: Deps)
 			ackOrder = {},
 			moveSeq = 0,
 			moveAxis = 0,
+			moveStrafe = 0,
 			moveTick = -math.huge,
 			pending = {},
 			snapshotSeq = 0,
@@ -324,6 +327,7 @@ local function new(deps: Deps)
 			local runSlot = profile.slots[run.slot] :: ServerTypes.Slot
 			local battle =
 				Battle.new({ -- built first: a config error must not leave Running without a battle
+					spatial = deps.spatial,
 					stage = run.stage,
 					seed = if deps.newSeed then deps.newSeed() else 12345,
 					loadout = ProfileSchema.loadoutOf(runSlot),
@@ -335,6 +339,7 @@ local function new(deps: Deps)
 				"Running", run.matchId, run.stage, run.ordinal
 			session.slot = run.slot
 			session.commandHigh, session.moveSeq, session.moveAxis, session.snapshotSeq = 0, 0, 0, 0
+			session.moveStrafe = 0
 			session.acks, session.ackOrder, session.pending = {}, {}, {} -- request cache is scoped to one match
 			session.battle, session.finalView, session.result = battle, nil, nil
 			owners[run.matchId] = userId
@@ -387,6 +392,7 @@ local function new(deps: Deps)
 			return false
 		end
 		session.moveSeq, session.moveAxis, session.moveTick = intent.seq, intent.axis, deps.tick()
+		session.moveStrafe = intent.strafe or 0
 		return true
 	end
 
@@ -401,6 +407,11 @@ local function new(deps: Deps)
 	local function phaseOf(userId: number): Phase?
 		local session = sessions[userId]
 		return if session then session.phase else nil
+	end
+
+	local function effectiveStrafe(userId: number): number
+		local s = sessions[userId]
+		return if s and deps.tick() - s.moveTick <= deps.moveTtlTicks then s.moveStrafe else 0
 	end
 
 	-- Owner-only snapshot (complete state each time, no deltas). Attack power and internals stay server-side.
@@ -488,8 +499,11 @@ local function new(deps: Deps)
 			if session.phase == "Running" and battle then
 				local commands = session.pending
 				session.pending = {}
-				local result =
-					Battle.step(battle, { commands = commands, axis = effectiveAxis(userId) })
+				local result = Battle.step(battle, {
+					commands = commands,
+					axis = effectiveAxis(userId),
+					strafe = effectiveStrafe(userId),
+				})
 				for _, outcome in result.results do
 					local requestId = outcome.requestId or ""
 					local message = reply(
@@ -518,6 +532,7 @@ local function new(deps: Deps)
 		handleCommand = handleCommand,
 		handleMove = handleMove,
 		effectiveAxis = effectiveAxis,
+		effectiveStrafe = effectiveStrafe,
 		phaseOf = phaseOf,
 		snapshot = snapshot,
 		stepAll = stepAll,

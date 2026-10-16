@@ -39,10 +39,19 @@ local function validBattle(battle: any): boolean
 			return false
 		end
 	end
+	if battle.spatial and (not finite(battle.heroMinZ) or not finite(battle.heroMaxZ)) then
+		return false
+	end
 	for _, list in { battle.entities, battle.objects } do
 		local seen: { [number]: boolean } = {}
 		for _, e in list do
-			if type(e) ~= "table" or not integer(e.id) or not finite(e.x) or seen[e.id] then
+			if
+				type(e) ~= "table"
+				or not integer(e.id)
+				or not finite(e.x)
+				or seen[e.id]
+				or (e.z ~= nil and not finite(e.z))
+			then
 				return false
 			end
 			seen[e.id] = true
@@ -110,6 +119,9 @@ local function new(balanceHash: string)
 					local prior = old[e.id]
 					if prior then
 						e.x = prior.x + (e.x - prior.x) * alpha
+						if e.z ~= nil and prior.z ~= nil then
+							e.z = prior.z + (e.z - prior.z) * alpha
+						end
 					end
 				end
 			end

@@ -10,8 +10,10 @@ type Router = typeof(ActionRouter.new({
 }))
 local DeviceAdapter = {}
 local KEYS: { [string]: { Enum.KeyCode } } = {
-	Left = { Enum.KeyCode.A, Enum.KeyCode.Left },
-	Right = { Enum.KeyCode.D, Enum.KeyCode.Right },
+	Left = { Enum.KeyCode.S, Enum.KeyCode.Down },
+	StrafeLeft = { Enum.KeyCode.A, Enum.KeyCode.Left },
+	Right = { Enum.KeyCode.W, Enum.KeyCode.Up },
+	StrafeRight = { Enum.KeyCode.D, Enum.KeyCode.Right },
 	Summon1 = { Enum.KeyCode.One },
 	Summon2 = { Enum.KeyCode.Two },
 	Summon3 = { Enum.KeyCode.Three },
@@ -22,8 +24,8 @@ local KEYS: { [string]: { Enum.KeyCode } } = {
 	Summon8 = { Enum.KeyCode.Eight },
 	Summon9 = { Enum.KeyCode.Nine },
 	Mace1 = { Enum.KeyCode.Q },
-	Mace2 = { Enum.KeyCode.W },
-	Mace3 = { Enum.KeyCode.E },
+	Mace2 = { Enum.KeyCode.E },
+	Mace3 = { Enum.KeyCode.R },
 	Jump = { Enum.KeyCode.Space },
 }
 
@@ -66,7 +68,12 @@ function DeviceAdapter.new(router: Router, buttons: { [string]: any })
 		end, false, Enum.ContextActionPriority.High.Value + 1, table.unpack(keys))
 	end
 	for action, button in buttons do
-		if action == "Left" or action == "Right" then
+		if
+			action == "Left"
+			or action == "Right"
+			or action == "StrafeLeft"
+			or action == "StrafeRight"
+		then
 			connect(button.InputBegan, function(input: InputObject)
 				if
 					input.UserInputType ~= Enum.UserInputType.Touch
@@ -95,6 +102,15 @@ function DeviceAdapter.new(router: Router, buttons: { [string]: any })
 			end)
 		end
 	end
+	connect(UserInputService.InputBegan, function(input: InputObject, processed: boolean)
+		if
+			not processed
+			and input.UserInputType == Enum.UserInputType.MouseButton1
+			and UserInputService:GetFocusedTextBox() == nil
+		then
+			router.begin("Mace1", input)
+		end
+	end)
 	connect(UserInputService.InputEnded, finish)
 	connect(UserInputService.WindowFocusReleased, function()
 		router.setBlocked("focus", true)

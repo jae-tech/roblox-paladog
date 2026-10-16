@@ -2,6 +2,11 @@
 
 ## 현재 상태
 
+**최신 3D 전환(2026-10-16)**: 사용자 재지시로 평면 GUI 전장 대신 3D 던전에서 영웅이 식량 소환 용병들과 함께 전진한다. 세부는 `3D_PLAN.md`/HANDOFF 상단이 우선이다. 기존 순수 전투는 선택 옵션 없는 회귀 기준선으로 유지하고 production Runtime만 `spatial=true`를 켠다. 서버 X/Z 정규화 이동·거리/탄/오오라와 근접 소환, client-only Model:PivotTo/Scriptable camera를 연결했다(1px=0.12stud, 폭±90px; D-3D-01/02). 영웅도 자체 렌더 모델이며 Humanoid 이동 권한은 없다. 외부 의존성은 추가하지 않았다.
+
+CLI 공간57 및 기존 회귀1178/Python82·정적 gate·생성·출시 감사 PASS. Studio 공간57/R4 106/엔진 모델·카메라 smoke17 PASS, 실제 Remote 비용/이동/피해 확인. **Studio 흰 화면/no frame으로 물리 조작·시각 플레이 BLOCKED**다. 정상 렌더 환경에서 출전/카메라/소환/마법/결과 UI 확인이 남으며 아래 과거 MVP/R5 시각 증거를 새 3D 화면 완료로 이월하지 않는다.
+
+
 **최신 REMAKE(2026-10-16)**: R5까지 로컬 구현·검증을 진행했다. 현재 상태와 다음 범위는 HANDOFF 상단·PROGRESS의 R5 기록을 따른다. 아래 P0~P5 상태는 MVP 당시 기록이다. REMAKE R4/R5 Studio 플레이와 v2 실 저장 검증은 NOT_RUN이며, 예전 MVP 증거로 대체하지 않는다. 연구에 없는 R5 값(검 모션, 변신 준비, 함정 위치·상한, 독 구름, 점프 맵·러너·코인 판정)은 `data/remake/design.json`에 추정 결정으로 기록했다.
 
 P0~P4 gate PASS는 P4 기준선 기록이다. 현재 P5는 CLI/Studio 서버/클라이언트613개와 Windows 장치 화면5종·renderer 교체/cleanup/카메라 복원 PASS 체크포인트이며, 독립 멀티터치 증거가 부족하여 full gate BLOCKED다. production 서버는 boot만 하고 client UI는 server remote를 기다린다. 테스트 저장은 Mock/InMemory이며 P6~P9는 미착수다. 기존 production runtime WAIVED·P0.1 보류·overlay 미승인은 유지한다. 연구/설계 정본13개는 수정하지 않는다.

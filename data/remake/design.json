@@ -40,7 +40,9 @@
     "D-JUMP-01": "Jump tracks are original: 64 px tiles, spikes 260..420 px apart away from safe zones, coins spread evenly; finish = last safe tile + 12.",
     "D-JUMP-02": "A jump lasts 0.6 s; a grounded boar on a spike restarts at the furthest safe zone after 1 s.",
     "D-SWORD-04": "Poison dagger creates a one-second cloud with 25 px radius at the arrow hit, refreshing the documented ten-second poison without resetting its damage timer.",
-    "D-JUMP-03": "The original runner speed is unknown: runner uses 90% of the boar speed, stopping at the finish. Coins use horizontal swept pickup during grounded or airborne movement (original tile geometry unavailable), so all coin goals are attainable."
+    "D-JUMP-03": "The original runner speed is unknown: runner uses 90% of the boar speed, stopping at the finish. Coins use horizontal swept pickup during grounded or airborne movement (original tile geometry unavailable), so all coin goals are attainable.",
+    "D-3D-01": "User-approved 3D companion combat: server X/Z ground-plane geometry, original food/mana economy, summons 30 px behind hero with +/-12 px spread; corridor depth +/-90 px, normalized diagonal speed.",
+    "D-3D-02": "Presentation only: 1 px = 0.12 studs; behind-hero Scriptable camera offset (-22,14,0), WASD movement and Q/E/R or left-click magic. Models are original client-only anchored code geometry; server snapshots own movement/damage."
   },
   "anim": {
     "known": {

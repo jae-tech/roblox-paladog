@@ -31,6 +31,9 @@
           "ClientHarness": {
             "$path": "test-support-client/ClientHarness.luau"
           },
+          "SpatialRender": {
+            "$path": "test-support-client/SpatialRender.luau"
+          },
           "Tests": {
             "$className": "Folder",
             "Runner": { "$path": "tests/Runner.luau" },
