@@ -9,6 +9,7 @@ local report = Runner.run("PureLuau", "cli-r4", 12345, function(check)
 		ActionRouter = require("../src/client/Input/ActionRouter"),
 		Text = require("../src/client/Presentation/Text"),
 		HudLayout = require("../src/client/Presentation/HudLayout"),
+		AutoAssist = require("../src/client/Input/AutoAssist"),
 		catalog = require("../src/shared/RemakeCatalog"),
 	}, check)
 end, "T-R4")

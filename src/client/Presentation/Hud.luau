@@ -429,14 +429,19 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			for n, b in unitButtons do
 				local buttonView = Text.summonView(catalog, slot, view, n)
 				local wait = buttonView.wait
+				local on = model.auto and model.auto.summon[n]
 				b.Text = string.format(
-					"%s\n%s %d%s",
+					"%s%s\n%s %d%s",
+					if on then "[오토] " else "",
 					buttonView.name,
 					buttonView.resource,
 					buttonView.cost,
 					if wait > 0 then string.format("\n%.1f초", wait) else ""
 				)
-				b.BackgroundColor3 = if buttonView.ready then Theme.button else Theme.locked
+				b.BackgroundColor3 = if on
+					then Theme.buttonHot
+					elseif buttonView.ready then Theme.button
+					else Theme.locked
 			end
 		end
 		for index, b in weapons do
@@ -448,13 +453,16 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				})[index]
 			else
 				local code = slot.equip[index]
+				local on = model.auto and model.auto.weapon[index]
 				if code and code ~= 0 then
-					b.Text = Text.itemName(catalog, code)
+					b.Text = (if on then "[오토] " else "")
+						.. Text.itemName(catalog, code)
 						.. "\n마나 "
 						.. Text.weaponCost(catalog, slot, code)
 				else
 					b.Text = "비어 있음"
 				end
+				b.BackgroundColor3 = if on then Theme.buttonHot else Theme.panelLight
 			end
 		end
 		levelUp.Visible = model.phase == "Running" and view.offer ~= nil

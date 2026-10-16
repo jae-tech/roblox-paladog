@@ -44,6 +44,7 @@ return {
 				ActionRouter = require(client.Input.ActionRouter),
 				Text = require(client.Presentation.Text),
 				HudLayout = require(client.Presentation.HudLayout),
+				AutoAssist = require(client.Input.AutoAssist),
 				catalog = require(ReplicatedStorage.Shared.RemakeCatalog),
 			}, check)
 		end, suiteId)

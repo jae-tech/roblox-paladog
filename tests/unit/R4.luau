@@ -354,4 +354,97 @@ return function(env: any, check: any)
 		end
 		check("lobby-desktop-unscaled", 1, L.lobbyScale(1920, 1080), 0)
 	end
+	-- D-AUTO-01: a summon/weapon press toggles that slot's auto; auto sends only what the HUD shows ready.
+	check("auto-module-present", true, env.AutoAssist ~= nil, 0)
+	if env.AutoAssist then
+		local auto = env.AutoAssist.new(catalog)
+		check("auto-toggle-on", true, auto.toggle("Summon", 1), 0)
+		check("auto-state-on", true, auto.state().summon[1], 0)
+		check("auto-toggle-off", false, auto.toggle("Summon", 1), 0)
+		check("auto-state-off", nil, auto.state().summon[1], 0)
+		check("auto-eligible-normal", true, auto.eligible("Normal"), 0)
+		check("auto-eligible-survival", true, auto.eligible("Survival"), 0)
+		check("auto-manual-destiny", false, auto.eligible("Destiny"), 0)
+		check("auto-manual-tower", false, auto.eligible("Tower"), 0)
+		check("auto-manual-jump", false, auto.eligible("Jump"), 0)
+		local skills = table.create(24, 0)
+		local slot = {
+			heroKind = "light",
+			units = { 1, 1, 0, 0, 0, 0, 0, 0, 0 },
+			skills = skills,
+			equip = { Text.encode(1, 1, 1), Text.encode(1, 11, 1), 0 },
+		}
+		local cost = catalog.units[1].cost
+		local function view(over: { [string]: any }?): any
+			local v: { [string]: any } = {
+				mode = "Normal",
+				paused = false,
+				food = cost,
+				mana = 1000,
+				summonPast = { 99999, 99999 },
+				heroState = "Idle",
+				entities = {
+					{ kind = "Hero", team = 1, x = 100, z = 0, hp = 1 },
+					{ kind = "Enemy", team = 2, x = 400, z = 0, hp = 10 },
+				},
+			}
+			local extra: { [string]: any } = over or {}
+			for k, value in extra do
+				v[k] = value
+			end
+			return v
+		end
+		local function kinds(list: { any }): string
+			local parts = {}
+			for _, d in list do
+				table.insert(parts, d.kind .. (d.unit or d.slot))
+			end
+			return table.concat(parts, ",")
+		end
+		check("auto-off-sends-nothing", "", kinds(auto.decide(view(), slot, 10)), 0)
+		auto.toggle("Summon", 1)
+		check("auto-summon-ready", "Summon1", kinds(auto.decide(view(), slot, 10)), 0)
+		check("auto-summon-retry-wait", "", kinds(auto.decide(view(), slot, 10.2)), 0)
+		check("auto-summon-again", "Summon1", kinds(auto.decide(view(), slot, 10.6)), 0)
+		check("auto-summon-no-food", "", kinds(auto.decide(view({ food = cost - 1 }), slot, 20)), 0)
+		check(
+			"auto-summon-cooldown",
+			"",
+			kinds(auto.decide(view({ summonPast = { 0, 0 } }), slot, 30)),
+			0
+		)
+		check("auto-paused-idle", "", kinds(auto.decide(view({ paused = true }), slot, 40)), 0)
+		check("auto-destiny-idle", "", kinds(auto.decide(view({ mode = "Destiny" }), slot, 50)), 0)
+		auto.toggle("Summon", 1)
+		auto.toggle("Mace", 1)
+		check("auto-weapon-enemy-near", "Mace1", kinds(auto.decide(view(), slot, 60)), 0)
+		local far = {
+			{ kind = "Hero", team = 1, x = 100, z = 0, hp = 1 },
+			{ kind = "Enemy", team = 2, x = 700, z = 0, hp = 10 },
+		}
+		check(
+			"auto-weapon-no-target",
+			"",
+			kinds(auto.decide(view({ entities = far }), slot, 70)),
+			0
+		)
+		check("auto-weapon-no-mana", "", kinds(auto.decide(view({ mana = 0 }), slot, 80)), 0)
+		check(
+			"auto-weapon-hero-busy",
+			"",
+			kinds(auto.decide(view({ heroState = "Attack" }), slot, 90)),
+			0
+		)
+		auto.toggle("Mace", 1)
+		auto.toggle("Mace", 2)
+		check("auto-gold-weapon-never", "", kinds(auto.decide(view(), slot, 100)), 0)
+		auto.toggle("Mace", 1)
+		auto.toggle("Summon", 2)
+		check(
+			"auto-both-one-frame",
+			"Summon2,Mace1",
+			kinds(auto.decide(view({ food = 1000 }), slot, 110)),
+			0
+		)
+	end
 end

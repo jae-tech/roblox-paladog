@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local ActionRouter = require("./Input/ActionRouter")
+local AutoAssist = require("./Input/AutoAssist")
 local DeviceAdapter = require("./Input/DeviceAdapter")
 local ClientController = require("./Net/ClientController")
 local Ui = require("./Presentation/Ui")
@@ -39,12 +40,28 @@ local function start(): any
 	end
 	local controller = makeController()
 	local lastUnit = 1
+	local auto = AutoAssist.new(catalog)
+	-- Summon/weapon presses toggle that slot's auto (D-AUTO-01) in plain battle modes; others pass through.
+	local function press(kind: string, fields: any, now: number)
+		local model = controller.model(now)
+		local mode = model.battle and model.battle.mode
+		if
+			(kind == "Summon" or kind == "Mace")
+			and fields
+			and model.phase == "Running"
+			and auto.eligible(mode)
+		then
+			auto.toggle(kind, if kind == "Summon" then fields.unit else fields.slot)
+			return
+		end
+		controller.battle(kind, fields, now)
+	end
 	local ui = Ui.new(playerGui, catalog, {
 		battle = function(kind, fields)
 			if fields and kind == "Summon" then
 				lastUnit = fields.unit or lastUnit
 			end
-			controller.battle(kind, fields, os.clock())
+			press(kind, fields, os.clock())
 		end,
 		lobby = function(kind, fields)
 			controller.lobby(kind, fields, os.clock())
@@ -74,13 +91,9 @@ local function start(): any
 			elseif summon then
 				lastUnit = summon
 				-- Keyboard summons in the tower use the middle lane; the lane picker covers touch.
-				controller.battle("Summon", { unit = summon, lane = if tower then 3 else 0 }, now)
+				press("Summon", { unit = summon, lane = if tower then 3 else 0 }, now)
 			elseif mace then
-				controller.battle(
-					"Mace",
-					{ slot = mace, unit = lastUnit, lane = if tower then 3 else 0 },
-					now
-				)
+				press("Mace", { slot = mace, unit = lastUnit, lane = if tower then 3 else 0 }, now)
 			end
 		end,
 	})
@@ -170,7 +183,17 @@ local function start(): any
 					and (model.battle.offer ~= nil or model.battle.reviveOffer == true)
 			)
 			router.step(now)
+			if model.battle and model.phase == "Running" and not router.inspect().blocked then
+				for _, d in auto.decide(model.battle, model.slot, now) do
+					if d.kind == "Summon" then
+						controller.battle("Summon", { unit = d.unit, lane = 0 }, now)
+					else
+						controller.battle("Mace", { slot = d.slot, unit = lastUnit, lane = 0 }, now)
+					end
+				end
+			end
 			if now - hudAt >= 0.1 then
+				model.auto = auto.state()
 				ui.update(model)
 				hudAt = now
 			end

@@ -48,7 +48,8 @@
     "D-SVV-03": "Survival boss multipliers: HP x [144].fVer 0.2 for bosses, replaced by [145].fVer 0.5 for boss 10; boss 8 attack x [146].fVer 0.5 (E04 §4-4 values, combination rule assumed).",
     "D-SVV-04": "Survival kill rewards: gold = iRwGld x 1.0 x normal difficulty, EXP = iRwExp x [141].fVer 27 (no stat multiplier, no 15-minute or replay rule); skill/ring gold and EXP bonuses still apply; boss-summoned minions pay 1 gold.",
     "D-SVV-05": "Shadow unlock event: a light-hero run whose account lacks the shadow hero stops spawning at the start of wave 4 and releases the shadow boss row as-is (no survival multipliers). Killing it unlocks the shadow hero at settlement and waves resume; it gives no gems. At HP <= iSkDst 40% it transforms once, attack x fSkDmg 5.",
-    "D-SVV-06": "Not reproduced: iLevel2Allow (level cap 999, major skills 99) because the research does not list which skills reach 99; level cap stays 200 in survival. Rankings are excluded (no social server)."
+    "D-SVV-06": "Not reproduced: iLevel2Allow (level cap 999, major skills 99) because the research does not list which skills reach 99; level cap stays 200 in survival. Rankings are excluded (no social server).",
+    "D-AUTO-01": "Not in the original (no auto summon/attack). Summon and weapon buttons toggle per-slot auto in plain battle modes (not Destiny/Tower/Jump); the client sends the same commands when the HUD shows ready, weapons only with an enemy within 500 and never the gold weapon. Server rules, quests and rewards are unchanged."
   },
   "anim": {
     "known": {
