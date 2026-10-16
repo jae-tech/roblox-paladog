@@ -21,9 +21,9 @@ Codex·Claude 등 코딩 에이전트용 작업 안내. 상세 근거는 아래 
 | P6 3스테이지·결과 | CLI/Studio T-P6 162 PASS |
 | P7 성장·보상 | CLI/Studio T-P7 74 PASS |
 | P8 저장·lease | CLI/Studio T-P8 52 PASS, 실 QA DataStore 복원·경합 PASS(2026-10-16, 사용자 승인) |
-| P9 통합·보안·부하 | `verify_p9.py` BLOCKED: CLI/Studio P2~P9 회귀·10분 부하·실 DataStore PASS, **Android 실기기 멀티터치는 알려진 제한(출시 전 실기기 확인 필요)** |
+| P9 통합·보안·부하 | `verify_p9.py` BLOCKED: CLI/Studio P2~P9 회귀·production 출시 빌드 감사·10분 부하·저속 통신·실 DataStore PASS, **Android 실기기 멀티터치는 알려진 제한(출시 전 실기기 확인 필요)** |
 
-진행 상세와 미해결 사항은 `docs/PROGRESS.md`가 최신이다(HANDOFF는 P5 체크포인트 기록). 밸런스 overlay 결정 14개는 2026-10-16 "jaetech"가 승인했다. Studio 동기화는 Rojo가 기존 스크립트를 갱신하지 못하는 문제가 있어, `rojo build`로 만든 rbxm을 MCP `import_rbxm`으로 넣고 이름=길이 해시로 일치를 확인한다(저장 안 함).
+진행 상세와 미해결 사항은 `docs/PROGRESS.md`가 최신이다. HANDOFF 상단에 현재 상태와 출시 전 남은 일을 둔다. 밸런스 overlay 결정 14개는 2026-10-16 "jaetech"가 승인했다. Studio 동기화는 Rojo가 기존 스크립트를 갱신하지 못하는 문제가 있어, `rojo build`로 만든 rbxm을 MCP `import_rbxm`으로 넣고 이름=길이 해시로 일치를 확인한다(저장 안 함).
 
 ## 환경과 명령 (macOS arm64 / Windows AMD64 bootstrap)
 
@@ -41,6 +41,7 @@ python3 tools/verify_p2.py                 # Studio 증거 없으면 exit 2(BLOC
 python3 tools/verify_p3.py                 # 동일
 python3 tools/verify_p4.py                 # 동일 (Studio 증거는 --studio-evidence)
 python3 tools/verify_p5.py                 # 실제 입력/장치/렌더/터치 증거 부족은 BLOCKED
+python3 tools/verify_p9.py --studio-evidence artifacts/P9/studio/p9-studio-evidence.json  # 전체 회귀+출시 감사+증거 묶음
 python3 -m unittest discover -s tools/tests
 .tools/stylua-2.6.0/stylua src tests test-support test-support-client   # 커밋 전 포맷
 ```

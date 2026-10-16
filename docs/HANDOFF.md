@@ -1,12 +1,20 @@
-# 개발 인수인계 — P5 입력·뷰 기반 체크포인트
+# 개발 인수인계
 
-## 현재 상태
+## 현재 상태 (2026-10-16)
 
-**P4 기준선(`67549f3`)에서 P0~P4 full gate PASS. P5 구현 체크포인트(`51d08a7`→main `ec778ec`)는 CLI/Studio 서버/Studio 클라이언트 동일613개 PASS였다. 2026-10-16 Windows 로컬 재현과 Studio 동일 suite를 재검증했고, 장치 화면5종·renderer 교체/cleanup·카메라 복원도 PASS다. 실제 PC 지속 입력·Q·GUI 소환·focus 정지도 PASS이며 독립 멀티터치 증거가 부족해 P5 full gate는 BLOCKED이며 완료로 표시하지 않는다. P6~P9는 미착수다.** 현재 P5 빌드에서 P0 로컬/P1 PASS 및 P0/P2/P3/P4 Studio 원시 suite PASS를 확인했지만 기존 단계의 full evidence 재수집은 끝내지 않았다. P0.1 Git 정책 보류와 기존 production runtime 검사 WAIVED는 유지하고 새 승인은 추가하지 않았다.
+P0~P9 구현과 검증을 마쳤다. `python tools/verify_p9.py --studio-evidence artifacts/P9/studio/p9-studio-evidence.json`은 **BLOCKED(exit 2)**다. CLI P2~P9, Studio suite 해시, production 출시 빌드 감사, 실 QA DataStore, 10분 부하, 저속 통신(poor 프로필)은 PASS다. **Android 실기기 멀티터치(device-touch)만 알려진 제한으로 BLOCKED**다. 단계별 결과는 `docs/PROGRESS.md`, 출시 증거 묶음은 `artifacts/P9/{acceptance,security,performance,asset-audit}.json`·`review.md`(gitignore)에 있다.
 
-기준 문서는 기존 설계 6개(`PRD`, `ARCHITECTURE`, `DATA_MODELS`, `ASSET_PIPELINE`, `IMPLEMENTATION_PLAN`, `TEST_PLAN`)와 REA Markdown 7개다. 이 13개 원문은 변경하지 않았다. REA 원본 SHA256은 `tools/reference-hashes.json`으로 검사한다.
+출시 전 남은 일(사용자 승인 필요):
 
-구현: production/test 분리, 품질 gate, 데이터 생성, 서버 전투/원격·프로필 골격, P5 클라이언트 입력·순수 snapshot/예측·HUD·placeholder·카메라. production 서버는 boot만 하고 클라이언트는 remote를 기다린다. 스테이지 스폰·정산·실제 저장은 없다.
+1. Android 실기기에서 이동+소환+시전 동시 터치, 버튼 밖 release/취소, safe area를 확인한다.
+2. `PersistencePolicy`는 `enabled = false`이고 QA universe로 고정돼 있다. 출시 universe에서 켜지 않으면 진행이 저장되지 않는다.
+3. 에셋은 모두 코드 생성 placeholder다. 시각·라이선스 검토는 사람이 한다.
+4. place publish와 API 서비스 액세스 설정은 사용자가 한다.
+
+Studio 동기화: Rojo 플러그인이 기존 스크립트를 갱신하지 못한다. `rojo build`로 하위 트리별 rbxm을 만들어 MCP `import_rbxm`으로 넣고, 이름=길이로 sourcemap과 맞춘다(저장 안 함). rbxm import는 `ReplicatedStorage`의 `StageGameplay` 속성을 넣지 않는다. 직접 `true`로 설정하지 않으면 클라이언트가 스테이지 모드로 뜨지 않는다.
+
+아래는 P5 체크포인트까지의 기록이다(역사 기록, 최신 아님).
+
 
 ## Studio 실행 검증 (2026-10-15)
 
@@ -164,15 +172,6 @@ P0의 GameId0 guard 음성 대조는 **1052Z 결과를 이월**했다. Guard/Tes
 
 최신 로컬 재검증: P0 local `artifacts/P0/20261015T224343489427Z/report.json` PASS, P1 `artifacts/P1/20261015T224354286360Z/report.json` PASS, Python96 PASS, 타입/lint/format/build/production 정적 격리 PASS. P2/P3/P4 gate는 CLI132/123/134 PASS지만 full scenario 증거를 전달하지 않아 BLOCKED다. 독립 touch injection 도구는 없고 공식 VirtualInput 문서도 touch pointer ID 입력을 제공하지 않는다. mouse나 simulator의 pinch를 멀티터치로 대체하지 않는다.
 
-## 다음 작업
-
-1. 검토자가 P0/P1 증거와 overlay 결정(`data/overlay/mvp-proto-001.json`)을 확인한다.
-2. P5 독립 멀티터치 증거를 수집한다. Windows PC 실제 입력/Q/GUI/focus·장치5종·renderer/cleanup/camera는 위 증거로 PASS다. `verify_p5.py --studio-evidence`는 남은 touch BLOCKED를 유지한다. 현재 체크포인트는 P5 완료가 아니므로 P6 완료 게이트 선행으로 삼지 않는다.
-3. P0·P2·P3·P4 full 증거를 현재 소스에서 재수집한다. ClientHarness도 바뀌었으므로 과거 GameId0 guard 음성 대조를 바이트 동일이라고 이월하지 않는다. 별도 미게시 place에서 다시 확인해야 한다.
-4. P5 full gate 이후 P6 순서로 진행한다. P7 순수 성장은 독립 가능하지만 정산 연결은 P6 이후다.
-
-Studio 재검증 절차는 [DEVELOPMENT](DEVELOPMENT.md)의 "Studio/MCP T-TOOL 재개"를 따른다.
-
 ## 승인 경계
 
-사용자는 이번 Claude 전환 인수인계를 위한 **Git commit/push를 명시 요청했다**. 이 요청은 게임 공개 배포 승인이 아니다. 실제 DataStore 작업, Studio API access toggle, 자산 upload, 공개 publish, 운영 데이터 변경에는 별도 승인이 필요하며 **그 승인은 부여되지 않았다**. 이 문서는 commit/push가 이미 성공했다고 주장하지 않는다.
+실제 DataStore 작업, Studio API access 토글, 에셋 업로드, 공개 publish, 운영 데이터 변경은 매번 사용자 승인이 필요하다. 2026-10-16 QA DataStore 검증 승인은 그 검증에만 해당한다.

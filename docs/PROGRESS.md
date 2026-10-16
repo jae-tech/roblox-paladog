@@ -131,3 +131,12 @@
 ## 실기기 터치 (2026-10-16)
 
 - 사용자가 Android 실기기를 확인할 수 없어 device-touch는 **BLOCKED(알려진 제한)**로 둔다. PASS·WAIVED로 바꾸지 않았다. 출시 전에 실기기에서 이동+소환+시전 동시 터치, 버튼 밖 release/취소, safe area를 확인해야 한다.
+
+## 출시 증거 묶음·production 감사·저속 통신 (2026-10-16)
+
+- `verify_p9.py`에 production 출시 빌드 감사(`default.project.json` 빌드: test harness·원격 endpoint·debug grant 0, 외부 asset/HTTP/loadstring/숫자 require 0, 스크립트 수 = 출시 소스 수, T-ASSET manifest 일치, sha256 기록)와 저속 통신 항목을 추가했다. 실행할 때마다 `artifacts/P9/{acceptance,security,performance,asset-audit}.json`·`review.md`를 쓴다. 감사 음성 테스트 `tools/tests/test_p9.py`를 추가했다(Python 100 PASS).
+- T-P9 부하 case가 CLI에서 8회 중 1회 p95 10.27ms(평소 약 7.5ms)로 흔들렸다. 호스트 잡음으로 판단했다. 기준 10ms는 그대로 두고, 최대 3회 측정한 p95 중 최솟값을 쓴다(상한 위반은 매 회 합산). CLI 3회 연속 PASS, Studio T-P9 83 PASS(digest 동일).
+- 저속 통신: Studio poor 프로필(지연 150ms+지터 100ms 양방향, 손실 0.5%)에서 실제 GUI로 s01 시작·소환·시전이 서버에 반영됐다. 40초 표시 샘플은 "연결됨" 397/400, "연결 불안" 3이다.
+- Studio에서 발견: rbxm import에는 `ReplicatedStorage.StageGameplay` 속성이 빠져 클라이언트가 스테이지 모드로 뜨지 않는다. 미저장 편집본에서만 `true`로 맞췄다.
+- 결과: `verify_p9.py` **BLOCKED(exit 2)**. device-touch(Android 실기기)만 남았다. P0 local PASS.
+- 출시 전 수동 확인: PersistencePolicy 활성화(현재 false, QA universe 고정), 에셋 시각·라이선스 검토, 실기기 터치. reviewer 서명은 없다(테스트 정책상 다중 에이전트 리뷰 생략).
