@@ -968,6 +968,9 @@ def asset_audit(balance, manifest, release_files, repo_files):
         text = view_defs.read_text(encoding="utf-8")
         used.update(re.findall(r'presentationId\s*=\s*"([a-z0-9_]+)"', text))
         used.update(re.findall(r'"([a-z0-9_]+_placeholder)"', text))  # remake: literal id lists and view() calls
+    # R8: server-built shared world (plaza) declares its ID as PRESENTATION_ID in src/server/World.
+    for world in sorted((ROOT / "src/server/World").glob("*.luau")):
+        used.update(re.findall(r'PRESENTATION_ID\s*=\s*"([a-z0-9_]+)"', world.read_text(encoding="utf-8")))
     entries = {e.get("presentationId"): e for e in manifest.get("entries", [])}
     if len(entries) != len(manifest.get("entries", [])):
         errors.append("asset manifest has duplicate presentationId")

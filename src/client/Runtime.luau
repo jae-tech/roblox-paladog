@@ -10,6 +10,8 @@ local AutoAssist = require("./Input/AutoAssist")
 local DeviceAdapter = require("./Input/DeviceAdapter")
 local ClientController = require("./Net/ClientController")
 local Ui = require("./Presentation/Ui")
+local PlazaState = require("./Presentation/PlazaState")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local active: any = nil
 local function start(): any
@@ -40,6 +42,37 @@ local function start(): any
 	end
 	local controller = makeController()
 	local lastUnit = 1
+	local menuOpen = false -- R8: the dungeon entrance in the plaza opens the expedition menu
+	-- The local avatar stands still while the menu or a battle owns WASD/touch (the client owns its
+	-- character physics, so zero walk speed / jump height stops it; PlayerModule may not exist).
+	local controlsOn: boolean? = nil
+	local savedWalk, savedJump, savedPower = 16, 7.2, 50
+	local function setControls(enabled: boolean)
+		local character = Players.LocalPlayer.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if not humanoid then
+			controlsOn = nil -- apply again once the avatar (re)spawns
+			return
+		end
+		if controlsOn == enabled and humanoid:GetAttribute("PlazaLocked") == not enabled then
+			return
+		end
+		if enabled then
+			if humanoid:GetAttribute("PlazaLocked") then
+				humanoid.WalkSpeed, humanoid.JumpHeight = savedWalk, savedJump
+				humanoid.JumpPower = savedPower
+			end
+			humanoid:SetAttribute("PlazaLocked", false)
+		else
+			if not humanoid:GetAttribute("PlazaLocked") then
+				savedWalk, savedJump = humanoid.WalkSpeed, humanoid.JumpHeight
+				savedPower = humanoid.JumpPower
+			end
+			humanoid.WalkSpeed, humanoid.JumpHeight, humanoid.JumpPower = 0, 0, 0
+			humanoid:SetAttribute("PlazaLocked", true)
+		end
+		controlsOn = enabled
+	end
 	local auto = AutoAssist.new(catalog)
 	-- Summon/weapon presses toggle that slot's auto (D-AUTO-01) in plain battle modes; others pass through.
 	local function press(kind: string, fields: any, now: number)
@@ -71,6 +104,9 @@ local function start(): any
 		end,
 		returnToLobby = function()
 			controller.returnToLobby(os.clock())
+		end,
+		closeMenu = function()
+			menuOpen = false
 		end,
 	})
 	local router = ActionRouter.new({
@@ -183,6 +219,10 @@ local function start(): any
 					and (model.battle.offer ~= nil or model.battle.reviveOffer == true)
 			)
 			router.step(now)
+			local plaza = PlazaState.view(model.phase, menuOpen)
+			model.menuVisible = plaza.menuVisible
+			setControls(plaza.controlsEnabled)
+			adapter.setPassive(not plaza.inBattle)
 			if model.battle and model.phase == "Running" and not router.inspect().blocked then
 				for _, d in auto.decide(model.battle, model.slot, now) do
 					if d.kind == "Summon" then
@@ -198,6 +238,14 @@ local function start(): any
 				hudAt = now
 			end
 			ui.render(controller.frame(now), dt)
+		end)
+	)
+	table.insert(
+		connections,
+		ProximityPromptService.PromptTriggered:Connect(function(prompt)
+			if prompt:GetAttribute("DungeonEntrance") == true then
+				menuOpen = true
+			end
 		end)
 	)
 	table.insert(connections, ReplicatedStorage.ChildAdded:Connect(attach))

@@ -9,6 +9,7 @@ export type Handlers = {
 	lobby: (string, { [string]: any }?) -> (),
 	start: (number) -> (),
 	returnToLobby: () -> (),
+	closeMenu: (() -> ())?,
 }
 
 local BATTLE_PHASES = { Running = true, Settling = true, Settled = true }
@@ -23,7 +24,11 @@ local function new(playerGui: PlayerGui, catalog: any, handlers: Handlers)
 	local field = Field.new(gui, catalog)
 	local hud =
 		Hud.new(gui, catalog, { battle = handlers.battle, returnToLobby = handlers.returnToLobby })
-	local lobby = Lobby.new(gui, catalog, { lobby = handlers.lobby, start = handlers.start })
+	local lobby = Lobby.new(
+		gui,
+		catalog,
+		{ lobby = handlers.lobby, start = handlers.start, close = handlers.closeMenu }
+	)
 	local phase = "ProfileLoading"
 	local stage = 1
 

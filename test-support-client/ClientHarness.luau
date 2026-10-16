@@ -45,6 +45,7 @@ return {
 				Text = require(client.Presentation.Text),
 				HudLayout = require(client.Presentation.HudLayout),
 				AutoAssist = require(client.Input.AutoAssist),
+				PlazaState = require(client.Presentation.PlazaState),
 				catalog = require(ReplicatedStorage.Shared.RemakeCatalog),
 			}, check)
 		end, suiteId)

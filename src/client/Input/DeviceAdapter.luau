@@ -34,6 +34,8 @@ function DeviceAdapter.new(router: Router, buttons: { [string]: any })
 	local touches: { [InputObject]: RBXScriptConnection } = {}
 	local names: { string } = {}
 	local destroyed = false
+	-- R8: outside a battle the keys belong to the Roblox avatar and the plaza's E prompt.
+	local passive = false
 	local function connect(signal: RBXScriptSignal, callback: (...any) -> ())
 		table.insert(connections, signal:Connect(callback))
 	end
@@ -58,7 +60,7 @@ function DeviceAdapter.new(router: Router, buttons: { [string]: any })
 			elseif state == Enum.UserInputState.End then
 				router.finish(input.KeyCode)
 			end
-			if UserInputService:GetFocusedTextBox() ~= nil then
+			if passive or UserInputService:GetFocusedTextBox() ~= nil then
 				return Enum.ContextActionResult.Pass
 			end
 			if state == Enum.UserInputState.Begin then
@@ -133,6 +135,9 @@ function DeviceAdapter.new(router: Router, buttons: { [string]: any })
 	router.setBlocked("text", UserInputService:GetFocusedTextBox() ~= nil)
 	router.setBlocked("roblox-menu", GuiService.MenuIsOpen)
 	local adapter = {}
+	function adapter.setPassive(value: boolean)
+		passive = value
+	end
 	function adapter.setBlocked(reason: string, value: boolean)
 		if not destroyed then
 			router.setBlocked(reason, value)

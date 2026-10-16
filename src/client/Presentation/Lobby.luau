@@ -9,6 +9,7 @@ local HudLayout = require("./HudLayout")
 export type Handlers = {
 	lobby: (string, { [string]: any }?) -> (),
 	start: (number) -> (),
+	close: (() -> ())?,
 }
 
 local NAV = {
@@ -47,8 +48,17 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	title.Position = UDim2.fromOffset(12, 0)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	local info = Widgets.label(header, "Info", "", 14)
-	info.Size = UDim2.new(1, -190, 1, 0)
+	info.Size = UDim2.new(1, -320, 1, 0)
 	info.Position = UDim2.fromOffset(180, 0)
+	-- R8: back to the plaza (the dungeon entrance reopens this menu)
+	local close = Widgets.button(header, "ToPlaza", "광장으로", 14)
+	close.Size = UDim2.fromOffset(110, 36)
+	close.Position = UDim2.new(1, -120, 0, 6)
+	close.Activated:Connect(function()
+		if handlers.close then
+			handlers.close()
+		end
+	end)
 	info.TextXAlignment = Enum.TextXAlignment.Right
 	local nav = Widgets.frame(root, "Nav", Theme.panel)
 	nav.Size = UDim2.new(0, 132, 1, -56)
@@ -747,10 +757,12 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	end
 
 	local function update(model: any)
-		local visible = model.phase == "LobbyReady"
-			or model.phase == "Preparing"
-			or model.phase == "ProfileLoading"
-			or model.phase == "Unavailable"
+		local visible = if model.menuVisible ~= nil
+			then model.menuVisible
+			else model.phase == "LobbyReady"
+				or model.phase == "Preparing"
+				or model.phase == "ProfileLoading"
+				or model.phase == "Unavailable"
 		root.Visible = visible
 		local summary = model.summary
 		local slot = model.slot

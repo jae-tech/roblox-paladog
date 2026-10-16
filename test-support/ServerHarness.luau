@@ -54,6 +54,7 @@ local SUITES = {
 	["T-R5"] = true,
 	["T-R6"] = true,
 	["T-R7"] = true,
+	["T-R8"] = true,
 	["T-3D"] = true,
 }
 
@@ -148,6 +149,12 @@ function Harness.runSuite(suiteId: string, seed: number, options: { loadTicks: n
 			}
 			require(tests.unit.R7)(env, check)
 			Harness.lastMetrics = env.metrics
+			return
+		elseif suiteId == "T-R8" then
+			require(tests.unit.R8)({
+				PlazaBoard = require(GameServer.World.PlazaBoard),
+				Schema = require(GameServer.Services.ProfileSchema),
+			}, check)
 			return
 		elseif suiteId == "T-P8" then
 			require(tests.unit.P8)({

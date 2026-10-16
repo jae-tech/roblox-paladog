@@ -11,6 +11,8 @@ local RemoteGateway = require("./Net/RemoteGateway")
 local RemoteBinding = require("./Net/RemoteBinding")
 local FixedStep = require("./Simulation/FixedStep")
 local PersistencePolicy = require("./Persistence/PersistencePolicy")
+local Plaza = require("./World/Plaza")
+local PlazaBoard = require("./World/PlazaBoard")
 
 local active: any = nil
 local function start(): any
@@ -105,7 +107,69 @@ local function start(): any
 			warn("Profile close deadline reached; unconfirmed data may be lost")
 		end
 	end)
-	active = { match = match, profiles = profiles }
+	-- Plaza (R8): shared square, Roblox leaderstats and the per-server board, refreshed every 2 s.
+	local plaza = Plaza.new(workspace)
+	local function leaderstats(player: Player): Folder
+		local folder = player:FindFirstChild("leaderstats") :: Folder?
+		if folder then
+			return folder
+		end
+		local created = Instance.new("Folder")
+		created.Name = "leaderstats"
+		for _, name in { "스테이지", "서바이벌", "레벨" } do
+			local value = Instance.new("IntValue")
+			value.Name = name
+			value.Parent = created
+		end
+		created.Parent = player
+		return created
+	end
+	-- Everyone (re)spawns in the plaza, never at a place's own spawn near the client battlefield.
+	local function toPlaza(player: Player)
+		leaderstats(player)
+		player.RespawnLocation = plaza.spawn
+		local function place(character: Model)
+			local root = character:WaitForChild("HumanoidRootPart", 10) :: BasePart?
+			if root and (root.Position - plaza.spawn.Position).Magnitude > 150 then
+				character:PivotTo(plaza.spawn.CFrame + Vector3.new(0, 4, 0))
+			end
+		end
+		player.CharacterAdded:Connect(place)
+		if player.Character then
+			task.spawn(place, player.Character)
+		end
+	end
+	Players.PlayerAdded:Connect(toPlaza)
+	for _, player in Players:GetPlayers() do
+		toPlaza(player)
+	end
+	task.spawn(function()
+		while not stopping do
+			local rows: { PlazaBoard.Row } = {}
+			for _, player in Players:GetPlayers() do
+				local stats = PlazaBoard.statsOf(profiles.profileOf(player.UserId))
+				local folder = leaderstats(player);
+				(folder:FindFirstChild("스테이지") :: IntValue).Value = stats.stage;
+				(folder:FindFirstChild("서바이벌") :: IntValue).Value = stats.wave;
+				(folder:FindFirstChild("레벨") :: IntValue).Value = stats.level
+				table.insert(rows, {
+					userId = player.UserId,
+					name = player.DisplayName,
+					level = stats.level,
+					stage = stats.stage,
+					wave = stats.wave,
+				})
+				local phase = match.phaseOf(player.UserId)
+				plaza.setExpedition(
+					player,
+					phase == "Running" or phase == "Settling" or phase == "Settled"
+				)
+			end
+			plaza.updateBoard(PlazaBoard.rank(rows))
+			task.wait(2)
+		end
+	end)
+	active = { match = match, profiles = profiles, plaza = plaza }
 	return active
 end
 

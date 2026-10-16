@@ -447,4 +447,23 @@ return function(env: any, check: any)
 			0
 		)
 	end
+	-- R8 plaza: the dungeon entrance opens the menu; menu or battle turns avatar controls off.
+	check("plaza-state-present", true, env.PlazaState ~= nil, 0)
+	if env.PlazaState then
+		local P = env.PlazaState
+		local walk = P.view("LobbyReady", false)
+		check("plaza-walk-no-menu", false, walk.menuVisible, 0)
+		check("plaza-walk-controls", true, walk.controlsEnabled, 0)
+		local menu = P.view("LobbyReady", true)
+		check("plaza-menu-open", true, menu.menuVisible, 0)
+		check("plaza-menu-locks-avatar", false, menu.controlsEnabled, 0)
+		local fight = P.view("Running", true)
+		check("plaza-battle-hides-menu", false, fight.menuVisible, 0)
+		check("plaza-battle-locks-avatar", false, fight.controlsEnabled, 0)
+		check("plaza-battle-flag", true, fight.inBattle, 0)
+		check("plaza-result-locks-avatar", false, P.view("Settled", false).controlsEnabled, 0)
+		check("plaza-unavailable-shown", true, P.view("Unavailable", false).menuVisible, 0)
+		check("plaza-loading-walks", true, P.view("ProfileLoading", false).controlsEnabled, 0)
+		check("plaza-nil-phase", true, P.view(nil, true).controlsEnabled, 0)
+	end
 end

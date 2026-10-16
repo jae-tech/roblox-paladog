@@ -630,6 +630,16 @@
       "originalFileHash": null,
       "approvedBy": null,
       "licenseRecord": "none: original code-built 3D dungeon, no asset file"
+    },
+    {
+      "presentationId": "plaza_3d_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: original code-built plaza (floor, fountain, lanterns, board, dungeon gate), no asset file"
     }
   ]
 }
