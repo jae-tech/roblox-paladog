@@ -5,6 +5,8 @@
 local Db = require("../Config/Remake/Db")
 local Rng = require("./Rng")
 local Rules = require("./Rules")
+local Shadow = require("./Shadow")
+local Jump = require("./Jump")
 
 local DT = 1 / 30
 local SCROLL_MAX = 1024
@@ -34,6 +36,11 @@ local OBJECTS: { [string]: any } = Db.objects :: any
 local SKILL_MULTIPLIED = { [1] = true, [2] = true, [3] = true, [5] = true, [7] = true, [9] = true }
 -- E04 §0: stage number mod 12 picks the light-hero mode; tower and dungeon shrink everything.
 local MODE_BY_REMAINDER = { [0] = "Boss", [3] = "Destiny", [6] = "Wagon", [9] = "Tower" }
+-- The shadow hero swaps destiny/escort/tower for boar jump, siege horse and dungeon (E04 §0).
+local SHADOW_MODE_BY_REMAINDER = { [0] = "Boss", [3] = "Jump", [6] = "Horse", [9] = "Dungeon" }
+local HORSE_LOSE_X = 140 -- the siege horse reaching x <= 140 loses the stage (E04 §4)
+-- Engine internals handed to Shadow (filled at the bottom of this file).
+local api: any = {}
 
 export type Entity = {
 	id: number,
@@ -82,6 +89,11 @@ export type Entity = {
 	invulnTicks: number,
 	minion: boolean,
 	hold: boolean,
+	lifetime: number,
+	knockWaitTicks: number,
+	burnTicks: number,
+	burnLeft: number,
+	burnDamage: number,
 	oneGold: boolean,
 	struck: boolean,
 	removed: boolean,
@@ -126,8 +138,8 @@ export type Options = {
 	revives: number?, -- revive offers available (gems checked by the caller, D-REVIVE-01)
 }
 
-local function modeOf(stage: number): string
-	return MODE_BY_REMAINDER[stage % 12] or "Normal"
+local function modeOf(stage: number, shadow: boolean?): string
+	return (if shadow then SHADOW_MODE_BY_REMAINDER else MODE_BY_REMAINDER)[stage % 12] or "Normal"
 end
 
 local function cloneLoadout(l: Rules.Loadout): Rules.Loadout
@@ -196,6 +208,11 @@ local function newEntity(b: any, kind: string, n: number, team: number): Entity
 		invulnTicks = 0,
 		minion = false,
 		hold = false,
+		lifetime = 0,
+		knockWaitTicks = 0,
+		burnTicks = 0,
+		burnLeft = 0,
+		burnDamage = 0,
 		oneGold = false,
 		struck = false,
 		removed = false,
@@ -219,7 +236,13 @@ local function count(b: any, team: number, unitsOnly: boolean): number
 		if
 			alive(e)
 			and e.team == team
-			and (not unitsOnly or e.kind == "Unit" or e.kind == "Enemy" or e.kind == "Boss")
+			and (
+				not unitsOnly
+				or e.kind == "Unit"
+				or e.kind == "Totem"
+				or e.kind == "Enemy"
+				or e.kind == "Boss"
+			)
 		then
 			total += 1
 		end
@@ -351,9 +374,25 @@ end
 
 local function new(options: Options): any
 	local stageNumber = options.stage
-	local stage = Db.campaign[stageNumber]
+	local stage: any = Db.campaign[stageNumber]
 	assert(stage, "unknown stage " .. tostring(stageNumber))
-	local mode = modeOf(stageNumber)
+	local shadow = options.loadout.heroKind == "shadow"
+	local mode = modeOf(stageNumber, shadow)
+	if shadow then
+		-- 21 shadow-only rows replace campaign stages; mode stages use their own tables (E04 §0-1).
+		for _, row in Db.darkReplaced do
+			if row.stage == stageNumber then
+				stage = row
+			end
+		end
+		if mode == "Jump" then
+			return Jump.new(options, Db.jump[(stageNumber - 3) // 12 + 1], stageNumber)
+		elseif mode == "Horse" then
+			stage = Db.darkWagon[(stageNumber - 6) // 12 + 1]
+		elseif mode == "Dungeon" then
+			stage = Db.dungeon[(stageNumber - 9) // 12 + 1]
+		end
+	end
 	local loadout = cloneLoadout(options.loadout)
 	local destinyMace, destinyUnit = nil, nil
 	if mode == "Destiny" then
@@ -372,8 +411,23 @@ local function new(options: Options): any
 		stageNumber = stageNumber,
 		stage = stage,
 		mode = mode,
-		scale = if mode == "Tower" then 0.6 else 1, -- E04 §0 global scale
-		enemySpawnX = if mode == "Destiny" or mode == "Tower" then NEAR_SPAWN_X else SCROLL_MAX,
+		scale = if mode == "Tower" then 0.6 elseif mode == "Dungeon" then 0.7 else 1, -- E04 §0 global scale
+		enemySpawnX = if mode == "Destiny"
+				or mode == "Tower"
+				or mode == "Dungeon"
+			then NEAR_SPAWN_X
+			else SCROLL_MAX,
+		dPattern = mode == "Destiny" or mode == "Dungeon", -- 60-enemy fixed rhythm (E04 §3-1)
+		shadow = shadow,
+		traps = {},
+		thornTicks = 0,
+		transformTicks = 0,
+		transformAttack = 1,
+		transformTaken = 1,
+		swordTicks = 0,
+		activeSword = nil,
+		dungeonTicks = 0,
+		horseId = 0,
 		loadout = loadout,
 		stats = stats,
 		difficulty = Rules.DIFFICULTY[loadout.difficulty] or Rules.DIFFICULTY[1],
@@ -418,8 +472,12 @@ local function new(options: Options): any
 	}
 	local hero = newEntity(b, "Hero", 0, 1)
 	hero.hp, hero.maxHp = stats.maxHp, stats.maxHp
-	hero.hitDist, hero.speed, hero.state = Db.specials.lightHero.hitDist, stats.moveSpeed, "Idle"
-	hero.x = if mode == "Destiny" then 45 elseif mode == "Tower" then 32 else 100 -- E04 §6
+	hero.hitDist = if shadow then Db.specials.shadowHero.hitDist else Db.specials.lightHero.hitDist
+	hero.speed, hero.state = stats.moveSpeed, "Idle"
+	hero.x = if mode == "Destiny"
+		then 45
+		elseif mode == "Tower" or mode == "Dungeon" then 32
+		else 100 -- E04 §6
 	hero.y = 165
 	if mode == "Tower" then
 		hero.line, hero.y = 0, laneY(0)
@@ -439,6 +497,17 @@ local function new(options: Options): any
 		wagon.speed = Db.specials.wagon.moveSpeed
 		wagon.y = 165
 		b.wagonId = add(b, wagon).id
+	elseif mode == "Horse" then
+		-- Siege horse: HP is iECHP_, attack is the row's horse attack, rolls left from x = 1024 (E04 §4).
+		local spec = Db.specials.woodenHorse
+		local horse = newEntity(b, "Horse", 12, 2)
+		horse.x, horse.hitDist, horse.state = SCROLL_MAX, spec.hitDist, "Move"
+		horse.hp = stage.castleHp * b.difficulty.hp
+		horse.maxHp = horse.hp
+		horse.ap, horse.attackDist, horse.speed = stage.horseAttack, spec.attackDist, spec.moveSpeed
+		horse.attackPast = 0
+		horse.y = 165
+		b.horseId = add(b, horse).id
 	elseif mode == "Tower" then
 		-- Fixed mid boss s/12 + 1 at x = 420, holding position (E04 §3-7); lane 3 is D-TOWER-02.
 		local guard = spawnEnemy(b, 100 + stageNumber // 12 + 1, 0, 420, false, 3)
@@ -465,7 +534,7 @@ end
 
 local function nextSpawnGap(b: any): number
 	local s = b.stage
-	if b.mode == "Destiny" then
+	if b.dPattern then
 		-- fixed pattern on the running total (E04 §3-1): forced 5 s at 10/20/30
 		local total = b.spawn.total
 		if total == 10 or total == 20 or total == 30 then
@@ -485,10 +554,10 @@ end
 -- ------------------------------------------------------------------ damage (E02 §2.1-§2.2)
 
 local function needSlide(e: Entity): boolean
-	if e.kind ~= "Unit" and e.kind ~= "Enemy" then
+	if e.kind ~= "Unit" and e.kind ~= "Totem" and e.kind ~= "Enemy" then
 		return false -- hero, bosses, castle and wagon never slide
 	end
-	if e.kind == "Unit" and e.n == 6 then
+	if (e.kind == "Unit" or e.kind == "Totem") and e.n == 6 then
 		return false
 	end
 	if e.kind == "Enemy" and (e.n == 12 or e.n == 20 or e.n == 17) then
@@ -498,14 +567,14 @@ local function needSlide(e: Entity): boolean
 end
 
 local function knockdown(e: Entity, mul: number?)
-	if e.kind ~= "Unit" and e.kind ~= "Enemy" then
+	if e.kind ~= "Unit" and e.kind ~= "Totem" and e.kind ~= "Enemy" then
 		return -- hero, boss, castle and wagon are immune (E02 §4.4)
 	end
 	e.state, e.stateTicks, e.knockMul, e.target = "Knock", 0, mul or 1, nil
 end
 
 local function freeze(e: Entity, seconds: number)
-	if e.kind == "Unit" or e.kind == "Enemy" then
+	if e.kind == "Unit" or e.kind == "Totem" or e.kind == "Enemy" then
 		e.state, e.stateTicks, e.stateLimit, e.target =
 			"Ice", 0, math.floor(seconds * 30 + 0.5), nil
 	end
@@ -590,7 +659,24 @@ local function strike(
 		return -- 10 s invulnerability after a revive (E03 §1.6)
 	end
 	local stats = b.stats
+	if b.shadow and target.kind == "Hero" and Rng.rand(b.rng) % 1000 <= stats.evadePercent * 10 then
+		return -- evade, shadow hero only (E02 §2.4)
+	end
 	local dmg = ap
+	if b.shadow then
+		if attacker and attacker.team == 2 and attacker.aura then
+			dmg *= stats.auraWeaken -- weaken aura on the attacking enemy
+		end
+		if target.team == 2 and target.aura then
+			dmg *= stats.auraCorrode -- corrode aura on the struck enemy
+		end
+		if target.kind == "Hero" and b.transformTicks > 0 then
+			dmg *= b.transformTaken
+		end
+		if target.kind == "Totem" and target.n == 6 then
+			dmg *= 0.5 -- bull totem (E02 §2.1)
+		end
+	end
 	if auraHit then
 		dmg *= stats.auraWar
 	end
@@ -629,7 +715,7 @@ local function strike(
 		return
 	end
 	-- Allied units fall when HP crosses 20% of max (E02 §2.1); skills knock by fSkKnd percent.
-	local crossed = target.kind == "Unit"
+	local crossed = (target.kind == "Unit" or target.kind == "Totem")
 		and before > target.maxHp * 0.2
 		and target.hp <= target.maxHp * 0.2
 	if crossed or (skill and attacker and Rng.rand(b.rng) % 1000 < attacker.knockPercent * 10) then
@@ -651,7 +737,8 @@ local function canHit(attackerKind: string, attackerN: number, c: Entity): boole
 	local targetKind: string = c.kind
 	local mirror = targetKind == "Boss" and c.n == 7 -- E02 §4.4 boss 07
 	local witch = attackerKind == "Boss" and attackerN == 2 -- E02 §4.4 boss 02
-	return not ((mirror and attackerKind ~= "Hero") or (witch and targetKind == "Hero"))
+	local eagle = targetKind == "Totem" and c.n == 7 -- the eagle totem cannot be targeted (E02 §4.5)
+	return not ((mirror and attackerKind ~= "Hero") or (witch and targetKind == "Hero") or eagle)
 end
 
 local function nearestFront(b: any, e: Entity, reach: number): Entity?
@@ -806,10 +893,22 @@ local function stepObjects(b: any)
 				o.pierce -= 1
 				projectileHit(b, o, best)
 				done = o.pierce <= 0
+				if o.row == 283 then
+					o.kind, o.x, o.ticks, o.duration, o.area = "Gas", best.x, 0, 30, 25
+					done = false -- D-SWORD-04: one-second cloud, applies the documented ten-second poison.
+				end
 			end
 			if o.x < -PROJECTILE_HALF_WIDTH * 2 or o.x > SCROLL_MAX + PROJECTILE_HALF_WIDTH * 2 then
 				done = true
 			end
+		elseif o.kind == "Gas" then
+			for _, eid in b.order do
+				local c = b.entities[eid]
+				if c and hitsFrom(o, c) and math.abs(c.x - o.x) <= o.area + c.hitDist then
+					c.poisonDps, c.poisonLeft = o.poison, 10 -- refresh duration, not the damage clock
+				end
+			end
+			done = o.ticks >= o.duration
 		elseif o.kind == "Lob" or o.kind == "Drop" then
 			if o.kind == "Lob" then
 				o.x = o.fromX + (o.toX - o.fromX) * math.min(o.ticks / o.duration, 1)
@@ -940,7 +1039,7 @@ local function bossRelease(b: any, e: Entity, target: Entity?)
 		-- frost witch: turns the first target in range into a frog for 8 s (E02 §4.4)
 		if target and alive(target) then
 			strike(b, e, target, e.ap, false, false)
-			if alive(target) and target.kind == "Unit" then
+			if alive(target) and (target.kind == "Unit" or target.kind == "Totem") then
 				target.frogTicks, target.target = 8 * 30, nil
 				if
 					target.state == "Delay"
@@ -1005,6 +1104,10 @@ end
 -- The release frame of an attack or skill animation.
 local function release(b: any, e: Entity, skill: boolean)
 	local target = if e.target then b.entities[e.target] else nil
+	if e.kind == "Totem" then
+		Shadow.release(api, b, e, target)
+		return
+	end
 	if e.kind == "Unit" then
 		local n = e.n
 		if n == 2 then
@@ -1130,20 +1233,34 @@ local function towerScore(b: any, e: Entity): boolean
 end
 
 local function stepEntity(b: any, e: Entity)
-	if e.kind == "Hero" or e.kind == "Castle" or e.kind == "Wagon" or not alive(e) then
+	local kind = e.kind
+	if kind == "Hero" or kind == "Castle" or kind == "Wagon" or kind == "Horse" or not alive(e) then
+		return
+	end
+	tickPoison(b, e)
+	Shadow.stepBurn(api, b, e)
+	if not alive(e) then
+		return
+	end
+	if e.frogTicks > 0 then
+		e.frogTicks -= 1
+	end
+	if kind == "Totem" and Shadow.stepTotem(api, b, e) then
 		return
 	end
 	e.stateTicks += 1
 	e.attackPast += 1 -- timers count whole ticks; seconds compare as ticks (no float drift)
-	tickPoison(b, e)
-	if e.frogTicks > 0 then
-		e.frogTicks -= 1
-	end
 	local state = e.state
 	if state == "Knock" then
 		e.x -= e.dir * KNOCK_SPEED * e.knockMul * DT
 		if e.stateTicks >= KNOCK_FRAMES then
-			enter(e, "KnockWait", KNOCK_WAIT * 30)
+			-- the shadow hero's shout holds its victims longer (E05 B5 totem 2)
+			enter(
+				e,
+				"KnockWait",
+				if e.knockWaitTicks > 0 then e.knockWaitTicks else KNOCK_WAIT * 30
+			)
+			e.knockWaitTicks = 0
 		end
 		return
 	elseif state == "KnockWait" or state == "Ice" or state == "Wait" then
@@ -1198,6 +1315,8 @@ local function stepEntity(b: any, e: Entity)
 			local speed = e.speed
 			if e.kind == "Unit" and e.aura then
 				speed *= b.stats.auraMove
+			elseif b.shadow and e.team == 2 and e.aura then
+				speed *= b.stats.auraHinder -- hinder aura (x0.95 even at level 0, E03 §5.4)
 			end
 			e.x += e.dir * speed * DT
 			if towerScore(b, e) then
@@ -1427,7 +1546,8 @@ local function heroLimit(b: any): number
 end
 
 local function heroCanMove(b: any): boolean
-	return b.mode ~= "Destiny" and b.mode ~= "Tower" -- move buttons are disabled there (E03 §1.1)
+	-- move buttons are disabled in destiny, tower, dungeon and jump (E03 §1.1)
+	return b.mode ~= "Destiny" and b.mode ~= "Tower" and b.mode ~= "Dungeon" and b.mode ~= "Jump"
 end
 
 local function stepHero(b: any)
@@ -1438,6 +1558,10 @@ local function stepHero(b: any)
 	tickPoison(b, h)
 	if h.invulnTicks > 0 then
 		h.invulnTicks -= 1
+	end
+	if b.shadow then
+		Shadow.stepHero(api, b)
+		return
 	end
 	if h.state == "Mace" then
 		h.stateTicks += 1
@@ -1507,6 +1631,9 @@ local function unitReady(b: any, n: number): (string?, any)
 end
 
 local function summon(b: any, n: number, lane: number?): string?
+	if b.shadow then
+		return Shadow.summon(api, b, n)
+	end
 	if b.mode == "Destiny" then
 		return "WrongMode" -- destiny summons only through boxes (D-DESTINY-03)
 	end
@@ -1656,11 +1783,13 @@ end
 -- ------------------------------------------------------------------ level-up choice (E03 §4.1)
 
 local LIGHT_MAX = { 9, 9, 5, 20, 20, 5, 5, 10, 20, 5, 20, 10, 3, 5, 20, 5, 3, 5, 3, 5, 2, 5, 5 }
+local SHADOW_MAX = { 9, 9, 5, 20, 20, 5, 5, 3, 10, 20, 10, 20, 5, 5, 10, 5, 5, 5, 5, 5, 5, 3, 5, 5 }
 
 local function candidates(b: any, level: number): { number }
 	local skills = b.loadout.skills
+	local maxes: { number } = if b.shadow then SHADOW_MAX else LIGHT_MAX
 	local open: { number } = {}
-	for i, max in LIGHT_MAX do
+	for i, max in maxes do
 		if (skills[i] or 0) < max then
 			table.insert(open, i)
 		end
@@ -1670,14 +1799,17 @@ local function candidates(b: any, level: number): { number }
 	end
 	local picked: { number } = {}
 	local function take(i: number)
-		if (skills[i] or 0) < LIGHT_MAX[i] and not table.find(picked, i) then
+		if (skills[i] or 0) < maxes[i] and not table.find(picked, i) then
 			table.insert(picked, i)
 		end
 	end
 	if level % 5 == 0 then
-		take(11)
-		take(9)
-		take(({ 19, 12, 20 })[(level // 5 - 1) % 3 + 1])
+		local fixed: { number } = if b.shadow
+			then Shadow.fixedCandidates(level)
+			else { 11, 9, ({ 19, 12, 20 })[(level // 5 - 1) % 3 + 1] }
+		for _, i in fixed do
+			take(i)
+		end
 	end
 	while #picked < 3 do
 		take(open[Rng.rand(b.rng) % #open + 1])
@@ -1779,8 +1911,8 @@ end
 
 local function stepSpawner(b: any)
 	local sp = b.spawn
-	if b.mode == "Destiny" and sp.total >= DESTINY_SPAWNS then
-		return -- destiny stops after 60 enemies (E04 §3-2)
+	if b.dPattern and sp.total >= DESTINY_SPAWNS then
+		return -- destiny and dungeon stop after 60 enemies (E04 §3-2)
 	end
 	if sp.need < 0 then
 		sp.need = nextSpawnGap(b) -- StartStage draws the first gap before any enemy (E04 §3-1)
@@ -1794,7 +1926,9 @@ local function stepSpawner(b: any)
 		return -- empty band: retry next frame without resetting the timer (E04 §3-3)
 	end
 	local lane = if b.mode == "Tower" then Rng.rand(b.rng) % 5 + 1 else nil
-	if not spawnEnemy(b, id, slot, nil, false, lane) then
+	local horse = b.entities[b.horseId]
+	local x = if horse and alive(horse) then horse.x else nil -- enemies leave the horse (E04 §4)
+	if not spawnEnemy(b, id, slot, x, false, lane) then
 		return
 	end
 	sp.created += 1
@@ -1804,7 +1938,7 @@ local function stepSpawner(b: any)
 	if b.mode == "Tower" and (sp.created == unitCount or sp.created == unitCount * 2) then
 		towerRush(b)
 	end
-	if b.mode ~= "Destiny" and sp.created >= unitCount * 2 then
+	if not b.dPattern and sp.created >= unitCount * 2 then
 		sp.created = 0
 	end
 	sp.timer = 0
@@ -1845,7 +1979,7 @@ local function releaseBoss(b: any)
 	b.bossId = boss.id
 	for _, id in b.order do
 		local c = b.entities[id]
-		if c and c.kind == "Unit" and alive(c) then
+		if c and (c.kind == "Unit" or c.kind == "Totem") and alive(c) then
 			knockdown(c, 3)
 		end
 	end
@@ -1860,8 +1994,16 @@ local function regen(b: any)
 		return
 	end
 	-- MP and food: per-0.1 s amounts x10 per second (E04 §1-4)
+	local vigor = (100 + stats.auraVigorPer * b.auraCount) / 100 -- shadow vigor aura (E03 §4.3)
 	b.mana = math.min(
-		b.mana + (stats.manaPerTenth + stats.manaPerTenthPerAura * b.auraCount) * 10 * DT,
+		b.mana
+			+ (
+					stats.manaPerTenth
+					+ stats.manaVigorBase * (vigor - 1)
+					+ stats.manaPerTenthPerAura * b.auraCount
+				)
+				* 10
+				* DT,
 		stats.maxMana
 	)
 	b.food = math.min(
@@ -1881,6 +2023,10 @@ end
 -- E03 §5.1: allied units within the radius on the hero's line are in the aura; regen aura every 5 s.
 -- Tower has no aura (E03 §5.1 exclusions).
 local function updateAura(b: any)
+	if b.shadow then
+		Shadow.updateAura(api, b)
+		return
+	end
 	local h = hero(b)
 	local radius = b.stats.auraRadius
 	local inside = 0
@@ -1911,10 +2057,17 @@ local function updateAura(b: any)
 end
 
 local function runCommands(b: any, commands: { any }): { any }
-	local results = {}
+	local results: { any } = {}
 	for _, command in commands do
 		local reason: string?
 		local kind = command.kind
+		if b.outcome then
+			table.insert(
+				results,
+				{ requestId = command.requestId, status = "Rejected", reason = "WrongPhase" }
+			)
+			continue
+		end
 		if kind == "Retreat" then
 			b.reviveOffer = false
 			b.outcome = "Defeat" -- leaving from the pause menu keeps what was earned (Settlement)
@@ -1936,11 +2089,15 @@ local function runCommands(b: any, commands: { any }): { any }
 		elseif kind == "Mace" then
 			if b.mode == "Tower" then
 				reason = towerButton(b, command.slot, command.unit, command.lane)
+			elseif b.shadow then
+				reason = Shadow.useSword(api, b, command.slot)
 			else
 				reason = useMace(b, command.slot)
 			end
 		elseif kind == "Box" then
 			reason = openBox(b, command.index)
+		elseif kind == "Jump" then
+			reason = "WrongMode"
 		else
 			reason = "InvalidPayload"
 		end
@@ -1976,9 +2133,16 @@ local function decideOutcome(b: any)
 		elseif not alive(b.entities[b.bossId]) then
 			b.outcome = "Victory"
 		end
-	elseif mode == "Destiny" then
+	elseif mode == "Destiny" or mode == "Dungeon" then
 		if b.rewards.killTotal >= DESTINY_KILLS then
 			b.outcome = "Victory"
+		end
+	elseif mode == "Horse" then
+		local horse = b.entities[b.horseId]
+		if not alive(horse) then
+			b.outcome = "Victory"
+		elseif horse.x <= HORSE_LOSE_X then
+			b.outcome = "Defeat"
 		end
 	elseif mode == "Wagon" then
 		local w = b.entities[b.wagonId]
@@ -2000,7 +2164,11 @@ local function cleanup(b: any)
 	local kept: { number } = {}
 	for _, id in b.order do
 		local e = b.entities[id]
-		local keep = id == b.heroId or id == b.castleId or id == b.wagonId or id == b.bossId
+		local keep = id == b.heroId
+			or id == b.castleId
+			or id == b.wagonId
+			or id == b.bossId
+			or id == b.horseId
 		if e and (alive(e) or keep) then
 			table.insert(kept, id)
 		else
@@ -2056,6 +2224,10 @@ local function step(b: any, input: Input?): any
 		end
 	end
 	stepWagon(b)
+	if b.shadow then
+		Shadow.stepTraps(api, b)
+		Shadow.stepHorse(api, b)
+	end
 	stepObjects(b)
 	decideOutcome(b)
 	cleanup(b)
@@ -2086,6 +2258,7 @@ local function snapshot(b: any): any
 			enhanced = e.enhanced,
 			frog = e.frogTicks > 0,
 			poisoned = e.poisonLeft > 0,
+			transformed = b.shadow and e.kind == "Hero" and b.transformTicks > 0,
 		})
 	end
 	local objects = {}
@@ -2111,11 +2284,24 @@ local function snapshot(b: any): any
 	return {
 		tick = b.tick,
 		mode = b.mode,
-		heroSpeed = if heroCanMove(b) then b.stats.moveSpeed + b.stats.moveSpeedRing else 0,
+		heroKind = b.loadout.heroKind,
+		transform = b.transformTicks > 0,
+		traps = (function()
+			local placed = {}
+			for _, trap in b.traps do
+				table.insert(placed, { x = trap.x, row = trap.row })
+			end
+			return placed
+		end)(),
+		heroSpeed = if heroCanMove(b) and heroView.state ~= "Transform"
+			then (b.stats.moveSpeed + b.stats.moveSpeedRing) * (if b.transformTicks > 0
+				then 1.2
+				else 1)
+			else 0,
 		heroMinX = -40,
 		heroMaxX = heroLimit(b),
 		heroState = heroView.state,
-		auraRadius = if b.mode ~= "Tower" then b.stats.auraRadius else nil,
+		auraRadius = if b.mode ~= "Tower" and b.mode ~= "Dungeon" then b.stats.auraRadius else nil,
 		paused = b.reviveOffer or #b.pendingPicks > 0,
 		food = b.food,
 		mana = b.mana,
@@ -2168,6 +2354,24 @@ local function digest(b: any): string
 			b.auxFifth.unit
 		),
 	}
+	if b.shadow then
+		table.insert(
+			parts,
+			string.format(
+				"shadow:%d:%.17g:%.17g:%d:%d:%d:%s",
+				b.transformTicks,
+				b.transformAttack,
+				b.transformTaken,
+				b.swordTicks,
+				b.thornTicks,
+				b.dungeonTicks,
+				if b.activeSword then b.activeSword.num .. ":" .. b.activeSword.grade else "-"
+			)
+		)
+		for _, trap in b.traps do
+			table.insert(parts, string.format("trap:%d:%.17g:%d", trap.row, trap.x, trap.line))
+		end
+	end
 	for n = 1, 9 do
 		local box = b.boxes[n]
 		table.insert(
@@ -2177,6 +2381,20 @@ local function digest(b: any): string
 	end
 	for _, id in b.order do
 		local e = b.entities[id]
+		if b.shadow then
+			table.insert(
+				parts,
+				string.format(
+					"shadow-entity:%d:%.17g:%d:%d:%.17g:%d",
+					e.id,
+					e.lifetime,
+					e.burnLeft,
+					e.burnTicks,
+					e.burnDamage,
+					e.knockWaitTicks
+				)
+			)
+		end
 		table.insert(
 			parts,
 			string.format(
@@ -2215,15 +2433,41 @@ local function digest(b: any): string
 	return string.format("%08x", hash)
 end
 
+api.hero = hero
+api.count = count
+api.newEntity = newEntity
+api.add = add
+api.depthY = depthY
+api.alive = alive
+api.targetable = targetable
+api.knockdown = knockdown
+api.freeze = freeze
+api.kill = kill
+api.strike = strike
+api.area = area
+api.fire = fire
+api.lob = lob
+api.launch = launch
+api.enter = enter
+api.nearestFront = nearestFront
+api.heroLimit = heroLimit
+
 return table.freeze({
 	DT = DT,
 	SCROLL_MAX = SCROLL_MAX,
 	modeOf = modeOf,
 	destinyLevel = destinyLevel,
 	new = new,
-	step = step,
-	snapshot = snapshot,
-	digest = digest,
+	-- boar jump stages run their own small world (Jump.luau)
+	step = function(b: any, input: Input?): any
+		return if b.jump then Jump.step(b, input) else step(b, input)
+	end,
+	snapshot = function(b: any): any
+		return if b.jump then Jump.snapshot(b) else snapshot(b)
+	end,
+	digest = function(b: any): string
+		return if b.jump then Jump.digest(b) else digest(b)
+	end,
 	spawnUnit = spawnUnit,
 	spawnEnemy = spawnEnemy,
 	strike = strike,

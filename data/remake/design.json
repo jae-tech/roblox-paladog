@@ -13,7 +13,7 @@
     "D-ANIM-02": "Hero weapon motion 18 frames, effect on frame 8 (hero part animations not parsed).",
     "D-PROJ-01": "Straight projectile hit half-width 10 px (sprite width not in the data).",
     "D-GHOST-01": "Ghost enemies advance their 150 px untargetable leg at walking speed.",
-    "D-CAP-01": "Server protection caps: 80 allies, 120 enemies, 256 objects (the original has none).",
+    "D-CAP-01": "Server protection caps: 80 allies, 120 enemies, 256 moving objects and 256 traps (the original has none). Hero skills do not consume ally slots.",
     "D-LVUP-01": "The battle pauses while a level-up choice is pending, like the original popup.",
     "D-LVUP-02": "Fixed level-up candidates apply when the newly reached level is a multiple of 5.",
     "D-DESTINY-01": "Destiny forced weapon grade equals the forced unit level (1, 3, ..., 19).",
@@ -27,7 +27,20 @@
     "D-SHOP-01": "Helmets/armor/mounts cost gems at a base of 100..500 by item number; their gold sale value is base + base*0.1*grade^2.",
     "D-DROP-01": "Drops are a hero weapon or ring/amulet (50/50), number 1..10, grade (chapter-1)*2 + 0..2 capped by the grade limit, seeded per run.",
     "D-DROP-02": "An item that does not fit the 100-slot inventory is sold on the spot.",
-    "D-QUEST-02": "Sub quest 1 time limit = floor((iCrSec + 120) / 10) * 10 seconds (matches the 1-1 example of 5:20)."
+    "D-QUEST-02": "Sub quest 1 time limit = floor((iCrSec + 120) / 10) * 10 seconds (matches the 1-1 example of 5:20).",
+    "D-QUEST-03": "Shadow quests use the light totals; main = mode goal (19 finish line, 20 siege horse destroyed, dungeon 60 kills), sub2 = coins >= iCSp21 on jump, hero HP >= 50% on horse/dungeon, totem summons on the cycle.",
+    "D-UNLOCK-02": "The shadow hero also unlocks from the gem shop for 1000 gems (the original sets the flag from a shop purchase, price unknown).",
+    "D-ANIM-03": "Shadow sword swing 15 frames, effect on frame 6.",
+    "D-SHADOW-01": "Transform plays a 1 s pose, then the 30 s buff.",
+    "D-SPIKE-01": "Spike skill strikes three points 60/120/180 px ahead.",
+    "D-TOTEM-08": "Salamander totem lobs a 30 px flame burst at its target.",
+    "D-DUNGEON-01": "Dungeon is one lane: hero fixed at x 32, enemies from x 480.",
+    "D-DUNGEON-02": "Traps land 80 px ahead of the hero.",
+    "D-DUNGEON-03": "Dungeon auto-attack is a free dark sword swing every 0.5 s.",
+    "D-JUMP-01": "Jump tracks are original: 64 px tiles, spikes 260..420 px apart away from safe zones, coins spread evenly; finish = last safe tile + 12.",
+    "D-JUMP-02": "A jump lasts 0.6 s; a grounded boar on a spike restarts at the furthest safe zone after 1 s.",
+    "D-SWORD-04": "Poison dagger creates a one-second cloud with 25 px radius at the arrow hit, refreshing the documented ten-second poison without resetting its damage timer.",
+    "D-JUMP-03": "The original runner speed is unknown: runner uses 90% of the boar speed, stopping at the finish. Coins use horizontal swept pickup during grounded or airborne movement (original tile geometry unavailable), so all coin goals are attainable."
   },
   "anim": {
     "known": {
@@ -321,7 +334,8 @@
       "1": "반지 3번 칸 해제",
       "2": "골드 100,000",
       "3": "황금 무기",
-      "9": "스킬 초기화"
+      "9": "스킬 초기화",
+      "5": "그늘검사 해금"
     },
     "quest": {
       "1": "영웅이 살아서 적 성채 파괴",
@@ -340,7 +354,10 @@
       "14": "{unit} {b}회 이상 소환",
       "15": "아군 {a}명 이상 살아남기",
       "16": "{a}번 무기 없이 승리",
-      "17": "{a}번 무기 {b}회 이상 사용"
+      "17": "{a}번 무기 {b}회 이상 사용",
+      "18": "코인 {a}개 이상 모으기",
+      "19": "결승선 도착",
+      "20": "공성 목마 파괴"
     },
     "lightSkills": [
       "처치 EXP +20%/Lv",
@@ -418,6 +435,32 @@
         "desc": "그늘검사 캠페인 완주",
         "gems": 200
       }
-    }
+    },
+    "shadowSkills": [
+      "처치 EXP +20%/Lv",
+      "처치 골드 +20%/Lv",
+      "아이템 발견 +0.5%p/Lv",
+      "최대 체력 +1500/Lv",
+      "5초마다 체력 240+100/Lv",
+      "이동 속도 +20/Lv",
+      "받는 피해 -10%/Lv",
+      "검 마나 -10%/Lv",
+      "최대 마나 +50/Lv",
+      "마나 재생 +1.2/초/Lv",
+      "최대 식량 +40/Lv",
+      "식량 재생 +0.5/초/Lv",
+      "회피 +10%/Lv",
+      "치명타 확률 5+1%/Lv",
+      "치명타 피해 x(5+2Lv)",
+      "그늘 안 적 받는 피해 x(1+0.3Lv)",
+      "그늘 안 적 공격 -8%/Lv",
+      "그늘 안 적 이동 x(0.95-0.09Lv)",
+      "그늘 안 적 수만큼 공격 +2%/Lv",
+      "그늘 안 적 수만큼 마나 재생 +2%/Lv",
+      "그늘 안 적 초당 10+15Lv 피해",
+      "그늘 범위 110+33/Lv",
+      "검 등급 +1/Lv",
+      "부적 등급 +1/Lv"
+    ]
   }
 }

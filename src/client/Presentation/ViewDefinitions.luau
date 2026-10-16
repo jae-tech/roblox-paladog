@@ -283,8 +283,47 @@ for n = 1, 10 do
 	)
 end
 
+local SHADOW = view("hero_shadow_placeholder", 28, 46, rgb(75, 65, 110), rgb(170, 120, 245), {
+	p(0.2, 0.3, 0.6, 0.55, "body", 0.2),
+	p(0.25, 0, 0.5, 0.35, "accent", 0.3),
+	p(0.65, 0.18, 0.12, 0.08, WHITE),
+	p(0.85, 0.25, 0.08, 0.55, WHITE),
+	p(0.1, 0.82, 0.3, 0.18, BLACK),
+	p(0.6, 0.82, 0.3, 0.18, BLACK),
+})
+local TOTEM_IDS = {
+	"totem_1_placeholder",
+	"totem_2_placeholder",
+	"totem_3_placeholder",
+	"totem_4_placeholder",
+	"totem_5_placeholder",
+	"totem_6_placeholder",
+	"totem_7_placeholder",
+	"totem_8_placeholder",
+	"totem_9_placeholder",
+}
+local TOTEMS: { View } = {}
+for n, id in TOTEM_IDS do
+	TOTEMS[n] = view(
+		id,
+		22 + n * 2,
+		24 + n,
+		rgb(90 + n * 8, 75, 110 + n * 7),
+		GOLD,
+		creature({ p(0.05, 0.5, 0.9, 0.12, "accent"), p(0.4, 0, 0.2, 0.2, "accent") })
+	)
+end
+
 return table.freeze({
 	hero = hero,
+	shadow = SHADOW,
+	totems = table.freeze(TOTEMS),
+	horse = view("siege_horse_placeholder", 85, 70, rgb(90, 65, 55), rgb(190, 110, 65), {
+		p(0.05, 0.15, 0.7, 0.55, "body"),
+		p(0.65, 0, 0.3, 0.35, "accent"),
+		p(0.05, 0.7, 0.25, 0.3, BLACK, 1),
+		p(0.65, 0.7, 0.25, 0.3, BLACK, 1),
+	}),
 	units = table.freeze(UNITS),
 	enemies = table.freeze(ENEMIES),
 	bosses = table.freeze(BOSSES),
@@ -306,6 +345,13 @@ return table.freeze({
 	projectile = table.freeze({ presentationId = "projectile_placeholder" }),
 	-- Object rows -> color, length and height in logical px (E02 §3 object table rows).
 	objects = table.freeze({
+		[275] = { color = rgb(240, 100, 40), w = 14, h = 12 },
+		[278] = { color = WHITE, w = 8, h = 10 },
+		[282] = { color = rgb(180, 150, 250), w = 24, h = 5 },
+		[283] = { color = rgb(120, 210, 80), w = 12, h = 12 },
+		[292] = { color = GOLD, w = 20, h = 4 },
+		[293] = { color = rgb(150, 110, 100), w = 18, h = 6 },
+		[294] = { color = rgb(240, 90, 40), w = 18, h = 6 },
 		[260] = { color = rgb(150, 110, 70), w = 14, h = 2 },
 		[261] = { color = rgb(250, 220, 120), w = 16, h = 3 },
 		[262] = { color = BLACK, w = 6, h = 6 },

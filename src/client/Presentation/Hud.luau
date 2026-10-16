@@ -205,11 +205,18 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	end)
 
 	local unitButtons: { TextButton } = {}
+	local jump = Widgets.button(bottom, "Jump", "도약 (Space)", 22, Theme.mana)
+	jump.Size = UDim2.fromOffset(220, 76)
+	jump.Position = UDim2.new(0.5, -110, 0, 26)
+	jump.Visible = false
+	jump.Activated:Connect(function()
+		handlers.battle("Jump", nil)
+	end)
 	local unitKey = ""
 	local function rebuildUnits(slot: any, battleView: any)
-		local key = if battleView.mode == "Destiny"
-			then "destiny"
-			else table.concat(slot.units, ",")
+		local key = slot.heroKind
+			.. battleView.mode
+			.. (if battleView.mode == "Destiny" then "destiny" else table.concat(slot.units, ","))
 		if key == unitKey then
 			return
 		end
@@ -218,6 +225,9 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			b:Destroy()
 		end
 		table.clear(unitButtons)
+		if battleView.mode == "Jump" then
+			return
+		end
 		if battleView.mode == "Destiny" then
 			for index = 1, 9 do
 				local b = Widgets.button(units, "Box" .. index, "", 12, Theme.panelLight)
@@ -272,6 +282,17 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			return
 		end
 		currentView = view
+		local jumping = view.mode == "Jump"
+		jump.Visible = jumping
+		units.Visible, foodBar.Visible, manaBar.Visible = not jumping, not jumping, not jumping
+		left.Visible = not jumping
+			and view.mode ~= "Dungeon"
+			and view.mode ~= "Tower"
+			and view.mode ~= "Destiny"
+		right.Visible = left.Visible
+		for _, button in weapons do
+			button.Visible = not jumping
+		end
 		local hero = nil
 		local goal = nil
 		for _, e in view.entities do
@@ -280,6 +301,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			elseif
 				e.kind == "Castle"
 				or e.kind == "Wagon"
+				or e.kind == "Horse"
 				or (e.kind == "Boss" and view.mode == "Boss")
 			then
 				goal = e
@@ -299,9 +321,18 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			Text.number(nextExp),
 			Text.number(view.gold)
 		)
-		if view.mode == "Destiny" then
+		if jumping then
+			setGoal(
+				math.min((hero and hero.x or 0) / math.max(view.finish, 1), 1),
+				string.format("코인 %d / %d", view.coins, view.coinTotal)
+			)
+			goalLabel.Text =
+				string.format("가시를 뛰어넘으세요 · 재시작 %d회", view.deaths)
+		elseif view.mode == "Destiny" or view.mode == "Dungeon" then
 			setGoal(view.kills / 60, string.format("처치 %d / 60", view.kills))
-			goalLabel.Text = "운명 상자를 열어 싸우세요"
+			goalLabel.Text = if view.mode == "Dungeon"
+				then "함정으로 적을 막으세요"
+				else "운명 상자를 열어 싸우세요"
 		elseif view.mode == "Tower" then
 			setGoal((view.points + 15) / 30, string.format("점수 %+d", view.points))
 			goalLabel.Text = "+15 승리 · -15 패배"
@@ -312,6 +343,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			)
 			goalLabel.Text = if goal.kind == "Wagon"
 				then "마차를 지켜 끝까지 보내세요"
+				elseif goal.kind == "Horse" then "목마가 도착하기 전에 파괴하세요"
 				elseif goal.kind == "Boss" then "보스를 쓰러뜨리세요"
 				else "적 성채"
 		end
@@ -339,19 +371,17 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				end
 			end
 		else
-			local leadership = slot.skills[13] or 0
 			for n, b in unitButtons do
-				local row = catalog.units[n]
-				local wait =
-					Text.cooldownLeft(catalog, slot.heroKind, n, leadership, view.summonPast[n])
-				local ready = wait <= 0 and view.food >= row.cost
+				local buttonView = Text.summonView(catalog, slot, view, n)
+				local wait = buttonView.wait
 				b.Text = string.format(
-					"%s\n식량 %d%s",
-					row.name,
-					row.cost,
+					"%s\n%s %d%s",
+					buttonView.name,
+					buttonView.resource,
+					buttonView.cost,
 					if wait > 0 then string.format("\n%.1f초", wait) else ""
 				)
-				b.BackgroundColor3 = if ready then Theme.button else Theme.locked
+				b.BackgroundColor3 = if buttonView.ready then Theme.button else Theme.locked
 			end
 		end
 		for index, b in weapons do
@@ -379,7 +409,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				b.Visible = index ~= nil
 				if index then
 					local names = catalog.skillNames[slot.heroKind]
-					local desc = catalog.text.lightSkills[index] or ""
+					local desc = Text.skillDescription(catalog, slot.heroKind, index)
 					b.Text =
 						string.format("%s\n(Lv.%d)\n%s", names[index], slot.skills[index], desc)
 				end

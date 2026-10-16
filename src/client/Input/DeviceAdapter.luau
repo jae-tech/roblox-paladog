@@ -24,6 +24,7 @@ local KEYS: { [string]: { Enum.KeyCode } } = {
 	Mace1 = { Enum.KeyCode.Q },
 	Mace2 = { Enum.KeyCode.W },
 	Mace3 = { Enum.KeyCode.E },
+	Jump = { Enum.KeyCode.Space },
 }
 
 function DeviceAdapter.new(router: Router, buttons: { [string]: any })

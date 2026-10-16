@@ -2,7 +2,7 @@
 -- Device-independent input state. Timing is supplied by the caller, never a clock.
 local ActionRouter = {}
 type Callbacks = { onAxis: (number) -> (), onAction: (string) -> () }
-local DISCRETE: { [string]: boolean } = { Mace1 = true, Mace2 = true, Mace3 = true }
+local DISCRETE: { [string]: boolean } = { Mace1 = true, Mace2 = true, Mace3 = true, Jump = true }
 for n = 1, 9 do
 	DISCRETE["Summon" .. n] = true -- remake: up to nine unit buttons (E02 §5)
 end

@@ -66,7 +66,11 @@ local function start(): any
 			local mace = tonumber(string.match(action, "^Mace(%d)$"))
 			local model = controller.model(now)
 			local tower = model.battle and model.battle.mode == "Tower"
-			if summon then
+			if action == "Jump" then
+				if model.battle and model.battle.mode == "Jump" then
+					controller.battle("Jump", nil, now)
+				end
+			elseif summon then
 				lastUnit = summon
 				-- Keyboard summons in the tower use the middle lane; the lane picker covers touch.
 				controller.battle("Summon", { unit = summon, lane = if tower then 3 else 0 }, now)

@@ -63,6 +63,7 @@ local FIELDS: { [string]: { string } } = {
 	Revive = BATTLE,
 	GiveUp = BATTLE,
 	Retreat = BATTLE,
+	Jump = BATTLE, -- boar jump stages (shadow hero)
 	ReturnToLobby = { "matchId" },
 	CreateSlot = { "slot", "heroKind", "difficulty", "expectedRevision" },
 	DeleteSlot = { "slot", "expectedRevision" },
@@ -256,6 +257,7 @@ local BATTLE_KINDS = table.freeze({
 	Revive = true,
 	GiveUp = true,
 	Retreat = true,
+	Jump = true,
 })
 
 return table.freeze({

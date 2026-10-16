@@ -2,6 +2,15 @@
 
 ## 현재 상태 (2026-10-16)
 
+### 최신 REMAKE 인계: R5 로컬 검증 완료
+
+- R0~R4 커밋을 이어받아 R5 암영 영웅 캠페인을 연결했다. 토템 9종(외침·가시·변신), 검 11종, 장비·스킬 24개·크리/회피·적 디버프 오오라, 교체 스테이지 21개, 던전 함정, 공성 목마, 오리지널 점프 코스 10개와 클라이언트 입력/HUD/표시를 구현했다.
+- CLI: R5 **532 PASS**, R1 112 / R2 77 / R3 167 / R4 63 / P2 133 / P8 51 PASS. 서버 권한·저장 무결성·보상 중복 방지 포함. P0 local(타입·lint·format·production/test build·Python), 재생성 diff0, 출시 감사 PASS.
+- **Studio R4/R5 실제 플레이·실 DataStore v2·실기기 터치는 이번 작업에서 NOT_RUN**. 아래 MVP Studio 증거는 REMAKE 완료 증거가 아니다. 점프 맵/장애물·러너 속도·코인 높이, 검 애니·독 구름 수명 등 연구에 없는 값은 `data/remake/design.json`의 결정 ID로 명시했다. 에셋은 계속 placeholder다.
+- 다음 구현: `docs/REMAKE_PLAN.md` **R6 서바이벌**. stage 0은 아직 `WrongMode`; 30웨이브+반복 스케일·보스 젬·부활·암영 영웅 해금 이벤트를 구현한다. 이후 R7에서 전체 회귀·Studio 실제 플레이·저장·부하 검증이 필요하다.
+
+### 이전 MVP 출시 상태 (역사 기록)
+
 P0~P9 구현과 검증을 마쳤다. `python tools/verify_p9.py --studio-evidence artifacts/P9/studio/p9-studio-evidence.json`은 **BLOCKED(exit 2)**다. CLI P2~P9, Studio suite 해시, production 출시 빌드 감사, 실 QA DataStore, 10분 부하, 저속 통신(poor 프로필)은 PASS다. **Android 실기기 멀티터치(device-touch)만 알려진 제한으로 BLOCKED**다. 단계별 결과는 `docs/PROGRESS.md`, 출시 증거 묶음은 `artifacts/P9/{acceptance,security,performance,asset-audit}.json`·`review.md`(gitignore)에 있다.
 
 출시 전 남은 일(사용자 승인 필요):

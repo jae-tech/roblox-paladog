@@ -19,6 +19,7 @@ export type CommandKind =
 	| "Revive"
 	| "GiveUp"
 	| "Retreat"
+	| "Jump"
 	| "ReturnToLobby"
 	| "CreateSlot"
 	| "DeleteSlot"

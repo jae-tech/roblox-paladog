@@ -510,6 +510,116 @@
       "originalFileHash": null,
       "approvedBy": null,
       "licenseRecord": "none: code-built GUI shapes, no asset file (remake R4, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "hero_shadow_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "siege_horse_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "totem_1_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "totem_2_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "totem_3_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "totem_4_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "totem_5_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "totem_6_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "totem_7_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "totem_8_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
+    },
+    {
+      "presentationId": "totem_9_placeholder",
+      "renderer": "Placeholder",
+      "provenanceKind": "Original",
+      "status": "placeholder",
+      "assetId": null,
+      "originalFileHash": null,
+      "approvedBy": null,
+      "licenseRecord": "none: code-built GUI shapes, no asset file (remake R5, client ViewDefinitions)"
     }
   ]
 }

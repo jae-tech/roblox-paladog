@@ -20,9 +20,18 @@ type Sprite = {
 	fading: number?,
 }
 
-local function viewFor(e: any): any
+local function viewFor(e: any, heroKind: string?, mode: string?): any
 	if e.kind == "Hero" then
-		return Views.hero
+		return if mode == "Jump"
+			then Views.totems[3]
+			elseif heroKind == "shadow" then Views.shadow
+			else Views.hero
+	elseif e.kind == "Totem" then
+		return Views.totems[e.n] or Views.totems[1]
+	elseif e.kind == "Runner" then
+		return Views.shadow
+	elseif e.kind == "Horse" then
+		return Views.horse
 	elseif e.kind == "Unit" then
 		return Views.units[e.n] or Views.units[1]
 	elseif e.kind == "Enemy" then
@@ -64,8 +73,8 @@ local function new(parent: Instance)
 		return part.color
 	end
 
-	local function build(e: any): Sprite
-		local v = viewFor(e)
+	local function build(e: any, heroKind: string?, mode: string?): Sprite
+		local v = viewFor(e, heroKind, mode)
 		local holder = Widgets.frame(world, "E" .. e.id)
 		holder.ZIndex = if e.kind == "Castle" then 3 else 5
 		local parts: { Frame } = {}
@@ -113,6 +122,7 @@ local function new(parent: Instance)
 				then Color3.fromRGB(170, 220, 255)
 				elseif e.frog then Color3.fromRGB(90, 200, 90)
 				elseif e.poisoned then Color3.fromRGB(150, 230, 120)
+				elseif e.transformed then Color3.fromRGB(210, 100, 250)
 				else nil
 			box.BackgroundColor3 = if tint then color(part, v):Lerp(tint, 0.55) else color(part, v)
 			box.BackgroundTransparency = if e.state == "Ghost" or e.state == "Blink"
@@ -129,7 +139,10 @@ local function new(parent: Instance)
 	end
 
 	local function shot(o: any, scale: number)
-		local spec: any = Views.objects[o.row] or { color = Theme.text, w = 6, h = 6 }
+		local spec: any = if o.kind == "Coin"
+			then { color = Theme.gold, w = 10, h = 10 }
+			elseif o.kind == "Spike" then { color = Theme.bad, w = 38, h = 12 }
+			else Views.objects[o.row] or { color = Theme.text, w = 6, h = 6 }
 		local box = shots[o.id]
 		if not box then
 			local made = Widgets.frame(world, "O" .. o.id, spec.color, 999)
@@ -172,7 +185,10 @@ local function new(parent: Instance)
 		if hero then
 			target = hero.x - viewWidth / 3
 		end
-		local high = math.max(FIELD_MAX + 40 - viewWidth, -40)
+		local high = math.max(
+			(if view.mode == "Jump" then view.heroMaxX else FIELD_MAX) + 40 - viewWidth,
+			-40
+		)
 		target = math.clamp(target, -40, high)
 		cameraX += (target - cameraX) * math.min(1, dt * 8)
 		local present: { [number]: boolean } = {}
@@ -180,7 +196,7 @@ local function new(parent: Instance)
 			present[e.id] = true
 			local sprite = sprites[e.id]
 			if not sprite then
-				sprite = build(e)
+				sprite = build(e, view.heroKind, view.mode)
 				sprites[e.id] = sprite
 			end
 			sprite.fading = nil
@@ -205,6 +221,11 @@ local function new(parent: Instance)
 		for _, o in view.objects do
 			live[o.id] = true
 			shot(o, scale)
+		end
+		for index, trap in view.traps or {} do
+			local id = -10000 - index
+			live[id] = true
+			shot({ id = id, kind = "Trap", row = trap.row, x = trap.x, line = trap.line }, scale)
 		end
 		for id, box in shots do
 			if not live[id] then

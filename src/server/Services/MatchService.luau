@@ -294,10 +294,8 @@ local function new(deps: Deps)
 			reply(userId, command.requestId, "Rejected", "Busy")
 			return
 		end
-		local current = deps.profiles.profileOf(userId)
-		local slot = current and ProfileSchema.currentSlot(current)
-		-- Survival (stage 0, R6) and shadow-hero battles (R5) are not wired yet.
-		if command.stage == 0 or (slot and slot.heroKind ~= "light") then
+		-- Survival admission is implemented in R6; both campaign heroes use the same fenced run.
+		if command.stage == 0 then
 			reply(userId, command.requestId, "Rejected", "WrongMode")
 			return
 		end
@@ -463,7 +461,7 @@ local function new(deps: Deps)
 			drops = #battle.rewards.drops,
 			revives = battle.rewards.revives,
 			killTotal = battle.rewards.killTotal,
-			quests = Quests.evaluate(session.stage :: number, stats),
+			quests = Quests.evaluate(session.stage :: number, stats, battle.loadout.heroKind),
 		}
 		freezeResult(frozen)
 		session.result = frozen

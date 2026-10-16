@@ -30,6 +30,7 @@ local fixtures = {
 	store = require(tests.fixtures.InMemoryProfileStore),
 }
 local GameServer = ServerScriptService.GameServer
+local GameClient = game:GetService("StarterPlayer").StarterPlayerScripts.GameClient
 local function p2Env()
 	return {
 		Protocol = require(ReplicatedStorage.Shared.Protocol),
@@ -50,6 +51,7 @@ local SUITES = {
 	["T-R1"] = true,
 	["T-R2"] = true,
 	["T-R3"] = true,
+	["T-R5"] = true,
 }
 
 local Harness = {}
@@ -79,6 +81,24 @@ function Harness.runSuite(suiteId: string, seed: number)
 				MatchService = require(GameServer.Services.MatchService),
 				RemoteGateway = require(GameServer.Net.RemoteGateway),
 				SessionStore = require(GameServer.Services.SessionStore),
+			}, check)
+			return
+		elseif suiteId == "T-R5" then
+			require(tests.unit.R5)({
+				Battle = battle.Battle,
+				Rules = battle.Rules,
+				Db = require(GameServer.Config.Remake.Db),
+				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				Schema = require(GameServer.Services.ProfileSchema),
+				Quests = require(GameServer.Services.Quests),
+				Settlement = require(GameServer.Services.Settlement),
+				ProfileService = require(GameServer.Services.ProfileService),
+				MatchService = require(GameServer.Services.MatchService),
+				SessionStore = require(GameServer.Services.SessionStore),
+				Text = require(GameClient.Presentation.Text),
+				catalog = require(ReplicatedStorage.Shared.RemakeCatalog),
+				ActionRouter = require(GameClient.Input.ActionRouter),
+				SnapshotBuffer = require(GameClient.Net.SnapshotBuffer),
 			}, check)
 			return
 		elseif suiteId == "T-P8" then

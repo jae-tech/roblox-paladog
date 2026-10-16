@@ -259,9 +259,30 @@ LIGHT_SKILL_MAX = [9, 9, 5, 20, 20, 5, 5, 10, 20, 5, 20, 10, 3, 5, 20, 5, 3, 5, 
 SHADOW_SKILL_MAX = [9, 9, 5, 20, 20, 5, 5, 3, 10, 20, 10, 20, 5, 5, 10, 5, 5, 5, 5, 5, 5, 3, 5, 5]
 
 
-def quests(db, design):
-    """D-QUEST-01/02: three quests per light-hero stage. quest.xml is not in the research docs, so the
-    shapes follow E05 B10 (17 types, totals, item stages) and the 1-1 example (main 300, sub1 5:20, sub2 400)."""
+SHADOW_MODES = {0: "Boss", 3: "Jump", 6: "Horse", 9: "Dungeon"}
+SHADOW_SUMMONS = [1, 3, 4, 6, 7, 8]  # totems that are units (2/5/9 are hero skills, E05 B1)
+
+
+def shadow_row(db, s):
+    """Shadow-hero stage row (E04 §0-1): replaced rows, then the mode tables, else the campaign row."""
+    for row in db["darkReplaced"]:
+        if row["stage"] == s:
+            return row
+    mode = SHADOW_MODES.get(s % 12)
+    if mode == "Jump":
+        return db["jump"][(s - 3) // 12]
+    if mode == "Horse":
+        return db["darkWagon"][(s - 6) // 12]
+    if mode == "Dungeon":
+        return db["dungeon"][(s - 9) // 12]
+    return db["campaign"][s - 1]
+
+
+def quests(db, design, hero="light"):
+    """D-QUEST-01/02/03: three quests per stage. quest.xml / quest_d.xml are not in the research docs, so the
+    shapes follow E05 B10 (17 types, totals, item stages) and the 1-1 example (main 300, sub1 5:20, sub2 400).
+    The shadow hero adds types 18 (coins), 19 (finish line) and 20 (siege horse destroyed)."""
+    shadow = hero == "shadow"
     rules = design["questRules"]
     totals = rules["rewardTotals"]
     item_stages = set(rules["itemStages"])
@@ -272,14 +293,19 @@ def quests(db, design):
     cycle = rules["sub2Cycle"]
     out, item_index = [], 0
     for s in range(1, 121):
-        row = db["campaign"][s - 1]
+        row = shadow_row(db, s) if shadow else db["campaign"][s - 1]
         chapter = (s - 1) // 24 + 1
-        mode = QUEST_MODES.get(s % 12, "Normal")
+        mode = (SHADOW_MODES if shadow else QUEST_MODES).get(s % 12, "Normal")
         main = {"Normal": {"type": 1}, "Boss": {"type": 9, "a": s // 12}, "Destiny": {"type": 3},
-                "Wagon": {"type": 5}, "Tower": {"type": 7}}[mode]
+                "Wagon": {"type": 5}, "Tower": {"type": 7}, "Jump": {"type": 19}, "Horse": {"type": 20},
+                "Dungeon": {"type": 3}}[mode]
         limit = int((row["clearSec"] + 120) // 10 * 10)  # 1-1: 203 + 120 -> 5:20 (D-QUEST-02)
         sub1 = {"type": 10, "a": limit // 60, "b": limit % 60}
-        if mode == "Tower":
+        if mode == "Jump":
+            sub2 = {"type": 18, "a": int(row["s21"])}  # 2-star coin count (E04 §4-3)
+        elif mode in ("Horse", "Dungeon"):
+            sub2 = {"type": 2, "a": 50}
+        elif mode == "Tower":
             sub2 = {"type": 8, "a": 5}
         elif mode == "Wagon":
             sub2 = {"type": 6, "a": 50}
@@ -289,7 +315,7 @@ def quests(db, design):
             kind = cycle[(s - 1) % len(cycle)]
             sub2 = {"type": kind}
             if kind == 14:
-                sub2.update(a=1 + (chapter - 1) * 2, b=10)
+                sub2.update(a=SHADOW_SUMMONS[chapter - 1] if shadow else 1 + (chapter - 1) * 2, b=10)
             elif kind == 2:
                 sub2.update(a=50)
             elif kind == 11:
@@ -308,7 +334,8 @@ def quests(db, design):
         if (s - 1) % 24 + 1 in item_stages:
             local = (s - 1) % 24 + 1
             sub2["gold"] = 0
-            sub2["item"] = {"category": "mace" if item_index % 2 == 0 else "ring",
+            weapon, ring = ("sword", "amulet") if shadow else ("mace", "ring")
+            sub2["item"] = {"category": weapon if item_index % 2 == 0 else ring,
                             "num": (item_index // 2) % 10 + 1,
                             "grade": chapter * 2 - 1 + (1 if local >= 15 else 0)}
             item_index += 1
@@ -357,6 +384,9 @@ def catalog(db, design):
                                             "darkArmors", "darkFeet")},
         "skillNames": {"light": names["lightSkills"], "shadow": names["shadowSkills"]},
         "stages": [dict(stage_meta(i), quests=q) for i, q in enumerate(quests(db, design))],
+        "stagesShadow": [{"stage": i + 1, "chapter": i // 24 + 1, "number": i % 24 + 1,
+                          "mode": SHADOW_MODES.get((i + 1) % 12, "Normal"), "quests": q}
+                         for i, q in enumerate(quests(db, design, "shadow"))],
         "gear": {k: [{"a": g["a"], "b": g["b"], "priceBase": g["priceBase"], "priceMulti": g["priceMulti"]}
                      for g in db[k]]
                  for k in ("rings", "amulets", "helmets", "armors", "horses", "darkHelmets", "darkArmors",
@@ -399,7 +429,7 @@ def outputs(sources, design):
     return {
         OUT_JSON: json.dumps(to_json(db), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         OUT_SERVER: luau("Remake game data (research appendix A1-A14, research names stripped).",
-                         strip(dict(db, quests=quests(db, design)))),
+                         strip(dict(db, quests=quests(db, design), questsShadow=quests(db, design, "shadow")))),
         OUT_CATALOG: luau("Remake public catalog: original names, costs, prices, stage list.",
                           strip(catalog(db, design))),
     }

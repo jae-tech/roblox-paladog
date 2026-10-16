@@ -15,11 +15,12 @@ export type Stats = {
 	passed: number,
 	boxesLeft: number,
 	wagonHpRatio: number,
+	coins: number?,
 }
 
 local function met(quest: any, stats: Stats): boolean
 	local t, a, b = quest.type, quest.a, quest.b
-	if t == 1 or t == 3 or t == 5 or t == 7 or t == 9 then
+	if t == 1 or t == 3 or t == 5 or t == 7 or t == 9 or t == 19 or t == 20 then
 		return true -- mode goal: reached by winning
 	elseif t == 2 then
 		return stats.heroHpRatio * 100 >= a
@@ -45,12 +46,14 @@ local function met(quest: any, stats: Stats): boolean
 		return (stats.maceUses[a] or 0) == 0
 	elseif t == 17 then
 		return (stats.maceUses[a] or 0) >= b
+	elseif t == 18 then
+		return (stats.coins or 0) >= a
 	end
 	return false
 end
 
-local function evaluate(stage: number, stats: Stats): { boolean }
-	local defs = Db.quests[stage]
+local function evaluate(stage: number, stats: Stats, heroKind: string?): { boolean }
+	local defs = (if heroKind == "shadow" then Db.questsShadow else Db.quests)[stage]
 	local out = { false, false, false }
 	if stats.victory and defs then
 		for i = 1, 3 do
@@ -67,7 +70,7 @@ local function statsOf(battle: any, Battle: any): Stats
 	for _, id in battle.order do
 		local e: any = battle.entities[id]
 		local kind: string = e.kind
-		if kind == "Unit" and Battle.alive(e) then
+		if (kind == "Unit" or kind == "Totem") and Battle.alive(e) then
 			allies += 1
 		elseif kind == "Wagon" then
 			wagonRatio = math.max(e.hp, 0) / e.maxHp
@@ -91,6 +94,7 @@ local function statsOf(battle: any, Battle: any): Stats
 		passed = battle.rewards.passed,
 		boxesLeft = boxes,
 		wagonHpRatio = wagonRatio,
+		coins = battle.coins or 0,
 	}
 end
 

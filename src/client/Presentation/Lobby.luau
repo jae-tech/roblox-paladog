@@ -213,7 +213,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		place(grid, 0, 42, 540, 260)
 		for i = 1, 24 do
 			local stage = (ui.chapter - 1) * 24 + i
-			local meta = catalog.stages[stage]
+			local meta = Text.stageMeta(catalog, slot.heroKind, stage)
 			local star = slot.stars[stage]
 			local label = string.format(
 				"%s\n%s",
@@ -245,7 +245,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		end
 		local detail = Widgets.frame(content, "Detail", Theme.panel, 8)
 		place(detail, 0, 310, 540, 150)
-		local meta = catalog.stages[ui.stage]
+		local meta = Text.stageMeta(catalog, slot.heroKind, ui.stage)
 		local headText = string.format("%s %s", Text.stageLabel(ui.stage), Text.modeName(meta.mode))
 		if slot.bestSec[ui.stage] > 0 then
 			headText ..= string.format(
@@ -567,8 +567,13 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			)
 			place(label, 8, 0, 200, 40)
 			label.TextXAlignment = Enum.TextXAlignment.Left
-			local desc =
-				Widgets.label(card, "Desc", catalog.text.lightSkills[i] or "", 12, Theme.muted)
+			local desc = Widgets.label(
+				card,
+				"Desc",
+				Text.skillDescription(catalog, slot.heroKind, i),
+				12,
+				Theme.muted
+			)
 			place(desc, 210, 0, 300, 40)
 			desc.TextXAlignment = Enum.TextXAlignment.Left
 			if slot.freePoints > 0 and slot.skills[i] < maxes[i] then

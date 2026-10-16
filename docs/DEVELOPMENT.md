@@ -2,6 +2,8 @@
 
 ## 현재 상태
 
+**최신 REMAKE(2026-10-16)**: R5까지 로컬 구현·검증을 진행했다. 현재 상태와 다음 범위는 HANDOFF 상단·PROGRESS의 R5 기록을 따른다. 아래 P0~P5 상태는 MVP 당시 기록이다. REMAKE R4/R5 Studio 플레이와 v2 실 저장 검증은 NOT_RUN이며, 예전 MVP 증거로 대체하지 않는다. 연구에 없는 R5 값(검 모션, 변신 준비, 함정 위치·상한, 독 구름, 점프 맵·러너·코인 판정)은 `data/remake/design.json`에 추정 결정으로 기록했다.
+
 P0~P4 gate PASS는 P4 기준선 기록이다. 현재 P5는 CLI/Studio 서버/클라이언트613개와 Windows 장치 화면5종·renderer 교체/cleanup/카메라 복원 PASS 체크포인트이며, 독립 멀티터치 증거가 부족하여 full gate BLOCKED다. production 서버는 boot만 하고 client UI는 server remote를 기다린다. 테스트 저장은 Mock/InMemory이며 P6~P9는 미착수다. 기존 production runtime WAIVED·P0.1 보류·overlay 미승인은 유지한다. 연구/설계 정본13개는 수정하지 않는다.
 
 최초 검증 호스트는 **macOS Darwin ARM64**였으며 2026-10-16 재개 호스트는 **Windows AMD64 / Python 3.14.2**다. 두 호스트의 같은 도구 버전을 고정했고 Windows 로컬 gate를 새로 검증했다(아래 참조). macOS에서 변경된 bootstrap을 재실행한 것은 아니다. 초기 P0 Git 기준선은 `f36bf2a`였고 당시 팀 branch 정책은 미합의였다. 현재는 AGENTS.md에 따라 단계별 로컬 feature branch에서 소스/문서/도구만 커밋하고 main에 fast-forward 병합한다(P4: `p4-projectiles-and-hero-skill`). `.omx/`, `artifacts/`, `.tools/`, 연구 바이너리와 키는 제외한다. push/publish는 하지 않는다.

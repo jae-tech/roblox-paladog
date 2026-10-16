@@ -123,7 +123,7 @@ local function reduce(profile: Profile, result: Result): (Profile?, string?)
 			giveItem(slot, dropItem(slot, stage, rng), items)
 		end
 		if outcome == "Victory" and stage >= 1 then
-			local defs = Db.quests[stage]
+			local defs = (if slot.heroKind == "shadow" then Db.questsShadow else Db.quests)[stage]
 			for i = 1, 3 do
 				if result.quests[i] == true then
 					stars += 1

@@ -114,6 +114,32 @@ local RING_TEXT = {
 	"최대 식량 +%s",
 }
 local GEAR_TEXT: { [number]: { string } } = {
+	[8] = {
+		"그늘 안 적 수만큼 식량 재생 +%s",
+		"5초마다 체력 +%s",
+		"맞을 때마다 마나 +%s",
+		"마나 재생 +%s/0.1초",
+		"치명타 확률 +%s%%",
+		"아이템 발견 +%s%%p",
+		"처치 골드 +%s%%",
+		"최대 식량 +%s",
+		"식량 재생 +%s/0.1초",
+		"처치 EXP +%s%%",
+	},
+	[9] = {
+		"그늘 안 적 수만큼 마나 재생 +%s",
+		"최대 체력 +%s",
+		"맞을 때마다 식량 +%s",
+		"최대 마나 +%s",
+		"회피 확률 +%s%%",
+	},
+	[10] = {
+		"그늘 안 적 수만큼 영웅 공격 x(1+%s)",
+		"받는 피해 x%s",
+		"받은 피해의 %s 반사",
+		"가시 오오라 초당 피해 +%s",
+		"치명타 피해 x%s",
+	},
 	[3] = {
 		"빛 안 아군 수만큼 식량 재생 +%s",
 		"5초마다 체력 +%s",
@@ -158,7 +184,7 @@ function Text.itemDescription(catalog: any, code: number): string
 			else "마나 " .. trim(row.manaA + row.manaB * grade)
 		return string.format(template, trim(value)) .. " · " .. cost
 	end
-	local value = if category == 5 and num == 2
+	local value = if (category == 5 or category == 10) and num == 2
 		then row.a - row.b * grade
 		else row.a + row.b * grade
 	local list = if RING_CATEGORY[category]
@@ -223,10 +249,27 @@ function Text.stageLabel(stage: number): string
 	return string.format("%d-%d", (stage - 1) // 24 + 1, (stage - 1) % 24 + 1)
 end
 
-local MODE_NAME =
-	{ Normal = "", Boss = "보스", Destiny = "운명", Wagon = "호위", Tower = "점령" }
+local MODE_NAME = {
+	Normal = "",
+	Boss = "보스",
+	Destiny = "운명",
+	Wagon = "호위",
+	Tower = "점령",
+	Jump = "도약",
+	Horse = "공성",
+	Dungeon = "던전",
+}
 function Text.modeName(mode: string): string
 	return MODE_NAME[mode] or ""
+end
+
+function Text.stageMeta(catalog: any, heroKind: string, stage: number): any
+	return (if heroKind == "shadow" then catalog.stagesShadow else catalog.stages)[stage]
+end
+
+function Text.skillDescription(catalog: any, heroKind: string, index: number): string
+	return (if heroKind == "shadow" then catalog.text.shadowSkills else catalog.text.lightSkills)[index]
+		or ""
 end
 
 function Text.unitName(catalog: any, heroKind: string, n: number): string
@@ -250,7 +293,7 @@ function Text.questReward(catalog: any, quest: any): string
 		return Text.number(quest.gold) .. "G"
 	end
 	if quest.item and quest.item.num > 0 then
-		local category = if quest.item.category == "mace" then 1 else 2
+		local category = ({ mace = 1, ring = 2, sword = 6, amulet = 7 })[quest.item.category]
 		return Text.itemName(catalog, Text.encode(category, quest.item.num, quest.item.grade))
 	end
 	return ""
@@ -267,6 +310,36 @@ function Text.cooldownLeft(
 	local list = if heroKind == "shadow" then catalog.totems else catalog.units
 	local need = list[n].cooldown * (if heroKind == "light" then (6 - leadership) / 6 else 1)
 	return math.max(0, need - past / 30)
+end
+
+-- Same view powers HUD labels and enabled colors for both heroes; dungeon buttons use mana, not food.
+function Text.summonView(catalog: any, slot: any, view: any, n: number): any
+	local trap = if slot.heroKind == "shadow" and view.mode == "Dungeon"
+		then ({
+			[1] = { name = "미끄럼 함정", cost = 20 },
+			[4] = { name = "폭발 함정", cost = 50 },
+			[8] = { name = "화염 함정", cost = 100 },
+		})[n]
+		else nil
+	if trap then
+		return {
+			name = trap.name,
+			cost = trap.cost,
+			resource = "마나",
+			wait = 0,
+			ready = view.mana >= trap.cost,
+		}
+	end
+	local row = (if slot.heroKind == "shadow" then catalog.totems else catalog.units)[n]
+	local wait =
+		Text.cooldownLeft(catalog, slot.heroKind, n, slot.skills[13] or 0, view.summonPast[n])
+	return {
+		name = row.name,
+		cost = row.cost,
+		resource = "식량",
+		wait = wait,
+		ready = wait <= 0 and view.food >= row.cost,
+	}
 end
 
 local REASONS: { [string]: string } = {
