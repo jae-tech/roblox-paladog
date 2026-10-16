@@ -96,3 +96,11 @@
 - 기존 회귀 2건(P6~P8 이후 미실행으로 발견): ① P2 요약 키 기대값을 P7 로비 DTO에 맞춤(owner 전용 파생값만). ② P8 변경으로 클라이언트가 `Unavailable` 이후 부트스트랩을 영구 중단하던 버그 수정: 서버는 재접속 lease 대기 등에서 회복될 수 있으므로 ProtocolMismatch 외에는 1초 간격 재시도.
 - CLI: P1 PASS, Python PASS, P2 132 / P3 123 / P4 134 / P5 613 / P6 162 / P7 74 / P8 52 / P9 74 PASS. 정적 분석·lint·format·두 빌드 PASS.
 - NOT_RUN: 코드 변경으로 Studio 증거 무효, Studio 재검증 필요. 실 DataStore(미승인)·실기기 터치 BLOCKED.
+
+## P9 Studio 전체 회귀·부하 (2026-10-16, 커밋 e21241a 기준)
+
+- 동기화: rbxm import(저장 안 함). Studio의 이름=길이 해시가 로컬 sourcemap과 일치(스크립트 91개, 410,548바이트).
+- 2-client playtest 서버: T-TOOL 10 PASS, 의도적 실패는 그 1건만 FAIL, 미지원 suite 거부. T-P2 132 / P3 123 / P4 134 / P5 613 / P6 162 / P7 74 / P8 52 / P9 74 PASS, 모두 CLI와 assertion 해시 일치. client-1 T-P5 613 PASS(해시 동일).
+- 부하: 4경기·아군30/적40·탄 128 유지, 측정 12000 tick(게임 10분). p50 5.10 / p95 6.09 / p99 8.36 / max 13.18ms, cap 초과 0. gcinfo 2651→3221KB(강제 GC 없음, 누수 판정 아님). Remote·snapshot 미포함.
+- `verify_p9.py`(P2~P9 CLI + Studio 해시 비교로 확장): **BLOCKED(exit 2)**. CLI 8개·studio-suites·perf PASS. 실 DataStore(미승인)·실기기 멀티터치(도구 없음) BLOCKED.
+- 미해결: Rojo 패치 미적용(rbxm import로 우회), place 반복 재열림, 실 DataStore·실기기, 100회 경기 생성/종료 누수 측정, Remote 포함 부하, 밸런스 승인(approvedBy null).

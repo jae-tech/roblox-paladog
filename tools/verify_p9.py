@@ -12,9 +12,8 @@ from verify_p2 import allowed_universes  # noqa: E402
 from toolchain import tool  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITES = {"T-P6": "tests/cli_p6.luau", "T-P7": "tests/cli_p7.luau", "T-P8": "tests/cli_p8.luau",
-          "T-P9": "tests/cli_p9.luau"}
-STUDIO_SUITES = ("T-P6", "T-P8", "T-P9")  # test policy: Studio runs at P6/P8/P9 only
+SUITES = {f"T-P{n}": f"tests/cli_p{n}.luau" for n in range(2, 10)}
+STUDIO_SUITES = tuple(SUITES)  # P9 is the full-regression stage (test policy)
 FIELDS = ("id", "expected", "actual", "status")
 
 
