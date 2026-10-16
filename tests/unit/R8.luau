@@ -273,4 +273,120 @@ return function(env: any, check: any)
 	changed[7] = 301000
 	local _, key2 = Gear.look(changed)
 	check("gear-key-follows-equip", true, key ~= key2, 0)
+
+	-- D-FIG-01: every battle figure and chapter dungeon is a valid, distinct code-built design
+	local Fig = env.FigureLook
+	check("fig-module-present", true, Fig ~= nil, 0)
+	if not Fig then
+		return
+	end
+	local function partProblem(part: any): string?
+		if not Fig.SHAPES[part.shape] then
+			return "shape " .. tostring(part.shape)
+		end
+		for axis = 1, 3 do
+			if not (part.size[axis] > 0) or part.at[axis] ~= part.at[axis] then
+				return "size"
+			end
+			if part.color[axis] < 0 or part.color[axis] > 255 then
+				return "color"
+			end
+		end
+		if part.g and (not Fig.AXIS[part.g] or not part.pv) then
+			return "group " .. tostring(part.g)
+		end
+		return nil
+	end
+	local figValid, figDistinct, figProblem = true, true, ""
+	local maxParts, figures, animated = 0, 0, 0
+	local seenFig: { [string]: boolean } = {}
+	for kind, count in Fig.COUNT do
+		for n = 1, count do
+			figures += 1
+			local f = Fig.figure(kind, n, "light", 1)
+			local signature = {}
+			local moves = false
+			maxParts = math.max(maxParts, #f.parts)
+			if #f.parts < 8 or not (f.height > 1) then
+				figValid, figProblem = false, kind .. n .. " too small"
+			end
+			for _, part in f.parts do
+				local bad = partProblem(part)
+				if bad then
+					figValid, figProblem = false, kind .. n .. " " .. bad
+				end
+				moves = moves or part.g ~= nil
+				local view: any = part
+				table.insert(
+					signature,
+					view.shape .. table.concat(view.size, ",") .. table.concat(view.color, ",")
+				)
+			end
+			if moves then
+				animated += 1
+			end
+			local figKey = table.concat(signature, "|")
+			if seenFig[figKey] then
+				figDistinct, figProblem = false, "same figure " .. kind .. n
+			end
+			seenFig[figKey] = true
+		end
+	end
+	check("fig-all-valid", "", if figValid then "" else figProblem, 0)
+	check("fig-count", 48, figures, 0)
+	check("fig-distinct", true, figDistinct, 0)
+	check("fig-all-animated", 48, animated, 0)
+	check("fig-part-budget", true, maxParts <= 64, 0)
+	check(
+		"fig-boss-bigger",
+		true,
+		Fig.figure("Boss", 1).height > Fig.figure("Enemy", 1).height * 1.4,
+		0
+	)
+	check("fig-unknown-falls-back", Fig.figure("Unit", 1).id, Fig.figure("Unit", 99).id, 0)
+	check("fig-flying-dragon", true, Fig.figure("Unit", 9).flying, 0)
+	check("fig-shadow-hero", "hero_shadow_placeholder", Fig.figure("Hero", 0, "shadow").id, 0)
+	for _, kind in { "Castle", "Wagon", "Horse", "Frog", "Runner" } do
+		local f = Fig.figure(kind, 0, "light", 3)
+		local ok = #f.parts > 0
+		for _, part in f.parts do
+			ok = ok and partProblem(part) == nil
+		end
+		check("fig-set-piece-" .. kind, true, ok, 0)
+	end
+	local attack = Fig.pose("Attack", 0, 0.45, 0)
+	check("fig-attack-raises-arm", true, attack.armR > 100, 0)
+	check("fig-attack-recovers", true, math.abs(Fig.pose("Attack", 0, 1, 0).armR) < 1, 0)
+	check("fig-walk-swings-legs", true, Fig.pose("Move", math.pi / 2, 0, 0).legL > 20, 0)
+	check("fig-ice-frozen", 0, Fig.pose("Ice", 1, 0.5, 1).legL, 0)
+	check("fig-knock-leans-back", true, Fig.pose("Knock", 0, 0, 0).body > 0, 0)
+	local mapNames: { [string]: boolean } = {}
+	local mapsValid, mapProblem, maxMap = true, "", 0
+	for chapter = 1, Fig.THEME_COUNT do
+		local m = Fig.map(chapter, -14.4, 136.8)
+		mapNames[m.name] = true
+		maxMap = math.max(maxMap, #m.parts)
+		local lights = 0
+		for _, part in m.parts do
+			local bad = partProblem(part)
+			if bad then
+				mapsValid, mapProblem = false, "chapter " .. chapter .. " " .. bad
+			end
+			if part.light then
+				lights += 1
+			end
+		end
+		if lights < 4 or lights > 24 then
+			mapsValid, mapProblem = false, "chapter " .. chapter .. " lights " .. lights
+		end
+	end
+	local themes = 0
+	for _ in mapNames do
+		themes += 1
+	end
+	check("map-all-valid", "", if mapsValid then "" else mapProblem, 0)
+	check("map-chapter-themes", 5, themes, 0)
+	check("map-part-budget", true, maxMap <= 900, 0)
+	check("map-deterministic", #Fig.map(2, 0, 100).parts, #Fig.map(2, 0, 100).parts, 0)
+	check("map-survival-clamps", "castle-of-the-dead", Fig.map(6, 0, 100).name, 0)
 end

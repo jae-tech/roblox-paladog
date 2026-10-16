@@ -7,6 +7,7 @@ local report = Runner.run("PureLuau", "cli-r8", 12345, function(check)
 		Schema = require("../src/server/Services/ProfileSchema"),
 		ArenaSpace = require("../src/shared/ArenaSpace"),
 		GearLook = require("../src/shared/GearLook"),
+		FigureLook = require("../src/shared/FigureLook"),
 		Protocol = require("../src/shared/Protocol"),
 		Battle = require("../src/server/Battle/Battle"),
 		ProfileService = require("../src/server/Services/ProfileService"),

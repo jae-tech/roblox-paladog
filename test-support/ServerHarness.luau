@@ -156,6 +156,7 @@ function Harness.runSuite(suiteId: string, seed: number, options: { loadTicks: n
 				Schema = require(GameServer.Services.ProfileSchema),
 				ArenaSpace = require(ReplicatedStorage.Shared.ArenaSpace),
 				GearLook = require(ReplicatedStorage.Shared.GearLook),
+				FigureLook = require(ReplicatedStorage.Shared.FigureLook),
 				Protocol = require(ReplicatedStorage.Shared.Protocol),
 				Battle = battle.Battle,
 				ProfileService = require(GameServer.Services.ProfileService),

@@ -1,19 +1,46 @@
 --!strict
 -- Client-only 3D dungeon and army. Models never decide movement, hits, costs or rewards.
+-- Figures and chapter maps come from shared FigureLook (D-FIG-01); limbs are posed every frame and all
+-- parts move in one BulkMoveTo.
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local FigureLook = require(ReplicatedStorage.Shared.FigureLook)
 local Views = require("./ViewDefinitions")
 local Widgets = require("./Widgets")
 
 local SCALE = 0.12
+local DYING_SECONDS = 0.45
+local ATTACK_SECONDS = 0.42
+local NAMED = { Hero = true, Boss = true, Runner = true, Castle = true, Wagon = true, Horse = true }
+
 type Figure = {
 	model: Model,
 	root: Part,
+	parts: { BasePart },
+	locals: { CFrame },
+	groups: { string? },
+	pivots: { Vector3? },
+	baseTransp: { number },
+	flying: boolean,
+	frog: { BasePart }?,
+	frogLocals: { CFrame }?,
+	ice: Part?,
+	look: string,
 	fill: Frame?,
+	bar: Frame?,
 	label: TextLabel?,
 	lastX: number,
 	lastZ: number,
+	lastHp: number,
+	walk: number,
+	state: string?,
+	actStart: number,
+	hitAt: number,
+	cf: CFrame,
 }
+type Dying = { figure: Figure, at: number }
 
 local function part(
 	parent: Instance,
@@ -32,10 +59,85 @@ local function part(
 	p.CanCollide = false
 	p.CanTouch = false
 	p.CanQuery = false
+	p.CastShadow = false
 	p.Material = material or Enum.Material.SmoothPlastic
 	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 	p.Parent = parent
 	return p
+end
+
+local function material(name: string?): Enum.Material
+	if name then
+		local ok, value = pcall(function()
+			return (Enum.Material :: any)[name]
+		end)
+		if ok and value then
+			return value
+		end
+	end
+	return Enum.Material.SmoothPlastic
+end
+
+local function vec(v: { number }, k: number): Vector3
+	return Vector3.new(v[1] * k, v[2] * k, v[3] * k)
+end
+
+-- one FigureLook part at its local frame (scaled); the caller positions it
+local function makePart(parent: Instance, spec: FigureLook.Part, k: number): (BasePart, CFrame)
+	local size = vec(spec.size, k)
+	local turn = CFrame.identity
+	local p: BasePart
+	if spec.shape == "Wedge" then
+		p = Instance.new("WedgePart")
+		p.Size = size
+	elseif spec.shape == "Ball" then
+		p = Instance.new("Part")
+		p.Size = size
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType = Enum.MeshType.Sphere
+		mesh.Parent = p
+	elseif spec.shape == "Cyl" or spec.shape == "VCyl" or spec.shape == "ZCyl" then
+		local cylinder = Instance.new("Part")
+		cylinder.Shape = Enum.PartType.Cylinder
+		if spec.shape == "VCyl" then
+			cylinder.Size = Vector3.new(size.Y, size.X, size.Z)
+			turn = CFrame.Angles(0, 0, math.rad(90))
+		elseif spec.shape == "ZCyl" then
+			cylinder.Size = Vector3.new(size.Z, size.Y, size.X)
+			turn = CFrame.Angles(0, math.rad(90), 0)
+		else
+			cylinder.Size = size
+		end
+		p = cylinder
+	else
+		p = Instance.new("Part")
+		p.Size = size
+	end
+	p.Name = spec.shape
+	p.Color = Color3.fromRGB(spec.color[1], spec.color[2], spec.color[3])
+	p.Material = if spec.neon then Enum.Material.Neon else material(spec.mat)
+	p.Transparency = spec.transp or 0
+	p.Anchored = true
+	p.CanCollide, p.CanQuery, p.CanTouch = false, false, false
+	p.CastShadow = false
+	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+	if spec.light then
+		local light = Instance.new("PointLight")
+		light.Color = p.Color
+		light.Range = spec.light[1] * math.max(k, 1)
+		light.Brightness = spec.light[2]
+		light.Shadows = false
+		light.Parent = p
+	end
+	local rot = spec.rot
+	local cf = CFrame.new(vec(spec.at, k))
+		* (if rot
+			then CFrame.Angles(math.rad(rot[1]), math.rad(rot[2]), math.rad(rot[3]))
+			else CFrame.identity)
+		* turn
+	p.CFrame = cf
+	p.Parent = parent
+	return p, cf
 end
 
 local function specOf(e: any, view: any): any
@@ -60,16 +162,34 @@ local function specOf(e: any, view: any): any
 	return Views.castle
 end
 
+local function lookOf(e: any, view: any): (string, number?, string?)
+	if e.kind == "Hero" and view.mode == "Jump" then
+		return "Totem", 3, nil
+	end
+	return e.kind, e.n, view.heroKind
+end
+
+local LIGHTING_KEYS =
+	{ "Ambient", "OutdoorAmbient", "ClockTime", "FogColor", "FogStart", "FogEnd", "Brightness" }
+
+local function rgb(v: { number }): Color3
+	return Color3.fromRGB(v[1], v[2], v[3])
+end
+
 local function new(parent: Instance, catalog: any)
 	local root = Widgets.frame(parent, "Field3D")
 	root.Size = UDim2.fromScale(1, 1)
 	local folder: Folder? = nil
 	local mapLength = 0
+	local mapChapter = 0
 	local mapOrigin = Vector3.zero
 	local figures: { [number]: Figure } = {}
+	local dying: { Dying } = {}
 	local shots: { [number]: Part } = {}
 	local aura: Part? = nil
 	local saved: any = nil
+	local savedLighting: { [string]: any }? = nil
+	local savedAtmosphere: { [string]: any }? = nil
 	local cameraPosition: Vector3? = nil
 	local lastHero: Vector3? = nil
 
@@ -87,88 +207,85 @@ local function new(parent: Instance, catalog: any)
 		saved, cameraPosition, lastHero = nil, nil, nil
 	end
 
+	local function restoreLighting()
+		if savedLighting then
+			for key, value in savedLighting do
+				(Lighting :: any)[key] = value
+			end
+			savedLighting = nil
+		end
+		local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+		if savedAtmosphere and atmosphere then
+			for key, value in savedAtmosphere do
+				(atmosphere :: any)[key] = value
+			end
+		end
+		savedAtmosphere = nil
+	end
+
+	-- chapter mood on this client only; the plaza look comes back when the battle view closes
+	local function applyLighting(look: FigureLook.Lighting)
+		if not savedLighting then
+			local keep = {}
+			for _, key in LIGHTING_KEYS do
+				keep[key] = (Lighting :: any)[key]
+			end
+			savedLighting = keep
+		end
+		Lighting.Ambient = rgb(look.ambient)
+		Lighting.OutdoorAmbient = rgb(look.outdoor)
+		Lighting.ClockTime = look.clock
+		Lighting.FogColor = rgb(look.fog)
+		Lighting.FogStart = look.fogStart
+		Lighting.FogEnd = look.fogEnd
+		Lighting.Brightness = look.brightness
+		local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+		if atmosphere then
+			if not savedAtmosphere then
+				savedAtmosphere = {
+					Density = atmosphere.Density,
+					Color = atmosphere.Color,
+					Decay = atmosphere.Decay,
+					Haze = atmosphere.Haze,
+				}
+			end
+			atmosphere.Density = 0.22
+			atmosphere.Color = rgb(look.fog)
+			atmosphere.Decay = rgb(look.fog):Lerp(Color3.new(), 0.4)
+			atmosphere.Haze = 1
+		end
+	end
+
 	local function clear()
 		if folder then
 			folder:Destroy()
 			folder = nil
 		end
 		table.clear(figures)
+		table.clear(dying)
 		table.clear(shots)
 		aura = nil
-		mapLength = 0
+		mapLength, mapChapter = 0, 0
 		restoreCamera()
+		restoreLighting()
 	end
 
-	local function makeMap(length: number, origin: Vector3)
+	local function makeMap(length: number, origin: Vector3, chapter: number)
 		local arena = Instance.new("Folder")
 		arena.Name = "LanternExpedition3D"
 		arena:SetAttribute("ClientVisualOnly", true)
 		arena:SetAttribute("PresentationId", Views.world3d.presentationId)
 		folder = arena
-		mapLength = length
-		local stone = Color3.fromRGB(48, 54, 67)
-		local width = 27
-		local extent = (length + 160) * SCALE
-		part(
-			arena,
-			"DungeonFloor",
-			Vector3.new(extent, 1, width),
-			CFrame.new((length - 80) * SCALE / 2, -0.5, 0),
-			stone,
-			Enum.Material.Slate
-		)
-		for _, side in { -1, 1 } do
-			part(
-				arena,
-				"DungeonWall",
-				Vector3.new(extent, 4, 0.8),
-				CFrame.new((length - 80) * SCALE / 2, 2, side * (width / 2)),
-				Color3.fromRGB(35, 39, 50),
-				Enum.Material.Slate
-			)
-			for x = 0, math.min(length, 1200), 128 do
-				part(
-					arena,
-					"Pillar",
-					Vector3.new(1.4, 6, 1.4),
-					CFrame.new(x * SCALE, 3, side * 12.5),
-					Color3.fromRGB(72, 76, 88),
-					Enum.Material.Cobblestone
-				)
-				local flame = part(
-					arena,
-					"Lantern",
-					Vector3.new(0.55, 1, 0.55),
-					CFrame.new(x * SCALE, 4.2, side * 11.6),
-					Color3.fromRGB(255, 173, 67),
-					Enum.Material.Neon
-				)
-				local light = Instance.new("PointLight")
-				light.Color = flame.Color
-				light.Range = 14
-				light.Brightness = 1.3
-				light.Parent = flame
-			end
+		mapLength, mapChapter = length, chapter
+		local look = FigureLook.map(chapter, -120 * SCALE, (length + 40) * SCALE)
+		arena:SetAttribute("Theme", look.name)
+		local scenery = Instance.new("Folder")
+		scenery.Name = "Scenery"
+		scenery.Parent = arena
+		for _, spec in look.parts do
+			makePart(scenery, spec, 1)
 		end
-		for x = 0, math.min(length, 1200), 96 do
-			part(
-				arena,
-				"FloorSeam",
-				Vector3.new(0.15, 0.02, width - 1),
-				CFrame.new(x * SCALE, 0.01, 0),
-				Color3.fromRGB(78, 84, 95),
-				Enum.Material.Slate
-			)
-		end
-		part(
-			arena,
-			"EntryPortal",
-			Vector3.new(0.2, 4, 4),
-			CFrame.new(0, 2, 0),
-			Color3.fromRGB(68, 180, 238),
-			Enum.Material.Neon
-		).Transparency =
-			0.5
+		applyLighting(look.lighting)
 		-- R8: the dungeon is drawn at the player's arena slot, over the server's collision floor
 		mapOrigin = origin
 		if origin ~= Vector3.zero then
@@ -206,145 +323,77 @@ local function new(parent: Instance, catalog: any)
 		return if e.team == 1 then "아군" else "적"
 	end
 
-	local function build(e: any, view: any): Figure
+	local function build(e: any, view: any, chapter: number): Figure
 		local v = specOf(e, view)
+		local kind, n, heroKind = lookOf(e, view)
+		local look = FigureLook.figure(kind, n, heroKind, chapter)
+		local grow = if e.giant then 1.3 elseif e.enhanced then 1.12 else 1
+		local k = look.scale * grow
 		local m = Instance.new("Model")
 		m.Name = "Entity_" .. e.id
 		m:SetAttribute("EntityId", e.id)
 		m:SetAttribute("Kind", e.kind)
 		m:SetAttribute("Team", e.team)
 		m:SetAttribute("PresentationId", v.presentationId)
+		m:SetAttribute("Figure", look.id)
 		local pivot = part(m, "Root", Vector3.new(0.2, 0.2, 0.2), CFrame.new(), v.body)
 		pivot.Transparency = 1
 		m.PrimaryPart = pivot
-		local tall = 1
-		if e.kind == "Castle" then
-			tall = 7
-			for _, z in { -3, 3 } do
-				part(
-					m,
-					"GateTower",
-					Vector3.new(2, 7, 2),
-					CFrame.new(z, 3.5, 0),
-					Color3.fromRGB(80, 68, 100),
-					Enum.Material.Slate
-				)
-			end
-			part(
-				m,
-				"Arch",
-				Vector3.new(8, 1.5, 2.2),
-				CFrame.new(0, 6, 0),
-				v.body,
-				Enum.Material.Slate
-			)
-			part(
-				m,
-				"Gate",
-				Vector3.new(4, 4.5, 0.4),
-				CFrame.new(0, 2.25, 0),
-				Color3.fromRGB(182, 68, 120),
-				Enum.Material.Neon
-			)
-		elseif e.kind == "Wagon" or e.kind == "Horse" then
-			tall = 3
-			part(
-				m,
-				"Hull",
-				Vector3.new(3, 2, 5),
-				CFrame.new(0, 2, 0),
-				Color3.fromRGB(115, 77, 51),
-				Enum.Material.WoodPlanks
-			)
-			for _, x in { -1.5, 1.5 } do
-				for _, z in { -1.7, 1.7 } do
-					local wheel = part(
-						m,
-						"Wheel",
-						Vector3.new(0.5, 1.3, 1.3),
-						CFrame.new(x, 0.7, z),
-						Color3.fromRGB(37, 32, 29)
-					)
-					wheel.Shape = Enum.PartType.Cylinder
-				end
-			end
-		else
-			local size = if e.kind == "Boss"
-				then 1.6
-				elseif e.giant then 1.3
-				elseif e.kind == "Totem" then 0.8
-				else 1
-			tall = 4.2 * size
-			local function limb(name: string, sz: Vector3, at: Vector3, c: Color3): Part
-				return part(m, name, sz * size, CFrame.new(at * size), c)
-			end
-			limb("Torso", Vector3.new(1.5, 1.6, 0.9), Vector3.new(0, 2.1, 0), v.body)
-			limb("Head", Vector3.new(1.25, 1.1, 1), Vector3.new(0, 3.45, 0), v.accent)
-			for _, side in { -1, 1 } do
-				limb(
-					"Leg",
-					Vector3.new(0.55, 1.3, 0.6),
-					Vector3.new(side * 0.45, 0.65, 0),
-					Color3.fromRGB(35, 37, 47)
-				)
-				limb("Arm", Vector3.new(0.42, 1.3, 0.5), Vector3.new(side, 2.1, 0), v.body)
-				limb(
-					"Eye",
-					Vector3.new(0.15, 0.15, 0.06),
-					Vector3.new(side * 0.25, 3.55, -0.52),
-					Color3.new(1, 1, 1)
-				)
-			end
-			if e.kind == "Hero" then
-				limb(
-					"Staff",
-					Vector3.new(0.18, 3.7, 0.18),
-					Vector3.new(1.15, 2, -0.45),
-					Color3.fromRGB(164, 107, 60)
-				)
-				local orb = limb(
-					"Magic",
-					Vector3.new(0.65, 0.65, 0.65),
-					Vector3.new(1.15, 4, -0.45),
-					if view.heroKind == "shadow"
-						then Color3.fromRGB(185, 105, 255)
-						else Color3.fromRGB(90, 201, 255)
-				)
-				orb.Material = Enum.Material.Neon
-				orb.Shape = Enum.PartType.Ball
-			elseif e.n == 2 or e.n == 8 then
-				limb(
-					"RangedWeapon",
-					Vector3.new(0.22, 2.5, 0.3),
-					Vector3.new(1.15, 2.4, -0.5),
-					v.accent
-				)
-			elseif e.n == 6 then
-				limb("Shield", Vector3.new(2.2, 2.4, 0.5), Vector3.new(0, 2, -0.9), v.accent)
-			else
-				limb("Weapon", Vector3.new(0.2, 2.1, 0.4), Vector3.new(1.1, 2.6, -0.55), v.accent)
-			end
+		local parts: { BasePart } = {}
+		local locals: { CFrame } = {}
+		local groups: { string? } = {}
+		local pivots: { Vector3? } = {}
+		local baseTransp: { number } = {}
+		local function add(spec: FigureLook.Part, scale: number)
+			local p, cf = makePart(m, spec, scale)
+			table.insert(parts, p)
+			table.insert(locals, cf)
+			table.insert(baseTransp, p.Transparency)
+			groups[#parts] = spec.g
+			pivots[#parts] = if spec.pv then vec(spec.pv, scale) else nil
 		end
+		for _, spec in look.parts do
+			add(spec, k)
+		end
+		if e.enhanced then
+			add({
+				shape = "VCyl",
+				size = { 2.4, 0.05, 2.4 },
+				at = { 0, 0.04, 0 },
+				color = { 220, 40, 70 },
+				neon = true,
+				transp = 0.35,
+			}, k / look.scale)
+		end
+		local tall = look.height * grow
 		local tag = Instance.new("BillboardGui")
 		tag.Name = "Health"
-		tag.Size = UDim2.fromOffset(110, 32)
-		tag.StudsOffset = Vector3.new(0, tall + 0.5, 0)
+		tag.Size =
+			UDim2.fromOffset(if NAMED[e.kind] then 120 else 64, if NAMED[e.kind] then 30 else 8)
+		tag.StudsOffset = Vector3.new(0, tall + 0.6, 0)
 		tag.AlwaysOnTop = true
 		tag.MaxDistance = 95
 		tag.Adornee = pivot
 		tag.Parent = pivot
-		local label = Widgets.label(
-			tag,
-			"Name",
-			entityName(e, view),
-			12,
-			if e.kind == "Hero" then Color3.fromRGB(255, 225, 95) else Color3.fromRGB(235, 235, 245)
-		)
-		label.Size = UDim2.new(1, 0, 0, 18)
-		label.TextStrokeTransparency = 0.3
+		local label: TextLabel? = nil
+		if NAMED[e.kind] then
+			local named = Widgets.label(
+				tag,
+				"Name",
+				entityName(e, view),
+				12,
+				if e.kind == "Hero"
+					then Color3.fromRGB(255, 225, 95)
+					else Color3.fromRGB(235, 235, 245)
+			)
+			named.Size = UDim2.new(1, 0, 0, 18)
+			named.TextStrokeTransparency = 0.3
+			label = named
+		end
 		local bar = Widgets.frame(tag, "Hp", Color3.fromRGB(30, 30, 40), 2)
 		bar.Size = UDim2.new(1, 0, 0, 5)
-		bar.Position = UDim2.fromOffset(0, 21)
+		bar.Position = UDim2.fromOffset(0, if label then 21 else 1)
+		bar.Visible = NAMED[e.kind] == true
 		local fill = Widgets.frame(
 			bar,
 			"Fill",
@@ -355,14 +404,77 @@ local function new(parent: Instance, catalog: any)
 		return {
 			model = m,
 			root = pivot,
+			parts = parts,
+			locals = locals,
+			groups = groups,
+			pivots = pivots,
+			baseTransp = baseTransp,
+			flying = look.flying,
+			frog = nil,
+			frogLocals = nil,
+			ice = nil,
+			look = "normal",
 			fill = fill,
+			bar = bar,
 			label = label,
 			lastX = e.x,
 			lastZ = e.z or 0,
+			lastHp = e.hp,
+			walk = 0,
+			state = e.state,
+			actStart = -math.huge,
+			hitAt = -math.huge,
+			cf = CFrame.new(),
 		}
 	end
 
-	local function render(view: any, _chapter: number, dt: number)
+	-- curse/ghost/ice change how the whole figure looks, only on a change of state
+	local function setLook(figure: Figure, look: string)
+		if figure.look == look then
+			return
+		end
+		figure.look = look
+		for i, p in figure.parts do
+			p.Transparency = if look == "frog"
+				then 1
+				elseif look == "ghost" then math.max(figure.baseTransp[i], 0.7)
+				else figure.baseTransp[i]
+		end
+		if look == "frog" and not figure.frog then
+			local frogParts: { BasePart } = {}
+			local frogLocals: { CFrame } = {}
+			for _, spec in FigureLook.figure("Frog").parts do
+				local p, cf = makePart(figure.model, spec, 1)
+				table.insert(frogParts, p)
+				table.insert(frogLocals, cf)
+			end
+			figure.frog, figure.frogLocals = frogParts, frogLocals
+		end
+		local frog = figure.frog
+		if frog then
+			for _, p in frog do
+				p.Transparency = if look == "frog" then 0 else 1
+			end
+		end
+		if look == "ice" and not figure.ice then
+			local height = figure.root:FindFirstChild("Health") :: BillboardGui?
+			local tall = if height then height.StudsOffset.Y else 3
+			local shell = part(
+				figure.model,
+				"Ice",
+				Vector3.new(2.4, tall, 2.4),
+				CFrame.new(),
+				Color3.fromRGB(170, 225, 255),
+				Enum.Material.Ice
+			)
+			figure.ice = shell
+		end
+		if figure.ice then
+			figure.ice.Transparency = if look == "ice" then 0.45 else 1
+		end
+	end
+
+	local function render(view: any, chapter: number, dt: number)
 		if not view then
 			return
 		end
@@ -371,10 +483,13 @@ local function new(parent: Instance, catalog: any)
 		local arenaOrigin = Players.LocalPlayer and Players.LocalPlayer:GetAttribute("ArenaOrigin")
 		local origin = if typeof(arenaOrigin) == "Vector3" then arenaOrigin else Vector3.zero
 		local avatarHero = origin ~= Vector3.zero
-		if not folder or mapLength ~= length or mapOrigin ~= origin then
+		if not folder or mapLength ~= length or mapOrigin ~= origin or mapChapter ~= chapter then
 			clear()
-			makeMap(length, origin)
+			makeMap(length, origin, chapter)
 		end
+		local now = os.clock()
+		local moveParts: { BasePart } = {}
+		local moveFrames: { CFrame } = {}
 		local live: { [number]: boolean } = {}
 		local hero: any = nil
 		for _, e in view.entities do
@@ -388,7 +503,7 @@ local function new(parent: Instance, catalog: any)
 			end
 			local figure = figures[e.id]
 			if not figure then
-				figure = build(e, view)
+				figure = build(e, view, chapter)
 				figures[e.id] = figure
 			end
 			local z = if view.spatial
@@ -396,13 +511,80 @@ local function new(parent: Instance, catalog: any)
 				elseif e.line and e.line > 0 then (e.line - 3) * 40
 				else (e.y - 165) * 1.4
 			local moving = math.abs(e.x - figure.lastX) + math.abs(z - figure.lastZ) > 0.05
-			local y = if view.mode == "Jump" then math.max(0, (e.y - 165) * SCALE) else 0
 			if moving then
-				y += math.sin(os.clock() * 10 + e.id) * 0.07
+				figure.walk += dt * 10
+			else
+				figure.walk = math.round(figure.walk / math.pi) * math.pi -- feet together at rest
 			end
+			if e.state ~= figure.state then
+				if e.state == "Attack" or e.state == "Skill" then
+					figure.actStart = now
+				end
+				figure.state = e.state
+			end
+			if e.hp < figure.lastHp then
+				figure.hitAt = now
+			end
+			figure.lastHp = e.hp
+			setLook(
+				figure,
+				if e.frog
+					then "frog"
+					elseif e.state == "Ghost" or e.state == "Blink" then "ghost"
+					elseif e.state == "Ice" then "ice"
+					else "normal"
+			)
+			local y = if view.mode == "Jump" then math.max(0, (e.y - 165) * SCALE) else 0
 			local pos = origin + Vector3.new(e.x * SCALE, y, z * SCALE)
-			figure.model:PivotTo(CFrame.lookAt(pos, pos + Vector3.new(e.dir or 1, 0, 0)))
+			local base = CFrame.lookAt(pos, pos + Vector3.new(e.dir or 1, 0, 0))
+			table.insert(moveParts, figure.root)
+			table.insert(moveFrames, base)
+			local lift = if moving then math.abs(math.sin(figure.walk)) * 0.12 else 0
+			if figure.flying then
+				lift = 0.7 + math.sin(now * 2.2 + e.id) * 0.25
+			end
+			local act = math.clamp((now - figure.actStart) / ATTACK_SECONDS, 0, 1)
+			local pose = FigureLook.pose(e.state, figure.walk, act, now + e.id * 0.37)
+			if now - figure.hitAt < 0.12 then
+				pose.body += 9
+			end
+			local body = base * CFrame.new(0, lift, 0) * CFrame.Angles(math.rad(pose.body), 0, 0)
+			figure.cf = body
+			if figure.look == "frog" then
+				local frog, frogLocals = figure.frog, figure.frogLocals
+				if frog and frogLocals then
+					for i, p in frog do
+						table.insert(moveParts, p)
+						table.insert(moveFrames, base * frogLocals[i])
+					end
+				end
+			else
+				for i, p in figure.parts do
+					local cf = figure.locals[i]
+					local group = figure.groups[i]
+					local joint = figure.pivots[i]
+					if group and joint then
+						local angle = math.rad(pose[group] or 0)
+						local axis = FigureLook.AXIS[group]
+						local turn = if axis == "Y"
+							then CFrame.Angles(0, angle, 0)
+							elseif axis == "Z" then CFrame.Angles(0, 0, angle)
+							else CFrame.Angles(angle, 0, 0)
+						cf = CFrame.new(joint) * turn * CFrame.new(-joint) * cf
+					end
+					table.insert(moveParts, p)
+					table.insert(moveFrames, body * cf)
+				end
+			end
+			if figure.ice and figure.look == "ice" then
+				table.insert(moveParts, figure.ice)
+				table.insert(moveFrames, base * CFrame.new(0, figure.ice.Size.Y / 2, 0))
+			end
 			figure.root:SetAttribute("Hp", e.hp)
+			local damaged = e.hp < e.maxHp
+			if figure.bar then
+				figure.bar.Visible = damaged or NAMED[e.kind] == true
+			end
 			if figure.fill then
 				figure.fill.Size = UDim2.fromScale(math.clamp(e.hp / e.maxHp, 0, 1), 1)
 			end
@@ -416,9 +598,35 @@ local function new(parent: Instance, catalog: any)
 		end
 		for id, f in figures do
 			if not live[id] then
-				f.model:Destroy()
 				figures[id] = nil
+				local tag = f.root:FindFirstChild("Health")
+				if tag then
+					tag:Destroy()
+				end
+				table.insert(dying, { figure = f, at = now })
 			end
+		end
+		-- the fallen topple and sink, then disappear
+		for i = #dying, 1, -1 do
+			local d = dying[i]
+			local t = (now - d.at) / DYING_SECONDS
+			if t >= 1 then
+				d.figure.model:Destroy()
+				table.remove(dying, i)
+			else
+				local f = d.figure
+				local fall = f.cf
+					* CFrame.new(0, -t * 1.4, 0)
+					* CFrame.Angles(math.rad(t * 70), 0, 0)
+				for j, p in f.parts do
+					p.Transparency = f.baseTransp[j] + (1 - f.baseTransp[j]) * t
+					table.insert(moveParts, p)
+					table.insert(moveFrames, fall * f.locals[j])
+				end
+			end
+		end
+		if #moveParts > 0 then
+			Workspace:BulkMoveTo(moveParts, moveFrames, Enum.BulkMoveMode.FireCFrameChanged)
 		end
 		local seen: { [number]: boolean } = {}
 		local function draw(o: any)
