@@ -23,6 +23,8 @@ Codex·Claude 등 코딩 에이전트용 작업 안내. 상세 근거는 아래 
 | P8 저장·lease | CLI/Studio T-P8 52 PASS, 실 QA DataStore 복원·경합 PASS(2026-10-16, 사용자 승인) |
 | P9 통합·보안·부하 | `verify_p9.py` BLOCKED: CLI/Studio P2~P9 회귀·production 출시 빌드 감사·10분 부하·저속 통신·실 DataStore PASS, **Android 실기기 멀티터치는 알려진 제한(출시 전 실기기 확인 필요)** |
 
+**2026-10-16부터 원작 재현 확장(REMAKE) 진행 중**: 사용자 지시로 시스템·수치를 원작과 같게, 외형·이름은 오리지널로 하여 팔라독·다크독 캠페인과 서바이벌 전체를 만든다. 범위·단계(R0~R7)·설계 결정은 `docs/REMAKE_PLAN.md`가 정본이고 MVP 설계 문서보다 우선한다. 원작 데이터는 `python tools/build_remake.py`(`--check`로 diff0 확인)로 `data/remake/db.json`, `src/server/Config/Remake/*`, `src/shared/RemakeCatalog.luau`를 만든다. 이 셋은 생성 파일이라 직접 고치지 않는다. 오리지널 이름·설계값은 `data/remake/design.json`에서 고친다. 원작 캐릭터명(연구 문서 이름, paladog/darkdog 같은 원작 영문명)은 `src/`에 넣지 않는다.
+
 진행 상세와 미해결 사항은 `docs/PROGRESS.md`가 최신이다. HANDOFF 상단에 현재 상태와 출시 전 남은 일을 둔다. 밸런스 overlay 결정 14개는 2026-10-16 "jaetech"가 승인했다. Studio 동기화는 Rojo가 기존 스크립트를 갱신하지 못하는 문제가 있어, `rojo build`로 만든 rbxm을 MCP `import_rbxm`으로 넣고 이름=길이 해시로 일치를 확인한다(저장 안 함).
 
 ## 환경과 명령 (macOS arm64 / Windows AMD64 bootstrap)
