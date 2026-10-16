@@ -41,7 +41,20 @@ python3 -m unittest discover -s tools/tests
 .tools/stylua-2.6.0/stylua src tests test-support test-support-client   # 커밋 전 포맷
 ```
 
-변경 후 위 명령을 모두 다시 돌린다. 종료 코드는 0=PASS, 1=FAIL, 2=BLOCKED. BLOCKED를 PASS로 바꾸거나 보고하지 않는다.
+종료 코드는 0=PASS, 1=FAIL, 2=BLOCKED. BLOCKED를 PASS로 바꾸거나 보고하지 않는다.
+
+## 테스트 정책 (2026-10-16, 토큰 최소화)
+
+P0~P9 순서(`IMPLEMENTATION_PLAN.md`)는 그대로다. 위 명령 전체는 매 변경이 아니라 P9 전체 회귀에서 돌린다.
+
+- 구현 중에는 바뀐 기능의 핵심 단위 suite(`tests/cli_pN.luau`)와 정적 분석(analyze·selene·StyLua·build)만 돌린다.
+- 이미 PASS한 기능은 관련 코드가 바뀌지 않았으면 다시 검증하지 않는다.
+- Studio MCP 테스트는 P0·P5·P6·P8·P9에서만 한다. P1~P4·P7은 로컬 테스트·정적 분석 우선. 실제 Studio 확인이 필요한 오류가 생기면 예외로 한다.
+- 같은 실패는 원인 분석 후 최대 2회만 수정하고, 그래도 안 되면 FAIL/BLOCKED로 기록하고 넘어간다.
+- 생략 금지: 저장 데이터 무결성, 서버 권한, 보상 중복 지급 테스트.
+- 실행하지 않은 항목은 PASS로 쓰지 않는다(NOT_RUN).
+- 전체 회귀·부하 테스트는 P9에서 한다.
+- 다중 에이전트 리뷰·상세 테스트 보고서는 생략한다. 단계 완료 시 `docs/PROGRESS.md`에 구현 내용·핵심 테스트 결과·미해결 문제만 짧게 적는다.
 
 ## 코드 규칙
 
@@ -72,5 +85,5 @@ MCP가 없으면 Studio 단계는 하지 말고 BLOCKED로 남긴 뒤 HANDOFF에
 ## 작업 흐름
 
 - 단계마다 브랜치(`p4-...`)에서 커밋하고 로컬 `main`에 fast-forward 병합한다. push는 사용자가 한다.
-- 단계를 마치면 `docs/HANDOFF.md`(상태·검증·남은 일)와 `docs/DEVELOPMENT.md`(결정·한계)를 갱신한다. 실행하지 않은 검증을 완료로 쓰지 않는다.
+- 단계를 마치면 `docs/PROGRESS.md`에 구현·핵심 테스트 결과·미해결 문제만 간결하게 기록한다(위 테스트 정책). 실행하지 않은 검증을 완료로 쓰지 않는다.
 - 사용자와는 한국어로 소통한다.
