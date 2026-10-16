@@ -1,10 +1,12 @@
 --!strict
--- Per-owner admission, stage/result flow and atomic progression command boundaries.
+-- Per-owner admission, stage/result flow and lobby transaction boundaries (remake R3).
+-- Battles are server-only `Battle` instances; clients see owner-only snapshots.
 local ProfileService = require("./ProfileService")
 local ProfileSchema = require("./ProfileSchema")
+local Economy = require("./Economy")
+local Quests = require("./Quests")
 local ServerTypes = require("../ServerTypes")
-local World = require("../Simulation/World")
-local SimTypes = require("../Simulation/SimTypes")
+local Battle = require("../Battle/Battle")
 
 type Phase =
 	"ProfileLoading"
@@ -30,7 +32,8 @@ type Ack = { commandSeq: number, message: Message }
 type Session = {
 	phase: Phase,
 	matchId: string?,
-	stageId: string?,
+	stage: number?,
+	slot: number?,
 	runOrdinal: number?,
 	commandHigh: number,
 	acks: { [string]: Ack },
@@ -40,7 +43,8 @@ type Session = {
 	moveTick: number,
 	pending: { any },
 	snapshotSeq: number,
-	world: SimTypes.World?,
+	battle: any?,
+	finalView: any?,
 	result: ServerTypes.MatchResult?,
 }
 
@@ -53,16 +57,56 @@ export type Deps = {
 	maxMatches: number,
 	ackCacheSize: number,
 	moveTtlTicks: number,
-	stageFlow: boolean?,
 	newSeed: (() -> number)?,
 }
 
 local ACTIVE: { [Phase]: boolean } =
 	{ Preparing = true, Running = true, Settling = true, Settled = true }
+local REVIVE_GEMS = 20
 
--- Freeze in one boundary so both pinned Luau analyzers retain the declared DTO type.
+-- Lobby kinds -> pure Economy transform (each re-checked against the stored document).
+local LOBBY: { [string]: (ServerTypes.ProfileV1, any) -> string? } = {
+	CreateSlot = function(p, c)
+		return Economy.createSlot(p, c.slot, c.heroKind, c.difficulty)
+	end,
+	DeleteSlot = function(p, c)
+		return Economy.deleteSlot(p, c.slot)
+	end,
+	SelectSlot = function(p, c)
+		return Economy.selectSlot(p, c.slot)
+	end,
+	UpgradeUnit = function(p, c)
+		return Economy.upgradeUnit(p, c.unit)
+	end,
+	LearnSkill = function(p, c)
+		return Economy.learnSkill(p, c.skill)
+	end,
+	ResetSkills = function(p, _c)
+		return Economy.resetSkills(p)
+	end,
+	BuyItem = function(p, c)
+		return Economy.buyItem(p, c.category, c.num)
+	end,
+	SellItem = function(p, c)
+		return Economy.sellItem(p, c.index)
+	end,
+	Equip = function(p, c)
+		return Economy.equip(p, c.index, c.slot)
+	end,
+	Unequip = function(p, c)
+		return Economy.unequip(p, c.slot)
+	end,
+	Enchant = function(p, c)
+		return Economy.enchant(p, c.where, c.index)
+	end,
+	GemShop = function(p, c)
+		return Economy.gemShop(p, c.item)
+	end,
+}
+
 local function freezeResult(result: ServerTypes.MatchResult)
-	table.freeze(result.killCounts)
+	table.freeze(result.picks)
+	table.freeze(result.quests)
 	table.freeze(result)
 end
 
@@ -98,6 +142,14 @@ local function new(deps: Deps)
 		return count
 	end
 
+	local function leaveMatch(session: Session)
+		if session.matchId then
+			owners[session.matchId] = nil
+		end
+		session.matchId, session.stage, session.slot, session.runOrdinal = nil, nil, nil, nil
+		session.battle, session.finalView, session.result, session.pending = nil, nil, nil, {}
+	end
+
 	local function playerJoined(userId: number)
 		if sessions[userId] then
 			return -- PlayerAdded and the initial GetPlayers() sweep may both report the same player
@@ -124,20 +176,16 @@ local function new(deps: Deps)
 					else session.phase
 			elseif status == "Unavailable" then
 				-- Storage lost (load failure or a stale writer): stop the session so nothing waits on it.
-				if session.matchId then
-					owners[session.matchId] = nil
-				end
-				session.phase, session.matchId, session.stageId, session.runOrdinal =
-					"Unavailable", nil, nil, nil
-				session.pending, session.world = {}, nil
+				leaveMatch(session)
+				session.phase = "Unavailable"
 			end
 		end)
 	end
 
 	local function playerLeft(userId: number)
 		local session = sessions[userId]
-		if session and session.matchId then
-			owners[session.matchId] = nil
+		if session then
+			leaveMatch(session)
 		end
 		sessions[userId] = nil
 		deps.profiles.release(userId)
@@ -175,8 +223,11 @@ local function new(deps: Deps)
 			end
 			return
 		end
-		local reason = if session.phase ~= "Running"
-			then "WrongPhase"
+		-- A foreign match id is reported as such in every phase; it never touches either session.
+		local owner = owners[command.matchId]
+		local reason = if owner ~= nil and owner ~= userId
+			then "NotOwner"
+			elseif session.phase ~= "Running" then "WrongPhase"
 			else ownershipReason(userId, session, command.matchId)
 		if
 			reason == "NotOwner" or (reason == nil and command.commandSeq <= session.commandHigh)
@@ -190,8 +241,11 @@ local function new(deps: Deps)
 		session.commandHigh = command.commandSeq
 		table.insert(session.pending, {
 			kind = command.kind,
+			unit = command.unit,
+			lane = if command.lane and command.lane > 0 then command.lane else nil,
 			slot = command.slot,
-			commandSeq = command.commandSeq,
+			index = command.index,
+			choice = command.choice,
 			requestId = command.requestId,
 		})
 		local message =
@@ -199,18 +253,21 @@ local function new(deps: Deps)
 		rememberAck(session, command.requestId, command.commandSeq, message)
 	end
 
-	local function profileCommand(
-		userId: number,
-		session: Session,
-		command: any,
-		start: (any) -> ()
-	)
+	local function lobbyCommand(userId: number, session: Session, command: any)
 		if session.phase ~= "LobbyReady" then
 			reply(userId, command.requestId, "Rejected", "WrongPhase")
 			return
 		end
+		local mutate = LOBBY[command.kind]
 		reply(userId, command.requestId, "Pending")
-		start(function(profile, reason)
+		deps.profiles.transact(userId, {
+			kind = command.kind,
+			requestId = command.requestId,
+			expectedRevision = command.expectedRevision,
+			mutate = function(profile)
+				return mutate(profile, command)
+			end,
+		}, function(profile, reason)
 			if sessions[userId] ~= session then
 				return
 			end
@@ -237,13 +294,20 @@ local function new(deps: Deps)
 			reply(userId, command.requestId, "Rejected", "Busy")
 			return
 		end
+		local current = deps.profiles.profileOf(userId)
+		local slot = current and ProfileSchema.currentSlot(current)
+		-- Survival (stage 0, R6) and shadow-hero battles (R5) are not wired yet.
+		if command.stage == 0 or (slot and slot.heroKind ~= "light") then
+			reply(userId, command.requestId, "Rejected", "WrongMode")
+			return
+		end
 		local matchId = deps.newMatchId()
 		session.phase = "Preparing"
 		reply(userId, command.requestId, "Pending")
 		deps.profiles.startRun(userId, {
 			requestId = command.requestId,
 			expectedRevision = command.expectedRevision,
-			stageId = command.stageId,
+			stage = command.stage,
 			matchId = matchId,
 			balanceHash = deps.balanceHash,
 		}, function(profile, reason)
@@ -251,34 +315,34 @@ local function new(deps: Deps)
 				return
 			end
 			local run = profile and profile.activeRun
-			-- The committed document must carry the run this request started (operation identity, ARCH §6.1).
-			if not run or run.startOperationId ~= command.requestId then
+			-- The committed document must carry the run this request started (operation identity).
+			if not profile or not run or run.startOperationId ~= command.requestId then
 				if session.phase == "Preparing" then
 					session.phase = "LobbyReady"
 				end
 				reply(userId, command.requestId, "Rejected", reason or "StaleCommand")
 				return
 			end
-			-- Running starts only after activeRun is committed; a replayed start returns the stored run.
-			local loaded = profile :: any
-			local world =
-				World.new({ -- built first: a config error must not leave a Running session without a world
-					stageId = run.stageId,
-					stageSpawns = deps.stageFlow,
+			local runSlot = profile.slots[run.slot] :: ServerTypes.Slot
+			local battle =
+				Battle.new({ -- built first: a config error must not leave Running without a battle
+					stage = run.stage,
 					seed = if deps.newSeed then deps.newSeed() else 12345,
-					unitLevels = loaded.unitLevels,
-					heroTraits = loaded.heroTraits, -- copied by World: growth is fixed for the whole match
+					loadout = ProfileSchema.loadoutOf(runSlot),
+					cleared = runSlot.stars[run.stage] >= 1,
+					goldAvailable = runSlot.gold,
+					revives = if profile.gems >= REVIVE_GEMS then 1 else 0,
 				})
-			session.phase, session.matchId, session.stageId, session.runOrdinal =
-				"Running", run.matchId, run.stageId, run.ordinal
+			session.phase, session.matchId, session.stage, session.runOrdinal =
+				"Running", run.matchId, run.stage, run.ordinal
+			session.slot = run.slot
 			session.commandHigh, session.moveSeq, session.moveAxis, session.snapshotSeq = 0, 0, 0, 0
 			session.acks, session.ackOrder, session.pending = {}, {}, {} -- request cache is scoped to one match
-			session.world = world
-			session.result = nil
+			session.battle, session.finalView, session.result = battle, nil, nil
 			owners[run.matchId] = userId
 			reply(userId, command.requestId, "Committed", nil, {
 				matchId = run.matchId,
-				profileRevision = (profile :: any).revision,
+				profileRevision = profile.revision,
 			})
 		end)
 	end
@@ -289,18 +353,12 @@ local function new(deps: Deps)
 			return
 		end
 		local kind = command.kind
-		if kind == "Summon" or kind == "Cast" then
+		if command.commandSeq ~= nil then
 			battleCommand(userId, session, command)
 		elseif kind == "StartStage" then
 			startStage(userId, session, command)
-		elseif kind == "UpgradeUnit" then
-			profileCommand(userId, session, command, function(done)
-				deps.profiles.upgradeUnit(userId, command, done)
-			end)
-		elseif kind == "AllocatePoint" then
-			profileCommand(userId, session, command, function(done)
-				deps.profiles.allocatePoint(userId, command, done)
-			end)
+		elseif LOBBY[kind] then
+			lobbyCommand(userId, session, command)
 		elseif kind == "ReturnToLobby" then
 			local reason = if session.phase ~= "Settled"
 				then "WrongPhase"
@@ -309,11 +367,8 @@ local function new(deps: Deps)
 				reply(userId, command.requestId, "Rejected", reason)
 				return
 			end
-			owners[session.matchId :: string] = nil
-			session.phase, session.matchId, session.stageId, session.runOrdinal =
-				"LobbyReady", nil, nil, nil
-			session.world = nil
-			session.result = nil
+			leaveMatch(session)
+			session.phase = "LobbyReady"
 			local profile = deps.profiles.profileOf(userId)
 			reply(userId, command.requestId, "Accepted", nil, {
 				profileRevision = if profile then profile.revision else nil,
@@ -357,7 +412,7 @@ local function new(deps: Deps)
 			return nil
 		end
 		session.snapshotSeq += 1
-		local world = session.world
+		local view = if session.battle then Battle.snapshot(session.battle) else session.finalView
 		local committedProfile = if session.phase == "Settled"
 			then deps.profiles.profileOf(userId)
 			else nil
@@ -365,31 +420,12 @@ local function new(deps: Deps)
 		return {
 			matchId = session.matchId,
 			snapshotSeq = session.snapshotSeq,
-			tick = if world then world.tick else deps.tick(),
 			phase = session.phase,
-			stageId = session.stageId,
+			stage = session.stage,
 			balanceHash = deps.balanceHash,
 			inputAckSeq = session.moveSeq,
 			commandAckSeq = session.commandHigh,
-			stageLength = if world then world.stage.length else nil,
-			advanceLimitX = if world then world.stage.advanceLimitX else nil,
-			heroMoveSpeed = if world then world.entities[world.heroId].moveSpeed else nil,
-			pendingKillGold = if world then world.pendingKillGold else 0,
-			pendingKillXp = if world then world.pendingKillXp else 0,
-			resources = if world
-				then {
-					foodMilli = world.resources.foodMilli,
-					manaMilli = world.resources.manaMilli,
-					foodMaxMilli = world.resources.foodMaxMilli,
-					manaMaxMilli = world.resources.manaMaxMilli,
-					summonReadyTick = table.clone(world.resources.summonReadyTick),
-					skillReadyTick = world.resources.skillReadyTick,
-				}
-				else nil,
-			entities = if world then World.snapshotEntities(world) else {},
-			projectiles = if world then World.snapshotProjectiles(world) else {},
-			heroAction = if world then World.snapshotHeroAction(world) else {},
-			outcome = if world then world.outcome else nil,
+			battle = view,
 			result = session.result,
 			profileRevision = if committedProfile then committedProfile.revision else nil,
 			profileSummary = if committedProfile
@@ -398,7 +434,7 @@ local function new(deps: Deps)
 			rewards = if ledger
 					and ledger.matchId == session.matchId
 					and ledger.ordinal == session.runOrdinal
-				then { gold = ledger.awardedGold, xp = ledger.awardedXp }
+				then ProfileSchema.deepClone(ledger)
 				else nil,
 			settlementStatus = if session.phase == "Settling"
 				then "Pending"
@@ -408,15 +444,54 @@ local function new(deps: Deps)
 		}
 	end
 
+	local function settle(userId: number, session: Session, battle: any)
+		local stats = Quests.statsOf(battle, Battle)
+		local frozen: ServerTypes.MatchResult = {
+			matchId = session.matchId :: string,
+			runOrdinal = session.runOrdinal :: number,
+			slot = session.slot :: number,
+			stage = session.stage :: number,
+			balanceHash = deps.balanceHash,
+			seed = battle.seed,
+			outcome = battle.outcome,
+			elapsedTicks = battle.tick,
+			gold = battle.rewards.gold,
+			goldSpent = battle.rewards.goldSpent,
+			exp = battle.exp,
+			levelUps = battle.rewards.levelUps,
+			picks = table.clone(battle.rewards.picks),
+			drops = #battle.rewards.drops,
+			revives = battle.rewards.revives,
+			killTotal = battle.rewards.killTotal,
+			quests = Quests.evaluate(session.stage :: number, stats),
+		}
+		freezeResult(frozen)
+		session.result = frozen
+		session.finalView = Battle.snapshot(battle)
+		session.battle = nil -- the final view stays for the result screen; the battle state is released
+		deps.profiles.finishRun(userId, frozen, function(profile)
+			if sessions[userId] == session and session.phase == "Settling" then
+				local saved = profile and profile.lastRunResult
+				local committed = profile ~= nil
+					and saved ~= nil
+					and saved.matchId == frozen.matchId
+					and saved.ordinal == frozen.runOrdinal
+					and saved.outcome == frozen.outcome
+					and not profile.activeRun
+				session.phase = if committed then "Settled" else "Unavailable"
+			end
+		end)
+	end
+
 	-- One simulation tick for every running match; replies carry the final Accepted/Rejected per command.
 	local function stepAll()
 		for userId, session in sessions do
-			local world = session.world
-			if session.phase == "Running" and world then
+			local battle = session.battle
+			if session.phase == "Running" and battle then
 				local commands = session.pending
 				session.pending = {}
 				local result =
-					World.step(world, { commands = commands, axis = effectiveAxis(userId) })
+					Battle.step(battle, { commands = commands, axis = effectiveAxis(userId) })
 				for _, outcome in result.results do
 					local requestId = outcome.requestId or ""
 					local message = reply(
@@ -433,48 +508,10 @@ local function new(deps: Deps)
 				end
 				if result.outcome then
 					session.phase = "Settling"
-					if deps.stageFlow then
-						local frozen: ServerTypes.MatchResult = {
-							matchId = session.matchId :: string,
-							runOrdinal = session.runOrdinal :: number,
-							stageId = world.stageId,
-							balanceHash = deps.balanceHash,
-							seed = if world.spawner then world.spawner.seed else 12345,
-							outcome = result.outcome,
-							elapsedTicks = world.tick,
-							killCounts = table.clone(world.killCounts),
-							pendingKillGold = world.pendingKillGold,
-							pendingKillXp = world.pendingKillXp,
-						}
-						freezeResult(frozen)
-						session.result = frozen
-						World.clearBattle(world)
-						deps.profiles.finishRun(userId, frozen, function(profile)
-							if sessions[userId] == session and session.phase == "Settling" then
-								local saved = profile and profile.lastRunResult
-								local committed = profile ~= nil
-									and saved ~= nil
-									and saved.matchId == frozen.matchId
-									and saved.ordinal == frozen.runOrdinal
-									and saved.outcome == frozen.outcome
-									and not profile.activeRun
-								session.phase = if committed then "Settled" else "Unavailable"
-							end
-						end)
-					end
+					settle(userId, session, battle)
 				end
 			end
 		end
-	end
-
-	local function takePending(userId: number): { any }
-		local session = sessions[userId]
-		if not session then
-			return {}
-		end
-		local pending = session.pending
-		session.pending = {}
-		return pending
 	end
 
 	return table.freeze({
@@ -485,11 +522,21 @@ local function new(deps: Deps)
 		effectiveAxis = effectiveAxis,
 		phaseOf = phaseOf,
 		snapshot = snapshot,
-		takePending = takePending,
 		stepAll = stepAll,
-		worldOf = function(userId: number): SimTypes.World?
+		takePending = function(
+			userId: number
+		): { any } -- tests/diagnostics: drains queued battle commands
 			local session = sessions[userId]
-			return if session then session.world else nil -- server diagnostics/tests only; never replicated
+			if not session then
+				return {}
+			end
+			local pending = session.pending
+			session.pending = {}
+			return pending
+		end,
+		battleOf = function(userId: number): any
+			local session = sessions[userId]
+			return if session then session.battle else nil -- server diagnostics/tests only; never replicated
 		end,
 		activeMatches = activeMatches,
 		ownedMatchCount = function(): number -- diagnostics/tests: must return to 0 after matches end

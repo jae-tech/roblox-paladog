@@ -13,14 +13,16 @@ return function(env: any, check: any)
 			difficulty = 1,
 			unitLevels = { 1, 1, 1, 1, 1, 1, 1, 1, 1 },
 		}
-		for k, v in over or {} do
+		local overrides: { [string]: any } = over or {}
+		for k, v in overrides do
 			l[k] = v
 		end
 		return l
 	end
 	local function battle(stage: number, over: { [string]: any }?, extra: { [string]: any }?): any
 		local options: any = { stage = stage, seed = 4242, loadout = loadout(over) }
-		for k, v in extra or {} do
+		local extras: { [string]: any } = extra or {}
+		for k, v in extras do
 			options[k] = v
 		end
 		return Battle.new(options)

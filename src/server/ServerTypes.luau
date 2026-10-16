@@ -1,10 +1,12 @@
 --!strict
--- Server-only persistence contracts (DATA_MODELS §5, ARCHITECTURE §8). P8 supplies the DataStore adapter.
+-- Server-only persistence contracts. Remake schema v2 (docs/REMAKE_PLAN.md R3, D-SLOT-01): account data plus
+-- three save slots. ProfileService only relies on the run/receipt/lease fields declared here.
 
 export type ActiveRun = {
 	ordinal: number,
 	matchId: string,
-	stageId: string,
+	slot: number,
+	stage: number,
 	balanceHash: string,
 	startOperationId: string,
 }
@@ -15,26 +17,48 @@ export type Receipt = { id: string, kind: string, revision: number }
 export type MatchResult = {
 	matchId: string,
 	runOrdinal: number,
-	stageId: string,
+	slot: number,
+	stage: number,
 	balanceHash: string,
 	seed: number,
-	outcome: string,
+	outcome: string, -- "Victory" | "Defeat" | "Abandoned"
 	elapsedTicks: number,
-	killCounts: { [string]: number },
-	pendingKillGold: number,
-	pendingKillXp: number,
+	gold: number,
+	goldSpent: number,
+	exp: number,
+	levelUps: number,
+	picks: { number },
+	drops: number,
+	revives: number,
+	killTotal: number,
+	quests: { boolean },
+}
+
+export type Slot = {
+	heroKind: string, -- "light" | "shadow"
+	difficulty: number,
+	gold: number,
+	exp: number,
+	level: number,
+	skills: { number },
+	freePoints: number,
+	units: { number },
+	stars: { number }, -- -1 locked, 0 open, 1..3 best stars
+	bestSec: { number }, -- 0 = never cleared
+	inventory: { number }, -- packed item codes
+	equip: { number }, -- 9 packed item codes, 0 = empty
+	survivalBest: number,
 }
 
 export type ProfileV1 = {
 	schemaVersion: number,
 	revision: number,
-	gold: number,
-	totalXp: number,
-	heroLevel: number,
-	unspentPoints: number,
-	heroTraits: { [string]: number },
-	unitLevels: { [string]: number },
-	stageProgress: { [string]: { wins: number, bestTicks: number? } },
+	gems: number,
+	achievements: { number },
+	darkUnlocked: boolean,
+	ringSlotUnlocked: boolean,
+	currentSlot: number, -- 0 = none selected
+	slots: { Slot | boolean }, -- false = empty
 	runCounter: number,
 	lastClosedRunOrdinal: number,
 	fenceEpoch: number,
@@ -45,6 +69,9 @@ export type ProfileV1 = {
 		outcome: string,
 		awardedGold: number,
 		awardedXp: number,
+		stars: number?,
+		items: { number }?,
+		gems: number?,
 	}?,
 	recentOperations: { Receipt },
 	lease: { sessionId: string, ownerJobId: string, expiresAt: number }?,

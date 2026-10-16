@@ -1,10 +1,9 @@
 --!strict
--- Client->server payload validation (ARCHITECTURE §6.1, DATA_MODELS §6). Every check is O(fixed size):
--- key scans stop after MAX_KEYS, values must be strings/numbers, ids come from closed sets.
+-- Client->server payload validation (remake protocol v2). Every check is O(fixed size): key scans stop after
+-- MAX_KEYS, values must be strings/numbers, every field has a closed integer range or string set per kind.
 local Types = require("./Types")
-local Catalog = require("./PublicCatalog")
 
-local VERSION = 1
+local VERSION = 2
 local MAX_KEYS = 8
 local MAX_INTEGER = 2147483647
 
@@ -17,10 +16,11 @@ local LIMITS = table.freeze({
 	bootstrapBurst = 2,
 	queueCapacity = 32,
 	ackCacheSize = 128,
-	moveTtlTicks = 10,
+	moveTtlTicks = 15, -- 0.5 s at 30 Hz
 	maxMatches = 4,
 	receiptCap = 64,
 	profileQueueCap = 4,
+	ticksPerSecond = 30,
 })
 
 local REASONS = table.freeze({
@@ -29,6 +29,7 @@ local REASONS = table.freeze({
 	"ProtocolMismatch",
 	"NotOwner",
 	"WrongPhase",
+	"WrongMode",
 	"LockedStage",
 	"StaleRevision",
 	"StaleCommand",
@@ -36,37 +37,73 @@ local REASONS = table.freeze({
 	"InsufficientFood",
 	"InsufficientMana",
 	"InsufficientGold",
+	"InsufficientGems",
 	"Cooldown",
 	"Busy",
 	"UnitCap",
-	"ProjectileCap",
 	"MaxLevel",
 	"NoPoints",
+	"NoSlot",
+	"SlotTaken",
+	"Locked",
+	"InventoryFull",
 	"StorageUnavailable",
 	"SessionLost",
 })
 
+local BATTLE = { "matchId", "commandSeq" }
 -- kind -> fields that must all be present (besides protocolVersion/requestId/kind); nothing else is accepted.
 local FIELDS: { [string]: { string } } = {
-	StartStage = { "stageId", "expectedRevision" },
-	Summon = { "matchId", "commandSeq", "slot" },
-	Cast = { "matchId", "commandSeq", "slot" },
-	UpgradeUnit = { "unitId", "expectedRevision" },
-	AllocatePoint = { "traitId", "expectedRevision" },
+	StartStage = { "stage", "expectedRevision" },
+	Summon = { "matchId", "commandSeq", "unit", "lane" },
+	Mace = { "matchId", "commandSeq", "slot", "unit", "lane" },
+	Box = { "matchId", "commandSeq", "index" },
+	PickSkill = { "matchId", "commandSeq", "choice" },
+	Revive = BATTLE,
+	GiveUp = BATTLE,
+	Retreat = BATTLE,
 	ReturnToLobby = { "matchId" },
+	CreateSlot = { "slot", "heroKind", "difficulty", "expectedRevision" },
+	DeleteSlot = { "slot", "expectedRevision" },
+	SelectSlot = { "slot", "expectedRevision" },
+	UpgradeUnit = { "unit", "expectedRevision" },
+	LearnSkill = { "skill", "expectedRevision" },
+	ResetSkills = { "expectedRevision" },
+	BuyItem = { "category", "num", "expectedRevision" },
+	SellItem = { "index", "expectedRevision" },
+	Equip = { "index", "slot", "expectedRevision" },
+	Unequip = { "slot", "expectedRevision" },
+	Enchant = { "where", "index", "expectedRevision" },
+	GemShop = { "item", "expectedRevision" },
 }
-local SLOT_MAX: { [string]: number } = { Summon = 3, Cast = 1 }
 
-local function idSet(entries: any): { [string]: boolean }
-	local set: { [string]: boolean } = {}
-	for id in entries do
-		set[id] = true
-	end
-	return table.freeze(set)
-end
-local STAGE_IDS = idSet(Catalog.stages)
-local UNIT_IDS = idSet(Catalog.units)
-local TRAIT_IDS = idSet(Catalog.traits)
+-- Integer ranges; a kind-specific entry overrides the default for that field.
+local RANGE: { [string]: { number } } = {
+	commandSeq = { 1, MAX_INTEGER },
+	expectedRevision = { 0, MAX_INTEGER },
+	stage = { 0, 120 }, -- 0 = survival
+	unit = { 1, 9 },
+	lane = { 0, 5 },
+	slot = { 1, 3 },
+	index = { 1, 100 },
+	choice = { 1, 3 },
+	skill = { 1, 24 },
+	difficulty = { 0, 3 },
+	category = { 1, 10 },
+	num = { 1, 11 },
+	item = { 1, 9 },
+}
+local KIND_RANGE: { [string]: { [string]: { number } } } = {
+	Mace = { unit = { 0, 9 } }, -- unit/lane only matter for tower buttons
+	Box = { index = { 1, 9 } },
+	Equip = { slot = { 1, 9 } },
+	Unequip = { slot = { 1, 9 } },
+	Enchant = { index = { 1, 100 } },
+}
+local STRINGS: { [string]: { [string]: boolean } } = {
+	heroKind = { light = true, shadow = true },
+	where = { inv = true, equip = true },
+}
 
 local function isInteger(value: unknown, low: number, high: number): boolean
 	return type(value) == "number"
@@ -122,20 +159,14 @@ end
 local function validField(kind: string, name: string, value: any): boolean
 	if name == "matchId" then
 		return isToken(value, 1, 64)
-	elseif name == "commandSeq" then
-		return isInteger(value, 1, MAX_INTEGER)
-	elseif name == "slot" then
-		return isInteger(value, 1, SLOT_MAX[kind])
-	elseif name == "expectedRevision" then
-		return isInteger(value, 0, MAX_INTEGER)
-	elseif name == "stageId" then
-		return type(value) == "string" and STAGE_IDS[value] == true
-	elseif name == "unitId" then
-		return type(value) == "string" and UNIT_IDS[value] == true
-	elseif name == "traitId" then
-		return type(value) == "string" and TRAIT_IDS[value] == true
 	end
-	return false
+	local set = STRINGS[name]
+	if set then
+		return type(value) == "string" and set[value] == true
+	end
+	local override = KIND_RANGE[kind]
+	local range = (override and override[name]) or RANGE[name]
+	return range ~= nil and isInteger(value, range[1], range[2])
 end
 
 local function validateCommand(payload: unknown): (Types.ClientCommand?, Types.Reason?)
@@ -153,28 +184,19 @@ local function validateCommand(payload: unknown): (Types.ClientCommand?, Types.R
 		return nil, "InvalidPayload"
 	end
 	local allowed: { [string]: boolean } = { protocolVersion = true, requestId = true, kind = true }
+	local command: { [string]: any } =
+		{ protocolVersion = VERSION, requestId = fields.requestId, kind = kind }
 	for _, name in required do
 		allowed[name] = true
 		if not validField(kind, name, fields[name]) then
 			return nil, "InvalidPayload"
 		end
+		command[name] = fields[name]
 	end
 	if not onlyKeys(fields, allowed) then
 		return nil, "InvalidPayload"
 	end
-	local command: Types.ClientCommand = {
-		protocolVersion = VERSION,
-		requestId = fields.requestId,
-		kind = kind,
-		matchId = fields.matchId,
-		commandSeq = fields.commandSeq,
-		slot = fields.slot,
-		stageId = fields.stageId,
-		unitId = fields.unitId,
-		traitId = fields.traitId,
-		expectedRevision = fields.expectedRevision,
-	}
-	return table.freeze(command) :: Types.ClientCommand, nil
+	return table.freeze(command) :: any, nil
 end
 
 local MOVE_KEYS = { protocolVersion = true, matchId = true, seq = true, axis = true }
@@ -225,10 +247,22 @@ local function echoRequestId(payload: unknown): string
 	return ""
 end
 
+local BATTLE_KINDS = table.freeze({
+	Summon = true,
+	Mace = true,
+	Box = true,
+	PickSkill = true,
+	Revive = true,
+	GiveUp = true,
+	Retreat = true,
+})
+
 return table.freeze({
 	VERSION = VERSION,
 	LIMITS = LIMITS,
 	REASONS = REASONS,
+	BATTLE_KINDS = BATTLE_KINDS,
+	FIELDS = FIELDS,
 	validateCommand = validateCommand,
 	validateMove = validateMove,
 	validateBootstrap = validateBootstrap,

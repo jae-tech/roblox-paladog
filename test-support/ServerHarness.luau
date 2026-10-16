@@ -33,7 +33,8 @@ local GameServer = ServerScriptService.GameServer
 local function p2Env()
 	return {
 		Protocol = require(ReplicatedStorage.Shared.Protocol),
-		Catalog = require(ReplicatedStorage.Shared.PublicCatalog),
+		Catalog = { version = "remake-db-1" },
+		Economy = require(GameServer.Services.Economy),
 		RemoteGateway = require(GameServer.Net.RemoteGateway),
 		MatchService = require(GameServer.Services.MatchService),
 		ProfileService = require(GameServer.Services.ProfileService),
@@ -41,35 +42,46 @@ local function p2Env()
 		newStore = require(tests.fixtures.InMemoryStoreAdapter),
 	}
 end
+local SUITES = {
+	["T-TOOL"] = true,
+	["T-TOOL-INTENTIONAL-FAIL"] = true,
+	["T-P2"] = true,
+	["T-P8"] = true,
+	["T-R1"] = true,
+	["T-R2"] = true,
+	["T-R3"] = true,
+}
 
 local Harness = {}
 function Harness.runSuite(suiteId: string, seed: number)
 	guard()
-	assert(
-		suiteId == "T-TOOL"
-			or suiteId == "T-TOOL-INTENTIONAL-FAIL"
-			or suiteId == "T-P2"
-			or suiteId == "T-P3"
-			or suiteId == "T-P4"
-			or suiteId == "T-P5"
-			or suiteId == "T-P6"
-			or suiteId == "T-P7"
-			or suiteId == "T-P8"
-			or suiteId == "T-P9",
-		"unsupported P0 suite"
-	)
+	assert(SUITES[suiteId], "unsupported suite")
 	return Runner.run("StudioServer", HttpService:GenerateGUID(false), seed, function(check)
-		if suiteId == "T-P9" then
-			local p9: any = p2Env()
-			p9.Schema = p9.ProfileSchema
-			p9.World = require(GameServer.Simulation.World)
-			p9.SessionStore = require(GameServer.Services.SessionStore)
-			p9.ProjectileSystem = require(GameServer.Simulation.ProjectileSystem)
-			require(tests.unit.P9)(p9, check)
+		local battle = {
+			Battle = require(GameServer.Battle.Battle),
+			Rules = require(GameServer.Battle.Rules),
+		}
+		if suiteId == "T-R1" then
+			require(tests.unit.R1)(battle, check)
 			return
-		end
-		if suiteId == "T-P8" then
-			local client = game:GetService("StarterPlayer").StarterPlayerScripts.GameClient
+		elseif suiteId == "T-R2" then
+			require(tests.unit.R2)(battle, check)
+			return
+		elseif suiteId == "T-R3" then
+			require(tests.unit.R3)({
+				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				Schema = require(GameServer.Services.ProfileSchema),
+				Economy = require(GameServer.Services.Economy),
+				Settlement = require(GameServer.Services.Settlement),
+				Battle = battle.Battle,
+				Db = require(GameServer.Config.Remake.Db),
+				ProfileService = require(GameServer.Services.ProfileService),
+				MatchService = require(GameServer.Services.MatchService),
+				RemoteGateway = require(GameServer.Net.RemoteGateway),
+				SessionStore = require(GameServer.Services.SessionStore),
+			}, check)
+			return
+		elseif suiteId == "T-P8" then
 			require(tests.unit.P8)({
 				Adapter = require(GameServer.Persistence.DataStoreAdapter),
 				Policy = require(GameServer.Persistence.PersistencePolicy),
@@ -77,80 +89,13 @@ function Harness.runSuite(suiteId: string, seed: number)
 				Schema = require(GameServer.Services.ProfileSchema),
 				ProfileService = require(GameServer.Services.ProfileService),
 				MatchService = require(GameServer.Services.MatchService),
-				Catalog = require(ReplicatedStorage.Shared.PublicCatalog),
-				ClientController = require(client.Net.ClientController),
-				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				Economy = require(GameServer.Services.Economy),
+				Db = require(GameServer.Config.Remake.Db),
 				newBackend = require(tests.fixtures.FakeDataStore),
 			}, check)
 			return
-		end
-		if suiteId == "T-P7" then
-			local client = game:GetService("StarterPlayer").StarterPlayerScripts.GameClient
-			require(tests.unit.P7)({
-				Growth = require(GameServer.Services.ProgressionService),
-				ResultReducer = require(GameServer.Simulation.ResultReducer),
-				Schema = require(GameServer.Services.ProfileSchema),
-				ProfileService = require(GameServer.Services.ProfileService),
-				MatchService = require(GameServer.Services.MatchService),
-				World = require(GameServer.Simulation.World),
-				Config = require(GameServer.Config.Generated.Progression),
-				Catalog = require(ReplicatedStorage.Shared.PublicCatalog),
-				Protocol = require(ReplicatedStorage.Shared.Protocol),
-				ClientController = require(client.Net.ClientController),
-				newStore = require(tests.fixtures.InMemoryStoreAdapter),
-			}, check)
-			return
-		end
-		if suiteId == "T-P6" then
-			require(tests.unit.P6)({
-				World = require(GameServer.Simulation.World),
-				StageSystem = require(GameServer.Simulation.StageSystem),
-				Stages = require(GameServer.Config.Generated.Stages),
-				ProjectileSystem = require(GameServer.Simulation.ProjectileSystem),
-				SessionStore = require(GameServer.Services.SessionStore),
-				Schema = require(GameServer.Services.ProfileSchema),
-				ProfileService = require(GameServer.Services.ProfileService),
-				MatchService = require(GameServer.Services.MatchService),
-				Catalog = require(ReplicatedStorage.Shared.PublicCatalog),
-			}, check)
-			return
-		end
-		if suiteId == "T-P5" then
-			local client = game:GetService("StarterPlayer").StarterPlayerScripts.GameClient
-			require(tests.unit.P5)({
-				ActionRouter = require(client.Input.ActionRouter),
-				SnapshotBuffer = require(client.Net.SnapshotBuffer),
-				ClientController = require(client.Net.ClientController),
-				Protocol = require(ReplicatedStorage.Shared.Protocol),
-				catalog = require(ReplicatedStorage.Shared.PublicCatalog),
-				Layout = require(client.Presentation.Layout),
-				CameraMath = require(client.Presentation.CameraMath),
-				ViewDefinitions = require(client.Presentation.ViewDefinitions),
-			}, check)
-			return
-		end
-		if suiteId == "T-P2" then
+		elseif suiteId == "T-P2" then
 			require(tests.unit.P2)(p2Env(), check)
-			return
-		elseif suiteId == "T-P3" or suiteId == "T-P4" then
-			local simulation = GameServer.Simulation
-			local env = {
-				World = require(simulation.World),
-				FixedStep = require(simulation.FixedStep),
-				Targeting = require(simulation.Targeting),
-				Damage = require(simulation.Damage),
-				ProjectileSystem = require(simulation.ProjectileSystem),
-				HeroActionSystem = require(simulation.HeroActionSystem),
-				Protocol = require(ReplicatedStorage.Shared.Protocol),
-				MatchService = require(GameServer.Services.MatchService),
-				ProfileService = require(GameServer.Services.ProfileService),
-				newStore = require(tests.fixtures.InMemoryStoreAdapter),
-			}
-			if suiteId == "T-P3" then
-				require(tests.unit.P3)(env, check)
-			else
-				require(tests.unit.P4)(env, check)
-			end
 			return
 		end
 		suite(fixtures, check)
@@ -170,7 +115,6 @@ function Harness.startNetRig()
 	end
 	local env = p2Env()
 	local Protocol = env.Protocol
-	local Progression = require(GameServer.Config.Generated.Progression)
 	local RemoteBinding = require(GameServer.Net.RemoteBinding)
 	local store = env.newStore()
 	local state = { tick = 0 }
@@ -197,7 +141,7 @@ function Harness.startNetRig()
 		newMatchId = function()
 			return HttpService:GenerateGUID(false)
 		end,
-		balanceHash = Progression.balanceHash,
+		balanceHash = "remake-db-1",
 		send = function(userId, message)
 			if forward then
 				forward(userId, "ServerMessage", message)
@@ -216,7 +160,7 @@ function Harness.startNetRig()
 		tick = function()
 			return state.tick
 		end,
-		balanceHash = Progression.balanceHash,
+		balanceHash = "remake-db-1",
 		send = function(userId, channel, payload)
 			if forward then
 				forward(userId, channel, payload)
@@ -232,8 +176,8 @@ function Harness.startNetRig()
 			state.tick += 1
 			core.drain()
 			match.stepAll()
-			if state.tick % 2 == 0 then
-				core.publishSnapshots() -- 10 Hz full snapshots
+			if state.tick % 3 == 0 then
+				core.publishSnapshots() -- 10 Hz full snapshots at the 30 Hz tick
 			end
 		end)
 	end)

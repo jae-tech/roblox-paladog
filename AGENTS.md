@@ -35,15 +35,13 @@ Windows는 Python만 선행 설치하고 아래 `python3` 대신 `python`을 써
 python3 tools/setup_tools.py               # 호스트별 SHA 고정 도구 설치 (macOS의 rojo/selene/luau-lsp는 rokit)
 python3 tools/verify_p0.py --local-only    # 분석·lint·format·build·production 격리 (PASS 기대)
 python3 tools/verify_p1.py                 # 데이터 golden·재생성 diff0·T-ASSET
-.tools/luau-0.742/luau tests/cli_p2.luau   # P2 suite
-.tools/luau-0.742/luau tests/cli_p3.luau   # P3 suite
-.tools/luau-0.742/luau tests/cli_p4.luau   # P4 suite
-.tools/luau-0.742/luau tests/cli_p5.luau   # P5 입력/네트워크/뷰 suite
-python3 tools/verify_p2.py                 # Studio 증거 없으면 exit 2(BLOCKED)가 정상
-python3 tools/verify_p3.py                 # 동일
-python3 tools/verify_p4.py                 # 동일 (Studio 증거는 --studio-evidence)
-python3 tools/verify_p5.py                 # 실제 입력/장치/렌더/터치 증거 부족은 BLOCKED
-python3 tools/verify_p9.py --studio-evidence artifacts/P9/studio/p9-studio-evidence.json  # 전체 회귀+출시 감사+증거 묶음
+.tools/luau-0.742/luau tests/cli_r1.luau   # REMAKE 전투 코어
+.tools/luau-0.742/luau tests/cli_r2.luau   # REMAKE 모드·보스
+.tools/luau-0.742/luau tests/cli_r3.luau   # REMAKE 성장·서버 흐름·공격 매트릭스·생명주기
+.tools/luau-0.742/luau tests/cli_p2.luau   # 프로토콜 v2 허용목록·격리·세션·lease (P2 이식)
+.tools/luau-0.742/luau tests/cli_p8.luau   # 저장 어댑터·lease·장애 주입 (P8 이식)
+python3 tools/build_remake.py --check      # 원작 데이터·퀘스트 재생성 diff0
+python3 tools/release_audit.py             # production 출시 빌드 감사
 python3 -m unittest discover -s tools/tests
 .tools/stylua-2.6.0/stylua src tests test-support test-support-client   # 커밋 전 포맷
 ```

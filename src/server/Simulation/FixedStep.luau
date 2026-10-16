@@ -1,9 +1,9 @@
 --!strict
--- Heartbeat dt -> fixed 0.05s ticks (ARCHITECTURE §5). Due ticks are derived from total elapsed time (with a
+-- Heartbeat dt -> fixed 1/30 s ticks (remake: one original animation frame, docs/REMAKE_PLAN.md §2). Due ticks are derived from total elapsed time (with a
 -- small epsilon), so 60fps, 30fps and uneven frames covering the same time give the same tick count; per-frame
--- rounding would drift. At most 4 ticks per frame; backlog beyond 0.25s (5 ticks) is dropped and reported.
-local TICKS_PER_SECOND = 20
-local MAX_BACKLOG_TICKS = 5
+-- rounding would drift. At most 4 ticks per frame; backlog beyond ~0.27 s (8 ticks) is dropped and reported.
+local TICKS_PER_SECOND = 30
+local MAX_BACKLOG_TICKS = 8
 local MAX_STEPS_PER_FRAME = 4
 
 export type Driver = { elapsed: number, ticks: number, droppedTicks: number }
@@ -19,7 +19,7 @@ local function advance(driver: Driver, dt: number, stepFn: () -> ()): number
 		- driver.ticks
 		- driver.droppedTicks
 	if due > MAX_BACKLOG_TICKS then
-		driver.droppedTicks += due - MAX_BACKLOG_TICKS -- simDroppedSeconds = droppedTicks / 20
+		driver.droppedTicks += due - MAX_BACKLOG_TICKS -- simDroppedSeconds = droppedTicks / TICKS_PER_SECOND
 		due = MAX_BACKLOG_TICKS
 	end
 	local steps = math.min(due, MAX_STEPS_PER_FRAME)
@@ -39,4 +39,5 @@ return table.freeze({
 	advance = advance,
 	droppedSeconds = droppedSeconds,
 	MAX_STEPS_PER_FRAME = MAX_STEPS_PER_FRAME,
+	TICKS_PER_SECOND = TICKS_PER_SECOND,
 })

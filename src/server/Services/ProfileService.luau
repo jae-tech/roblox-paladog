@@ -5,8 +5,7 @@
 -- same busy flag, so a release never races an in-flight write.
 local ServerTypes = require("../ServerTypes")
 local Schema = require("./ProfileSchema")
-local Growth = require("./ProgressionService")
-local ResultReducer = require("../Simulation/ResultReducer")
+local Settlement = require("./Settlement")
 
 type ProfileV1 = ServerTypes.ProfileV1
 type Session = ServerTypes.Session
@@ -460,12 +459,13 @@ local function new(deps: Deps)
 		pump(userId, state)
 	end
 
+	-- Opens a run on the current slot; stage 0 is survival (R6). The stage must be unlocked (E04 §5).
 	local function startRun(
 		userId: number,
 		op: {
 			requestId: string,
 			expectedRevision: number,
-			stageId: string,
+			stage: number,
 			matchId: string,
 			balanceHash: string,
 		},
@@ -479,14 +479,19 @@ local function new(deps: Deps)
 			mutate = function(profile: ProfileV1): string?
 				if profile.activeRun then
 					return "Busy"
-				elseif not Schema.isUnlocked(profile, op.stageId) then
+				end
+				local slot = Schema.currentSlot(profile)
+				if not slot then
+					return "NoSlot"
+				elseif op.stage >= 1 and (slot.stars[op.stage] or -1) < 0 then
 					return "LockedStage"
 				end
 				profile.runCounter += 1
 				profile.activeRun = {
 					ordinal = profile.runCounter,
 					matchId = op.matchId,
-					stageId = op.stageId,
+					slot = profile.currentSlot,
+					stage = op.stage,
 					balanceHash = op.balanceHash,
 					startOperationId = op.requestId,
 				}
@@ -495,35 +500,23 @@ local function new(deps: Deps)
 		})
 	end
 
-	local function upgradeUnit(
+	-- Lobby transaction: `mutate` edits the stored copy and returns a rejection reason or nil.
+	local function transact(
 		userId: number,
-		op: { requestId: string, expectedRevision: number, unitId: string },
+		op: {
+			kind: string,
+			requestId: string,
+			expectedRevision: number,
+			mutate: (ProfileV1) -> string?,
+		},
 		done: Done
 	)
 		enqueue(userId, {
-			kind = "UpgradeUnit",
+			kind = op.kind,
 			requestId = op.requestId,
 			expectedRevision = op.expectedRevision,
 			done = done,
-			mutate = function(profile: ProfileV1): string?
-				return Growth.upgradeUnit(profile, op.unitId)
-			end,
-		})
-	end
-
-	local function allocatePoint(
-		userId: number,
-		op: { requestId: string, expectedRevision: number, traitId: string },
-		done: Done
-	)
-		enqueue(userId, {
-			kind = "AllocatePoint",
-			requestId = op.requestId,
-			expectedRevision = op.expectedRevision,
-			done = done,
-			mutate = function(profile: ProfileV1): string?
-				return Growth.allocatePoint(profile, op.traitId)
-			end,
+			mutate = op.mutate,
 		})
 	end
 
@@ -542,15 +535,15 @@ local function new(deps: Deps)
 			expectedRevision = profile.revision,
 			done = done,
 			mutate = function(current)
-				local reduced, reason = ResultReducer.reduce(current, fixed)
+				local reduced, reason = Settlement.reduce(current, fixed)
 				if not reduced then
 					return reason
 				end
-				current.gold, current.totalXp = reduced.gold, reduced.totalXp
-				current.heroLevel, current.unspentPoints = reduced.heroLevel, reduced.unspentPoints
-				current.stageProgress = reduced.stageProgress
-				current.lastClosedRunOrdinal = reduced.lastClosedRunOrdinal
-				current.lastRunResult, current.activeRun = reduced.lastRunResult, nil
+				local target = current :: any
+				for key, value in reduced :: any do
+					target[key] = value
+				end
+				current.activeRun = nil
 				return nil
 			end,
 		})
@@ -634,8 +627,7 @@ local function new(deps: Deps)
 		status = status,
 		profileOf = profileOf,
 		startRun = startRun,
-		upgradeUnit = upgradeUnit,
-		allocatePoint = allocatePoint,
+		transact = transact,
 		finishRun = finishRun,
 		poll = poll,
 		shutdown = shutdown,

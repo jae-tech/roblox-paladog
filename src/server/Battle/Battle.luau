@@ -1462,9 +1462,10 @@ local function stepHero(b: any)
 	end
 end
 
-local function startMace(b: any, num: number, grade: number)
+-- maceUses counts by weapon slot (quest types 16/17); destiny boxes count as slot 0.
+local function startMace(b: any, num: number, grade: number, slot: number)
 	b.activeMace = { num = num, grade = grade }
-	b.rewards.maceUses[num] = (b.rewards.maceUses[num] or 0) + 1
+	b.rewards.maceUses[slot] = (b.rewards.maceUses[slot] or 0) + 1
 	local h = hero(b)
 	h.dir = 1
 	enter(h, "Mace")
@@ -1491,7 +1492,7 @@ local function useMace(b: any, slot: number): string?
 		end
 		b.mana -= cost
 	end
-	startMace(b, item.num, grade)
+	startMace(b, item.num, grade, slot)
 	return nil
 end
 
@@ -1646,7 +1647,7 @@ local function openBox(b: any, index: number): string?
 		if not alive(h) or (h.state ~= "Idle" and h.state ~= "Move") then
 			return "Busy"
 		end
-		startMace(b, box.id, destinyLevel(b.stageNumber))
+		startMace(b, box.id, destinyLevel(b.stageNumber), 0)
 	end
 	b.boxes[index] = nil
 	return nil
@@ -1914,7 +1915,10 @@ local function runCommands(b: any, commands: { any }): { any }
 	for _, command in commands do
 		local reason: string?
 		local kind = command.kind
-		if kind == "PickSkill" then
+		if kind == "Retreat" then
+			b.reviveOffer = false
+			b.outcome = "Defeat" -- leaving from the pause menu keeps what was earned (Settlement)
+		elseif kind == "PickSkill" then
 			reason = pickSkill(b, command.choice)
 		elseif b.reviveOffer then
 			if kind == "Revive" then

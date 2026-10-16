@@ -1,5 +1,5 @@
 --!strict
--- Offline fault matrix only; prepared but not executed during the user's testing pause.
+-- Persistence fault matrix (DataStore adapter, lease, fence, reconciliation) on the remake v2 schema.
 return function(env: any, check: any)
 	local Schema, Adapter = env.Schema, env.Adapter
 	local function acquire(fake: any, adapter: any, id: string): any
@@ -117,7 +117,7 @@ return function(env: any, check: any)
 	cyclic.self = cyclic
 	check("cyclic-document-rejected", false, env.Validator.validate(cyclic), 0)
 	local oversized = Schema.newProfile()
-	oversized.extra = string.rep("x", 65536)
+	oversized.extra = string.rep("x", 262144)
 	check("oversized-document-rejected", false, env.Validator.validate(oversized), 0)
 
 	local function service(backend: any): any
@@ -136,34 +136,54 @@ return function(env: any, check: any)
 			log = function(_message: string) end,
 		})
 	end
+	local hash = "remake-db-1"
+	local function createSlot(profiles: any, expected: number)
+		profiles.transact(1, {
+			kind = "CreateSlot",
+			requestId = "p8-create-slot-op-" .. expected,
+			expectedRevision = expected,
+			mutate = function(doc: any)
+				return env.Economy.createSlot(doc, 1, "light", 1)
+			end,
+		}, function() end)
+	end
 	local economic = env.newBackend()
 	economic.repeats = 3
 	local profiles = service(economic)
 	profiles.load(1, function() end)
 	check("durable-load-ready", "Ready", profiles.status(1), 0)
+	createSlot(profiles, 0)
 	profiles.startRun(1, {
 		requestId = "p8-start-operation-01",
-		expectedRevision = 0,
-		stageId = "s01",
+		expectedRevision = 1,
+		stage = 1,
 		matchId = "run",
-		balanceHash = env.Catalog.balanceHash,
+		balanceHash = hash,
 	}, function() end)
 	local result = {
 		matchId = "run",
 		runOrdinal = 1,
-		stageId = "s01",
-		balanceHash = env.Catalog.balanceHash,
+		slot = 1,
+		stage = 1,
+		balanceHash = hash,
 		seed = 12345,
 		outcome = "Victory",
-		elapsedTicks = 100,
-		killCounts = {},
-		pendingKillGold = 0,
-		pendingKillXp = 0,
+		elapsedTicks = 30 * 120,
+		gold = 0,
+		goldSpent = 0,
+		exp = 0,
+		levelUps = 0,
+		picks = {},
+		drops = 0,
+		revives = 0,
+		killTotal = 0,
+		quests = { true, false, false },
 	}
+	local paid = 10000 + env.Db.quests[1][1].gold -- start gold + main quest (D-QUEST-01)
 	economic.failAfter = 1
 	profiles.finishRun(1, result, function() end)
-	check("response-lost-result-reconciled", 200, profiles.profileOf(1).gold, 0)
-	check("response-lost-revision-once", 2, profiles.profileOf(1).revision, 0)
+	check("response-lost-result-reconciled", paid, profiles.profileOf(1).slots[1].gold, 0)
+	check("response-lost-revision-once", 3, profiles.profileOf(1).revision, 0)
 	local stored = economic.raw("qa:u:1")
 	stored.recentOperations = {}
 	economic.setRaw("qa:u:1", stored)
@@ -172,14 +192,14 @@ return function(env: any, check: any)
 		reconciled = p ~= nil
 	end)
 	check("closed-result-with-evicted-receipt", true, reconciled, 0)
-	check("closed-result-not-paid-twice", 200, profiles.profileOf(1).gold, 0)
-	check("closed-result-wins-once", 1, profiles.profileOf(1).stageProgress.s01.wins, 0)
+	check("closed-result-not-paid-twice", paid, profiles.profileOf(1).slots[1].gold, 0)
+	check("closed-result-star-once", 1, profiles.profileOf(1).slots[1].stars[1], 0)
 	profiles.startRun(1, {
 		requestId = "p8-next-operation-001",
-		expectedRevision = 2,
-		stageId = "s01",
+		expectedRevision = 3,
+		stage = 1,
 		matchId = "run-2",
-		balanceHash = env.Catalog.balanceHash,
+		balanceHash = hash,
 	}, function() end)
 	local olderReason: string? = nil
 	profiles.finishRun(1, result, function(_p: any, reason: string?)
@@ -194,24 +214,26 @@ return function(env: any, check: any)
 	local leaving = env.newBackend()
 	local exiting = service(leaving)
 	exiting.load(1, function() end)
+	createSlot(exiting, 0)
 	leaving.afterCommit = function()
 		exiting.release(1)
 		exiting.shutdown()
 	end
 	exiting.startRun(1, {
 		requestId = "p8-leave-operation-01",
-		expectedRevision = 0,
-		stageId = "s01",
+		expectedRevision = 1,
+		stage = 1,
 		matchId = "orphan",
-		balanceHash = env.Catalog.balanceHash,
+		balanceHash = hash,
 	}, function() end)
 	check("leave-close-idempotent", true, exiting.isIdle(), 0)
 	check("leave-active-run-abandoned", "Abandoned", leaving.raw("qa:u:1").lastRunResult.outcome, 0)
-	check("leave-run-reward-zero", 0, leaving.raw("qa:u:1").gold, 0)
+	check("leave-run-reward-zero", 10000, leaving.raw("qa:u:1").slots[1].gold, 0)
 
 	local rejoining = env.newBackend()
 	local rejoined = service(rejoining)
 	rejoined.load(1, function() end)
+	createSlot(rejoined, 0)
 	local oldToken = token(rejoining.raw("qa:u:1"))
 	local joinedStatus: string? = nil
 	rejoining.afterCommit = function()
@@ -222,10 +244,10 @@ return function(env: any, check: any)
 	end
 	rejoined.startRun(1, {
 		requestId = "p8-rejoin-operation-1",
-		expectedRevision = 0,
-		stageId = "s01",
+		expectedRevision = 1,
+		stage = 1,
 		matchId = "interrupted",
-		balanceHash = env.Catalog.balanceHash,
+		balanceHash = hash,
 	}, function() end)
 	check("rapid-rejoin-waits-for-old-writer", "Ready", joinedStatus, 0)
 	check("rapid-rejoin-has-new-fence", 2, rejoining.raw("qa:u:1").fenceEpoch, 0)
@@ -248,11 +270,10 @@ return function(env: any, check: any)
 		newMatchId = function()
 			return "late-run"
 		end,
-		balanceHash = env.Catalog.balanceHash,
+		balanceHash = hash,
 		maxMatches = 4,
 		ackCacheSize = 128,
-		moveTtlTicks = 10,
-		stageFlow = true,
+		moveTtlTicks = 15,
 		send = function() end,
 	})
 	match.playerJoined(1)
@@ -265,24 +286,14 @@ return function(env: any, check: any)
 	check("late-renew-cannot-revive-profile", "Unavailable", stopped.status(1), 0)
 	check("lease-loss-stops-match-session", "Unavailable", match.phaseOf(1), 0)
 	local count = late.calls
-	stopped.allocatePoint(
-		1,
-		{ requestId = "stopped-operation-01", expectedRevision = 0, traitId = "focus" },
-		function() end
-	)
-	check("stopped-session-no-new-write", count, late.calls, 0)
-	local offline = env.ClientController.new({
-		protocol = env.Protocol,
-		catalog = env.Catalog,
-		send = function() end,
-		requestId = function()
-			return "client-operation-0001"
+	stopped.transact(1, {
+		kind = "SelectSlot",
+		requestId = "stopped-operation-01",
+		expectedRevision = 0,
+		mutate = function(doc: any)
+			return env.Economy.selectSlot(doc, 1)
 		end,
-	})
-	offline.finishBootstrap(
-		offline.beginBootstrap(0),
-		{ protocolVersion = 1, balanceHash = env.Catalog.balanceHash, status = "Unavailable" },
-		0
-	)
-	check("client-storage-loss-disables-play", "Unavailable", offline.model(0).phase, 0)
+	}, function() end)
+	check("stopped-session-no-new-write", count, late.calls, 0)
+	-- The client half (storage loss disables play) moves to the R4 client suite with the new controller.
 end

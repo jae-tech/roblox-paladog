@@ -15,7 +15,8 @@ return function(env: any, check: any)
 			difficulty = 1,
 			unitLevels = { 1, 1, 1, 1, 1, 1, 1, 1, 1 },
 		}
-		for k, v in over or {} do
+		local overrides: { [string]: any } = over or {}
+		for k, v in overrides do
 			l[k] = v
 		end
 		return l

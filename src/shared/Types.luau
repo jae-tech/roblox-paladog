@@ -1,5 +1,5 @@
 --!strict
--- Network DTO and session-phase contracts shared by server and client (DATA_MODELS §6, ARCHITECTURE §6-7).
+-- Network DTO and session-phase contracts shared by server and client (remake protocol v2).
 
 export type Phase =
 	"ProfileLoading"
@@ -13,18 +13,33 @@ export type Phase =
 export type CommandKind =
 	"StartStage"
 	| "Summon"
-	| "Cast"
-	| "UpgradeUnit"
-	| "AllocatePoint"
+	| "Mace"
+	| "Box"
+	| "PickSkill"
+	| "Revive"
+	| "GiveUp"
+	| "Retreat"
 	| "ReturnToLobby"
+	| "CreateSlot"
+	| "DeleteSlot"
+	| "SelectSlot"
+	| "UpgradeUnit"
+	| "LearnSkill"
+	| "ResetSkills"
+	| "BuyItem"
+	| "SellItem"
+	| "Equip"
+	| "Unequip"
+	| "Enchant"
+	| "GemShop"
 
--- DATA_MODELS §6 enum + InsufficientGold (UpgradeUnit needs it; the design enum has no gold reason).
 export type Reason =
 	"NotReady"
 	| "InvalidPayload"
 	| "ProtocolMismatch"
 	| "NotOwner"
 	| "WrongPhase"
+	| "WrongMode"
 	| "LockedStage"
 	| "StaleRevision"
 	| "StaleCommand"
@@ -32,12 +47,16 @@ export type Reason =
 	| "InsufficientFood"
 	| "InsufficientMana"
 	| "InsufficientGold"
+	| "InsufficientGems"
 	| "Cooldown"
 	| "Busy"
 	| "UnitCap"
-	| "ProjectileCap"
 	| "MaxLevel"
 	| "NoPoints"
+	| "NoSlot"
+	| "SlotTaken"
+	| "Locked"
+	| "InventoryFull"
 	| "StorageUnavailable"
 	| "SessionLost"
 
@@ -50,11 +69,20 @@ export type ClientCommand = {
 	kind: CommandKind,
 	matchId: string?,
 	commandSeq: number?,
-	slot: number?,
-	stageId: string?,
-	unitId: string?,
-	traitId: string?,
 	expectedRevision: number?,
+	stage: number?,
+	unit: number?,
+	lane: number?,
+	slot: number?,
+	index: number?,
+	choice: number?,
+	skill: number?,
+	heroKind: string?,
+	difficulty: number?,
+	category: number?,
+	num: number?,
+	where: string?,
+	item: number?,
 }
 
 export type MoveIntent = {
@@ -64,6 +92,8 @@ export type MoveIntent = {
 	axis: number,
 }
 
+export type ProfileSummary = { [string]: any }
+
 export type ServerMessage = {
 	requestId: string,
 	status: MessageStatus,
@@ -72,93 +102,6 @@ export type ServerMessage = {
 	profileRevision: number?,
 	matchId: string?,
 	profileSummary: ProfileSummary?,
-}
-
-export type StageProgress = { wins: number, bestTicks: number? }
-
-export type ProfileSummary = {
-	gold: number,
-	totalXp: number,
-	heroLevel: number,
-	unspentPoints: number,
-	heroTraits: { vitality: number, provisions: number, focus: number },
-	unitLevels: { vanguard: number, slinger: number, bulwark: number },
-	stageProgress: { [string]: StageProgress },
-	unlockedStages: { [string]: boolean }?,
-	unitUpgradeCosts: { [string]: number }?,
-	nextLevelXp: number?,
-	lastRunResult: {
-		ordinal: number,
-		matchId: string,
-		outcome: string,
-		awardedGold: number,
-		awardedXp: number,
-	}?,
-}
-
--- Complete owner-facing simulation snapshot. Projectile damage/reservations stay server-only.
-export type MatchSnapshot = {
-	matchId: string,
-	snapshotSeq: number,
-	tick: number,
-	phase: Phase,
-	stageId: string,
-	balanceHash: string,
-	inputAckSeq: number,
-	commandAckSeq: number,
-	stageLength: number?,
-	advanceLimitX: number?,
-	heroMoveSpeed: number?,
-	pendingKillGold: number,
-	pendingKillXp: number,
-	resources: {
-		foodMilli: number,
-		manaMilli: number,
-		foodMaxMilli: number,
-		manaMaxMilli: number,
-		summonReadyTick: { number },
-		skillReadyTick: number,
-	}?,
-	heroAction: { skillId: string?, releaseTick: number?, endTick: number? },
-	entities: { any },
-	projectiles: { any },
-	outcome: string?,
-	result: {
-		matchId: string,
-		runOrdinal: number,
-		stageId: string,
-		balanceHash: string,
-		seed: number,
-		outcome: string,
-		elapsedTicks: number,
-		killCounts: { [string]: number },
-		pendingKillGold: number,
-		pendingKillXp: number,
-	}?,
-	settlementStatus: ("Pending" | "Committed" | "Failed")?,
-	profileRevision: number?,
-	profileSummary: ProfileSummary?,
-	rewards: { gold: number, xp: number }?,
-}
-
-export type BootstrapStatus =
-	"Loading"
-	| "Ready"
-	| "Unavailable"
-	| "RateLimited"
-	| "ProtocolMismatch"
-
-export type BootstrapResult = {
-	protocolVersion: number,
-	status: BootstrapStatus,
-	retryAfterSeconds: number?,
-	storage: string,
-	balanceHash: string,
-	publicCatalog: { [string]: any }?,
-	phase: Phase?,
-	profileRevision: number?,
-	profileSummary: ProfileSummary?,
-	currentMatch: MatchSnapshot?,
 }
 
 return {}

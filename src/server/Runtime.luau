@@ -18,7 +18,8 @@ local function start(): any
 		return active
 	end
 	local protocol = require(ReplicatedStorage.Shared.Protocol)
-	local catalog = require(ReplicatedStorage.Shared.PublicCatalog)
+	local catalog = require(ReplicatedStorage.Shared.RemakeCatalog)
+	local balanceHash = "remake-db-1"
 	local tick = 0
 	local stopping = false
 	local forward: ((number, string, any) -> ())? = nil
@@ -52,25 +53,24 @@ local function start(): any
 		newSeed = function()
 			return math.max(1, tonumber(string.sub(HttpService:GenerateGUID(false), 1, 8), 16) or 1)
 		end,
-		balanceHash = catalog.balanceHash,
+		balanceHash = balanceHash,
 		send = function(userId, message)
 			send(userId, "ServerMessage", message)
 		end,
 		maxMatches = protocol.LIMITS.maxMatches,
 		ackCacheSize = protocol.LIMITS.ackCacheSize,
 		moveTtlTicks = protocol.LIMITS.moveTtlTicks,
-		stageFlow = true,
 	})
 	local core = RemoteGateway.newCore({
 		protocol = protocol,
-		publicCatalog = catalog,
+		publicCatalog = { version = balanceHash, size = #catalog.stages },
 		profiles = profiles,
 		match = match,
 		clock = os.clock,
 		tick = function()
 			return tick
 		end,
-		balanceHash = catalog.balanceHash,
+		balanceHash = balanceHash,
 		send = send,
 	})
 	local _, sender = RemoteBinding.bind(core, ReplicatedStorage, Players)
@@ -85,7 +85,7 @@ local function start(): any
 			tick += 1
 			core.drain()
 			match.stepAll()
-			if tick % 2 == 0 then
+			if tick % 3 == 0 then -- 10 Hz owner snapshots at the 30 Hz battle tick
 				core.publishSnapshots()
 			end
 		end)

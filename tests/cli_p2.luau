@@ -4,7 +4,8 @@ local Runner = require("./Runner")
 local suite = require("./unit/P2")
 local env = {
 	Protocol = require("../src/shared/Protocol"),
-	Catalog = require("../src/shared/PublicCatalog"),
+	Catalog = { version = "remake-db-1" },
+	Economy = require("../src/server/Services/Economy"),
 	RemoteGateway = require("../src/server/Net/RemoteGateway"),
 	MatchService = require("../src/server/Services/MatchService"),
 	ProfileService = require("../src/server/Services/ProfileService"),

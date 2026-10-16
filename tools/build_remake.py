@@ -244,6 +244,86 @@ def strip(value):
     return value
 
 
+def spread(total, count, first):
+    """count amounts rising linearly from `first`, rounded to 10, summing exactly to `total`."""
+    span = count * (count - 1) // 2
+    slope = (total - count * first) / span if span else 0
+    amounts = [int(round((first + slope * i) / 10)) * 10 for i in range(count)]
+    amounts[-1] += total - sum(amounts)
+    return amounts
+
+
+QUEST_MODES = {0: "Boss", 3: "Destiny", 6: "Wagon", 9: "Tower"}
+
+
+def quests(db, design):
+    """D-QUEST-01/02: three quests per light-hero stage. quest.xml is not in the research docs, so the
+    shapes follow E05 B10 (17 types, totals, item stages) and the 1-1 example (main 300, sub1 5:20, sub2 400)."""
+    rules = design["questRules"]
+    totals = rules["rewardTotals"]
+    item_stages = set(rules["itemStages"])
+    main_gold = spread(totals["main"], 120, 300)
+    sub1_gold = spread(totals["sub1"], 120, 200)
+    gold_stages = [s for s in range(1, 121) if (s - 1) % 24 + 1 not in item_stages]
+    sub2_gold = dict(zip(gold_stages, spread(totals["sub2"], len(gold_stages), 400)))
+    cycle = rules["sub2Cycle"]
+    out, item_index = [], 0
+    for s in range(1, 121):
+        row = db["campaign"][s - 1]
+        chapter = (s - 1) // 24 + 1
+        mode = QUEST_MODES.get(s % 12, "Normal")
+        main = {"Normal": {"type": 1}, "Boss": {"type": 9, "a": s // 12}, "Destiny": {"type": 3},
+                "Wagon": {"type": 5}, "Tower": {"type": 7}}[mode]
+        limit = int((row["clearSec"] + 120) // 10 * 10)  # 1-1: 203 + 120 -> 5:20 (D-QUEST-02)
+        sub1 = {"type": 10, "a": limit // 60, "b": limit % 60}
+        if mode == "Tower":
+            sub2 = {"type": 8, "a": 5}
+        elif mode == "Wagon":
+            sub2 = {"type": 6, "a": 50}
+        elif mode == "Destiny":
+            sub2 = {"type": 4, "a": 3}
+        else:
+            kind = cycle[(s - 1) % len(cycle)]
+            sub2 = {"type": kind}
+            if kind == 14:
+                sub2.update(a=1 + (chapter - 1) * 2, b=10)
+            elif kind == 2:
+                sub2.update(a=50)
+            elif kind == 11:
+                sub2.update(a=100 * (1 + (s - 1) // 6))
+            elif kind == 12:
+                sub2.update(a=3 + (chapter - 1) * 2)
+            elif kind == 15:
+                sub2.update(a=5)
+            elif kind == 17:
+                sub2.update(a=1, b=3)
+            elif kind in (13, 16):
+                sub2.update(a=1)
+            elif kind == 8:
+                sub2.update(a=5)
+        main["gold"], sub1["gold"] = main_gold[s - 1], sub1_gold[s - 1]
+        if (s - 1) % 24 + 1 in item_stages:
+            local = (s - 1) % 24 + 1
+            sub2["gold"] = 0
+            sub2["item"] = {"category": "mace" if item_index % 2 == 0 else "ring",
+                            "num": (item_index // 2) % 10 + 1,
+                            "grade": chapter * 2 - 1 + (1 if local >= 15 else 0)}
+            item_index += 1
+        else:
+            sub2["gold"] = sub2_gold[s]
+        for quest in (main, sub1, sub2):  # one key set so Luau infers a single quest type
+            quest.setdefault("a", 0)
+            quest.setdefault("b", 0)
+            quest.setdefault("item", {"category": "", "num": 0, "grade": 0})
+        out.append([main, sub1, sub2])
+    if item_index != 30:
+        raise DataError(f"quest items: {item_index} != 30")
+    sums = [sum(q[i]["gold"] for q in out) for i in range(3)]
+    if sums != [totals["main"], totals["sub1"], totals["sub2"]]:
+        raise DataError(f"quest totals {sums}")
+    return out
+
+
 def catalog(db, design):
     names = design["names"]
     if len(names["units"]) != 9 or len(names["enemies"]) != 20 or len(names["bosses"]) != 10:
@@ -271,7 +351,7 @@ def catalog(db, design):
         "gearNames": {k: names[k] for k in ("rings", "amulets", "helmets", "armors", "horses", "darkHelmets",
                                             "darkArmors", "darkFeet")},
         "skillNames": {"light": names["lightSkills"], "shadow": names["shadowSkills"]},
-        "stages": [stage_meta(i) for i in range(120)],
+        "stages": [dict(stage_meta(i), quests=q) for i, q in enumerate(quests(db, design))],
     }
 
 
@@ -290,7 +370,8 @@ def outputs(sources, design):
     golden(db)
     return {
         OUT_JSON: json.dumps(to_json(db), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        OUT_SERVER: luau("Remake game data (research appendix A1-A14, research names stripped).", strip(db)),
+        OUT_SERVER: luau("Remake game data (research appendix A1-A14, research names stripped).",
+                         strip(dict(db, quests=quests(db, design)))),
         OUT_CATALOG: luau("Remake public catalog: original names, costs, prices, stage list.",
                           strip(catalog(db, design))),
     }

@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import verify_p9 as gate  # noqa: E402
+import release_audit as gate  # noqa: E402
 
 MANIFEST = json.loads((gate.ROOT / "data/assets/asset-manifest.json").read_text(encoding="utf-8"))
 BALANCE = json.loads((gate.ROOT / "data/balance/mvp-proto-001.json").read_text(encoding="utf-8"))

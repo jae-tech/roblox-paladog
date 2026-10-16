@@ -134,7 +134,7 @@ local function newCore(deps: Deps)
 			elseif status == "Loading" then "Loading"
 			else "Unavailable"
 		result.phase = deps.match.phaseOf(userId)
-		result.publicCatalog = deps.publicCatalog
+		result.catalogVersion = deps.publicCatalog.version -- the client requires the shared catalog itself
 		if profile then
 			result.profileRevision = profile.revision
 			result.profileSummary = ProfileSchema.summary(profile)

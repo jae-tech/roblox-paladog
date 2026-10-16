@@ -1,5 +1,5 @@
 --!strict
--- P2 suite: protocol allowlist (T-SEC-01/02/03/04), owner isolation (T-ISOLATION core), profile store contract.
+-- P2 suite on the remake protocol v2: allowlist (T-SEC-01/02/03/04), owner isolation, profile store contract.
 -- Modules are injected so the same suite runs in the Luau CLI and in Studio.
 type Check = (string, unknown, unknown, number) -> ()
 
@@ -32,12 +32,13 @@ return function(env: any, check: Check)
 	-- ---------------------------------------------------------------- protocol allowlist
 	local function summon(extra: { [string]: any }?): { [string]: any }
 		local payload: { [string]: any } = {
-			protocolVersion = 1,
+			protocolVersion = Protocol.VERSION,
 			requestId = REQ .. "1",
 			kind = "Summon",
 			matchId = "m1",
 			commandSeq = 1,
-			slot = 2,
+			unit = 2,
+			lane = 0,
 		}
 		if extra then
 			for key, value in extra do
@@ -62,17 +63,17 @@ return function(env: any, check: Check)
 		)
 	end
 	local bad: { [string]: any } = {
-		["nan-slot"] = { slot = 0 / 0 },
+		["nan-unit"] = { unit = 0 / 0 },
 		["inf-seq"] = { commandSeq = math.huge },
 		["negative-seq"] = { commandSeq = -1 },
-		["fractional-slot"] = { slot = 1.5 },
-		["slot-out-of-range"] = { slot = 4 },
+		["fractional-unit"] = { unit = 1.5 },
+		["unit-out-of-range"] = { unit = 10 },
 		["long-request-id"] = { requestId = string.rep("a", 65) },
 		["short-request-id"] = { requestId = "short" },
 		["non-ascii-request-id"] = { requestId = REQ .. "한" },
 		["nested-table"] = { matchId = { "m1" } },
-		["boolean-value"] = { slot = true },
-		["string-number"] = { slot = "2" },
+		["boolean-value"] = { unit = true },
+		["string-number"] = { unit = "2" },
 		["unknown-kind"] = { kind = "GrantReward" },
 	}
 	for name, extra in bad do
@@ -88,52 +89,68 @@ return function(env: any, check: Check)
 	check(
 		"protocol-version-mismatch",
 		"ProtocolMismatch",
-		reasonOf(summon({ protocolVersion = 2 })),
+		reasonOf(summon({ protocolVersion = Protocol.VERSION + 1 })),
 		0
 	)
 	check(
 		"protocol-version-string",
 		"InvalidPayload",
-		reasonOf(summon({ protocolVersion = "1" })),
+		reasonOf(summon({ protocolVersion = tostring(Protocol.VERSION) })),
 		0
 	)
 	check(
-		"protocol-cast-slot-1-only",
+		"protocol-mace-slot-range",
 		"InvalidPayload",
-		reasonOf(summon({ kind = "Cast", slot = 2 })),
+		reasonOf(summon({ kind = "Mace", slot = 4 })),
 		0
 	)
 	local start = {
-		protocolVersion = 1,
+		protocolVersion = Protocol.VERSION,
 		requestId = REQ .. "s",
 		kind = "StartStage",
-		stageId = "s09",
+		stage = 121,
 		expectedRevision = 0,
 	}
 	check("protocol-unknown-stage", "InvalidPayload", reasonOf(start), 0)
-	check(
-		"protocol-move-valid",
-		true,
-		Protocol.validateMove({ protocolVersion = 1, matchId = "m1", seq = 1, axis = -1 }) ~= nil,
-		0
-	)
+	check("protocol-move-valid", true, Protocol.validateMove({
+		protocolVersion = Protocol.VERSION,
+		matchId = "m1",
+		seq = 1,
+		axis = -1,
+	}) ~= nil, 0)
 	check(
 		"protocol-move-fractional-axis",
 		nil,
-		Protocol.validateMove({ protocolVersion = 1, matchId = "m1", seq = 1, axis = 0.5 }),
+		Protocol.validateMove({
+			protocolVersion = Protocol.VERSION,
+			matchId = "m1",
+			seq = 1,
+			axis = 0.5,
+		}),
 		0
 	)
 	check(
 		"protocol-move-extra-field",
 		nil,
-		Protocol.validateMove({ protocolVersion = 1, matchId = "m1", seq = 1, axis = 1, x = 5 }),
+		Protocol.validateMove({
+			protocolVersion = Protocol.VERSION,
+			matchId = "m1",
+			seq = 1,
+			axis = 1,
+			x = 5,
+		}),
 		0
 	)
-	check("protocol-bootstrap-valid", nil, Protocol.validateBootstrap({ protocolVersion = 1 }), 0)
+	check(
+		"protocol-bootstrap-valid",
+		nil,
+		Protocol.validateBootstrap({ protocolVersion = Protocol.VERSION }),
+		0
+	)
 	check(
 		"protocol-bootstrap-extra",
 		"InvalidPayload",
-		Protocol.validateBootstrap({ protocolVersion = 1, a = 1 }),
+		Protocol.validateBootstrap({ protocolVersion = Protocol.VERSION, a = 1 }),
 		0
 	)
 	check(
@@ -226,13 +243,24 @@ return function(env: any, check: Check)
 			end
 			return nil
 		end
-		function w.start(userId: number, stageId: string, id: string, revision: number?)
+		-- A save slot must exist before any stage starts (D-SLOT-01); server-side so revisions stay explicit.
+		function w.slot(userId: number)
+			w.profiles.transact(userId, {
+				kind = "CreateSlot",
+				requestId = REQ .. "slot" .. userId,
+				expectedRevision = w.profiles.profileOf(userId).revision,
+				mutate = function(doc: any)
+					return env.Economy.createSlot(doc, 1, "light", 1)
+				end,
+			}, function() end)
+		end
+		function w.start(userId: number, stage: number, id: string, revision: number?)
 			w.command(userId, {
-				protocolVersion = 1,
+				protocolVersion = Protocol.VERSION,
 				requestId = REQ .. id,
 				kind = "StartStage",
-				stageId = stageId,
-				expectedRevision = revision or 0,
+				stage = stage,
+				expectedRevision = revision or 1,
 			})
 			return w.last(userId)
 		end
@@ -245,14 +273,19 @@ return function(env: any, check: Check)
 			slot: number?
 		)
 			w.now += 0.2 -- stay inside the discrete token budget
-			w.command(userId, {
-				protocolVersion = 1,
+			local payload: { [string]: any } = {
+				protocolVersion = Protocol.VERSION,
 				requestId = REQ .. id,
 				kind = kind,
 				matchId = matchId,
 				commandSeq = seq,
-				slot = slot or 1,
-			})
+				unit = if kind == "Summon" then slot or 1 else 0,
+				lane = 0,
+			}
+			if kind == "Mace" then
+				payload.slot = slot or 1
+			end
+			w.command(userId, payload)
 			return w.last(userId)
 		end
 		return w
@@ -262,12 +295,13 @@ return function(env: any, check: Check)
 	local w = world()
 	w.gateway.playerAdded(1)
 	check("profile-new-lobby", "LobbyReady", w.match.phaseOf(1), 0)
+	w.slot(1)
 	local thread = coroutine.create(w.gateway.getBootstrap)
-	local resumed, boot = coroutine.resume(thread, 1, { protocolVersion = 1 })
+	local resumed, boot = coroutine.resume(thread, 1, { protocolVersion = Protocol.VERSION })
 	check("bootstrap-no-yield", "dead", coroutine.status(thread), 0)
 	check("bootstrap-ready", "Ready", resumed and boot.status, 0)
 	check("bootstrap-mock-storage-shown", "Mock/InMemory", boot.storage, 0)
-	check("bootstrap-summary-gold", 0, boot.profileSummary.gold, 0)
+	check("bootstrap-summary-slot-gold", 10000, boot.profileSummary.slots[1].gold, 0)
 	local bootKeys = {}
 	for key in boot do
 		table.insert(bootKeys, key)
@@ -275,7 +309,7 @@ return function(env: any, check: Check)
 	table.sort(bootKeys)
 	check(
 		"bootstrap-exact-keys",
-		"balanceHash,phase,profileRevision,profileSummary,protocolVersion,publicCatalog,status,storage",
+		"balanceHash,catalogVersion,phase,profileRevision,profileSummary,protocolVersion,status,storage",
 		table.concat(bootKeys, ","),
 		0
 	)
@@ -286,38 +320,38 @@ return function(env: any, check: Check)
 	table.sort(summaryKeys)
 	check(
 		"bootstrap-summary-exact-keys",
-		"gold,heroLevel,heroTraits,nextLevelXp,stageProgress,totalXp,unitLevels,unitUpgradeCosts,unlockedStages,unspentPoints", -- P7 lobby DTO (owner-only, derived)
+		"achievements,currentSlot,darkUnlocked,gems,ringSlotUnlocked,slots", -- v2 lobby DTO (owner-only)
 		table.concat(summaryKeys, ","),
 		0
 	)
-	w.gateway.getBootstrap(1, { protocolVersion = 1 })
-	local limited = w.gateway.getBootstrap(1, { protocolVersion = 1 })
+	w.gateway.getBootstrap(1, { protocolVersion = Protocol.VERSION })
+	local limited = w.gateway.getBootstrap(1, { protocolVersion = Protocol.VERSION })
 	check("bootstrap-rate-limited", "RateLimited", limited.status, 0)
 	check("bootstrap-retry-after", true, limited.retryAfterSeconds > 0, 0)
 	w.now += 2
 	check(
 		"bootstrap-protocol-mismatch",
 		"ProtocolMismatch",
-		w.gateway.getBootstrap(1, { protocolVersion = 9 }).status,
+		w.gateway.getBootstrap(1, { protocolVersion = 99 }).status,
 		0
 	)
 
 	-- ---------------------------------------------------------------- start / phase rules
-	check("start-locked-stage", "LockedStage", w.start(1, "s02", "a1").reason, 0)
-	check("start-stale-revision", "StaleRevision", w.start(1, "s01", "a2", 7).reason, 0)
-	local started = w.start(1, "s01", "a3")
+	check("start-locked-stage", "LockedStage", w.start(1, 2, "a1").reason, 0)
+	check("start-stale-revision", "StaleRevision", w.start(1, 1, "a2", 7).reason, 0)
+	local started = w.start(1, 1, "a3")
 	check("start-committed", "Committed", started.status, 0)
 	check("start-running", "Running", w.match.phaseOf(1), 0)
 	local matchA = started.matchId
 	local profileA = w.profiles.profileOf(1)
 	check("start-active-run", matchA, profileA.activeRun.matchId, 0)
-	check("start-revision", 1, profileA.revision, 0)
-	check("start-again-wrong-phase", "WrongPhase", w.start(1, "s01", "a4", 1).reason, 0)
+	check("start-revision", 2, profileA.revision, 0)
+	check("start-again-wrong-phase", "WrongPhase", w.start(1, 1, "a4", 2).reason, 0)
 	local replayed
 	w.profiles.startRun(1, {
 		requestId = REQ .. "a3",
-		expectedRevision = 0,
-		stageId = "s01",
+		expectedRevision = 1,
+		stage = 1,
 		matchId = "other",
 		balanceHash = "hash",
 	}, function(profile)
@@ -331,7 +365,7 @@ return function(env: any, check: Check)
 	local duplicate = w.battle(1, "Summon", matchA, 1, "b1")
 	check("summon-duplicate-same-ack", "Pending", duplicate.status, 0)
 	check("tsec04-old-seq", "StaleCommand", w.battle(1, "Summon", matchA, 1, "b2").reason, 0)
-	check("cast-pending", "Pending", w.battle(1, "Cast", matchA, 2, "b3").status, 0)
+	check("mace-pending", "Pending", w.battle(1, "Mace", matchA, 2, "b3").status, 0)
 	check(
 		"tsec04-unknown-match",
 		"WrongPhase",
@@ -342,7 +376,8 @@ return function(env: any, check: Check)
 
 	-- ---------------------------------------------------------------- isolation (two owners)
 	w.gateway.playerAdded(2)
-	local matchB = w.start(2, "s01", "c1").matchId
+	w.slot(2)
+	local matchB = w.start(2, 1, "c1").matchId
 	check("isolation-distinct-matches", true, matchB ~= nil and matchB ~= matchA, 0)
 	local sentBefore = #w.sent
 	check(
@@ -361,7 +396,10 @@ return function(env: any, check: Check)
 	check(
 		"isolation-foreign-move-ignored",
 		false,
-		w.gateway.moveIntent(1, { protocolVersion = 1, matchId = matchB, seq = 1, axis = 1 }),
+		w.gateway.moveIntent(
+			1,
+			{ protocolVersion = Protocol.VERSION, matchId = matchB, seq = 1, axis = 1 }
+		),
 		0
 	)
 	w.gateway.publishSnapshots()
@@ -376,20 +414,26 @@ return function(env: any, check: Check)
 		end
 	end
 	check("isolation-snapshot-owner-only", false, foreignSnapshot, 0)
-	check("isolation-profiles-separate", 1, w.profiles.profileOf(2).revision, 0)
+	check("isolation-profiles-separate", 2, w.profiles.profileOf(2).revision, 0)
 
 	-- ---------------------------------------------------------------- movement
 	w.now += 1
 	check(
 		"move-accepted",
 		true,
-		w.gateway.moveIntent(1, { protocolVersion = 1, matchId = matchA, seq = 1, axis = 1 }),
+		w.gateway.moveIntent(
+			1,
+			{ protocolVersion = Protocol.VERSION, matchId = matchA, seq = 1, axis = 1 }
+		),
 		0
 	)
 	check(
 		"move-stale-seq",
 		false,
-		w.gateway.moveIntent(1, { protocolVersion = 1, matchId = matchA, seq = 1, axis = -1 }),
+		w.gateway.moveIntent(
+			1,
+			{ protocolVersion = Protocol.VERSION, matchId = matchA, seq = 1, axis = -1 }
+		),
 		0
 	)
 	check("move-axis", 1, w.match.effectiveAxis(1), 0)
@@ -426,7 +470,8 @@ return function(env: any, check: Check)
 	-- queue capacity: refill tokens between sends but never drain
 	local q = world()
 	q.gateway.playerAdded(7)
-	local qMatch = q.start(7, "s01", "q0").matchId
+	q.slot(7)
+	local qMatch = q.start(7, 1, "q0").matchId
 	for index = 1, 40 do
 		q.now += 0.2
 		q.gateway.clientCommand(
@@ -442,22 +487,33 @@ return function(env: any, check: Check)
 	local cap = world()
 	for userId = 11, 15 do
 		cap.gateway.playerAdded(userId)
+		cap.slot(userId)
 	end
 	for userId = 11, 14 do
-		cap.start(userId, "s01", "cap" .. userId)
+		cap.start(userId, 1, "cap" .. userId)
 	end
-	check("match-cap-4", "Busy", cap.start(15, "s01", "cap15").reason, 0)
+	check("match-cap-4", "Busy", cap.start(15, 1, "cap15").reason, 0)
 
 	-- ---------------------------------------------------------------- growth transactions
-	local g = world()
+	local function seededDoc(gold: number, mouseLevel: number?): any
+		local doc = env.ProfileSchema.newProfile()
+		local slot = env.ProfileSchema.newSlot("light", 1)
+		slot.gold = gold
+		slot.units[1] = mouseLevel or 1
+		doc.slots[1], doc.currentSlot = slot, 1
+		return doc
+	end
+	local poorStore = env.newStore()
+	poorStore.setRaw(3, seededDoc(100))
+	local g = world({ store = poorStore })
 	g.gateway.playerAdded(3)
 	local function upgrade(id: string, revision: number)
 		g.now += 0.2
 		g.command(3, {
-			protocolVersion = 1,
+			protocolVersion = Protocol.VERSION,
 			requestId = REQ .. id,
 			kind = "UpgradeUnit",
-			unitId = "vanguard",
+			unit = 1,
 			expectedRevision = revision,
 		})
 		return g.last(3)
@@ -465,63 +521,60 @@ return function(env: any, check: Check)
 	check("upgrade-insufficient-gold", "InsufficientGold", upgrade("u1", 0).reason, 0)
 	g.now += 0.2
 	g.command(3, {
-		protocolVersion = 1,
+		protocolVersion = Protocol.VERSION,
 		requestId = REQ .. "p1",
-		kind = "AllocatePoint",
-		traitId = "focus",
+		kind = "LearnSkill",
+		skill = 4,
 		expectedRevision = 0,
 	})
-	check("allocate-no-points", "NoPoints", g.last(3).reason, 0)
+	check("learn-no-points", "NoPoints", g.last(3).reason, 0)
 
 	local rich = env.newStore()
-	local seeded = env.ProfileSchema.newProfile()
-	seeded.gold = 25
-	rich.setRaw(4, seeded)
+	rich.setRaw(4, seededDoc(250))
 	local r = world({ store = rich })
 	r.gateway.playerAdded(4)
 	r.store.inject("updateAfter") -- commit succeeds, response is lost
 	r.now += 0.2
 	local upgradeCommand = {
-		protocolVersion = 1,
+		protocolVersion = Protocol.VERSION,
 		requestId = REQ .. "v1",
 		kind = "UpgradeUnit",
-		unitId = "vanguard",
+		unit = 1,
 		expectedRevision = 0,
 	}
 	r.command(4, upgradeCommand)
 	check("upgrade-lost-response-not-committed", "StorageUnavailable", r.last(4).reason, 0)
-	check("upgrade-lost-response-store-spent", 0, r.store.raw(4).gold, 0)
+	check("upgrade-lost-response-store-spent", 0, r.store.raw(4).slots[1].gold, 0)
 	r.now += 0.2
 	r.command(4, upgradeCommand)
 	check("upgrade-retry-committed", "Committed", r.last(4).status, 0)
-	check("upgrade-retry-no-double-spend", 0, r.profiles.profileOf(4).gold, 0)
-	check("upgrade-level-2", 2, r.profiles.profileOf(4).unitLevels.vanguard, 0)
+	check("upgrade-retry-no-double-spend", 0, r.profiles.profileOf(4).slots[1].gold, 0)
+	check("upgrade-level-2", 2, r.profiles.profileOf(4).slots[1].units[1], 0)
 	check("upgrade-receipt-once", 1, #r.profiles.profileOf(4).recentOperations, 0)
 
 	local capped = env.newStore()
-	local wealthy = env.ProfileSchema.newProfile()
-	wealthy.gold = 1000
-	capped.setRaw(5, wealthy)
+	capped.setRaw(5, seededDoc(10 ^ 6, 16))
 	local c = world({ store = capped, receiptCap = 3 })
 	c.gateway.playerAdded(5)
 	for index = 0, 3 do
 		c.now += 0.2
 		c.command(5, {
-			protocolVersion = 1,
+			protocolVersion = Protocol.VERSION,
 			requestId = REQ .. "w" .. index,
 			kind = "UpgradeUnit",
-			unitId = "vanguard",
+			unit = 1,
 			expectedRevision = index,
 		})
 	end
-	check("upgrade-to-max", 5, c.profiles.profileOf(5).unitLevels.vanguard, 0)
+	check("upgrade-to-max", 20, c.profiles.profileOf(5).slots[1].units[1], 0)
+	check("upgrade-costs-from-table", 10 ^ 6 - 27000, c.profiles.profileOf(5).slots[1].gold, 0) -- 6000+6500+7000+7500
 	check("receipts-capped", 3, #c.profiles.profileOf(5).recentOperations, 0)
 	c.now += 0.2
 	c.command(5, {
-		protocolVersion = 1,
+		protocolVersion = Protocol.VERSION,
 		requestId = REQ .. "w9",
 		kind = "UpgradeUnit",
-		unitId = "vanguard",
+		unit = 1,
 		expectedRevision = 4,
 	})
 	check("upgrade-max-level", "MaxLevel", c.last(5).reason, 0)
@@ -536,13 +589,13 @@ return function(env: any, check: Check)
 	check(
 		"load-error-bootstrap",
 		"Unavailable",
-		f.gateway.getBootstrap(6, { protocolVersion = 1 }).status,
+		f.gateway.getBootstrap(6, { protocolVersion = Protocol.VERSION }).status,
 		0
 	)
 
 	local corrupt = env.newStore()
 	local broken = env.ProfileSchema.newProfile()
-	broken.gold = -5
+	broken.gems = -5
 	corrupt.setRaw(8, broken)
 	local k = world({ store = corrupt })
 	k.gateway.playerAdded(8)
@@ -551,7 +604,7 @@ return function(env: any, check: Check)
 
 	local future = env.newStore()
 	local newer = env.ProfileSchema.newProfile()
-	newer.schemaVersion = 2
+	newer.schemaVersion = env.ProfileSchema.SCHEMA_VERSION + 1
 	future.setRaw(9, newer)
 	local fw = world({ store = future })
 	fw.gateway.playerAdded(9)
@@ -572,10 +625,10 @@ return function(env: any, check: Check)
 	check("lease-epoch-increments", 2, shared.raw(20).fenceEpoch, 0)
 	first.now += 0.2
 	first.command(20, {
-		protocolVersion = 1,
+		protocolVersion = Protocol.VERSION,
 		requestId = REQ .. "z1",
-		kind = "AllocatePoint",
-		traitId = "focus",
+		kind = "LearnSkill",
+		skill = 1,
 		expectedRevision = 0,
 	})
 	check("lease-stale-writer-rejected", "SessionLost", first.last(20).reason, 0)
@@ -586,7 +639,8 @@ return function(env: any, check: Check)
 	-- ack semantics: cached requestId with another seq, eviction then replay, cache reset per match
 	local a = world()
 	a.gateway.playerAdded(30)
-	local mA = a.start(30, "s01", "ack0").matchId
+	a.slot(30)
+	local mA = a.start(30, 1, "ack0").matchId
 	a.battle(30, "Summon", mA, 1, "ack1")
 	check(
 		"ack-same-id-other-seq-stale",
@@ -611,7 +665,7 @@ return function(env: any, check: Check)
 		(function()
 			a.now += 0.2
 			a.command(30, {
-				protocolVersion = 1,
+				protocolVersion = Protocol.VERSION,
 				requestId = REQ .. "rtl",
 				kind = "ReturnToLobby",
 				matchId = mA,
@@ -625,22 +679,23 @@ return function(env: any, check: Check)
 	local b = world()
 	b.gateway.playerAdded(31)
 	b.gateway.playerAdded(32)
-	local m31 = b.start(31, "s01", "iso31").matchId
+	b.slot(31)
+	local m31 = b.start(31, 1, "iso31").matchId
 	b.now += 2
-	local boot32 = b.gateway.getBootstrap(32, { protocolVersion = 1 })
+	local boot32 = b.gateway.getBootstrap(32, { protocolVersion = Protocol.VERSION })
 	check("bootstrap-other-player-no-match", nil, boot32.currentMatch, 0)
 	check("bootstrap-other-player-own-revision", 0, boot32.profileRevision, 0)
 	check(
 		"bootstrap-unknown-player-loading",
 		"Loading",
-		b.gateway.getBootstrap(99, { protocolVersion = 1 }).status,
+		b.gateway.getBootstrap(99, { protocolVersion = Protocol.VERSION }).status,
 		0
 	)
 	local moves = 0
 	for seq = 1, 100 do
 		moves += if b.gateway.moveIntent(
 				31,
-				{ protocolVersion = 1, matchId = m31, seq = seq, axis = 1 }
+				{ protocolVersion = Protocol.VERSION, matchId = m31, seq = seq, axis = 1 }
 			)
 			then 1
 			else 0
@@ -659,13 +714,15 @@ return function(env: any, check: Check)
 	local r2 = world({ deferred = true })
 	r2.gateway.playerAdded(34)
 	r2.runAll()
+	r2.slot(34)
+	r2.runAll()
 	r2.gateway.playerRemoving(34) -- old release queued (not yet run)
 	r2.gateway.playerAdded(34)
 	r2.run(2) -- new load first
 	r2.run(1) -- then the late release of the old session
 	check("rejoin-late-release-fenced", "LobbyReady", r2.match.phaseOf(34), 0)
 	check("rejoin-lease-kept", true, r2.store.raw(34).lease ~= nil, 0)
-	check("rejoin-start-works", "Pending", r2.start(34, "s01", "rejoin").status, 0)
+	check("rejoin-start-works", "Pending", r2.start(34, 1, "rejoin").status, 0)
 	r2.runAll()
 	check("rejoin-start-committed", "Running", r2.match.phaseOf(34), 0)
 
@@ -673,7 +730,9 @@ return function(env: any, check: Check)
 	local l = world({ deferred = true })
 	l.gateway.playerAdded(35)
 	l.runAll()
-	l.start(35, "s01", "leave1")
+	l.slot(35)
+	l.runAll()
+	l.start(35, 1, "leave1")
 	l.gateway.playerRemoving(35)
 	check("leave-release-not-parallel", 1, #l.tasks, 0)
 	l.runAll()
@@ -688,9 +747,9 @@ return function(env: any, check: Check)
 	check("orphan-active-run-cleared", nil, orphan and orphan.activeRun, 0)
 	check("orphan-no-reward", 0, orphan and orphan.lastRunResult.awardedGold, 0)
 	local revision = orphan and orphan.revision or 0
-	check("orphan-start-again", "Committed", o.start(35, "s01", "after-orphan", revision).status, 0)
+	check("orphan-start-again", "Committed", o.start(35, 1, "after-orphan", revision).status, 0)
 	-- replaying the original start of the closed run: committed receipt but no matching run -> concrete reason
-	local replay = o.start(35, "s01", "leave1", 0)
+	local replay = o.start(35, 1, "leave1", 1)
 	check("start-replay-closed-run-rejected", "Rejected", replay.status, 0)
 	check("start-replay-reason-not-nil", true, replay.reason ~= nil, 0)
 
@@ -704,18 +763,18 @@ return function(env: any, check: Check)
 	s2.gateway.playerAdded(36) -- steals the expired lease
 	s1.now += 0.2
 	s1.command(36, {
-		protocolVersion = 1,
+		protocolVersion = Protocol.VERSION,
 		requestId = REQ .. "st1",
-		kind = "AllocatePoint",
-		traitId = "focus",
+		kind = "LearnSkill",
+		skill = 1,
 		expectedRevision = 0,
 	})
 	s1.now += 0.2
 	s1.command(36, {
-		protocolVersion = 1,
+		protocolVersion = Protocol.VERSION,
 		requestId = REQ .. "st2",
 		kind = "StartStage",
-		stageId = "s01",
+		stage = 1,
 		expectedRevision = 0,
 	})
 	s1.runAll()
@@ -730,20 +789,20 @@ return function(env: any, check: Check)
 	local updatesBefore = bud.store.calls.update
 	bud.now += 0.2
 	bud.command(37, {
-		protocolVersion = 1,
+		protocolVersion = Protocol.VERSION,
 		requestId = REQ .. "bud0",
-		kind = "AllocatePoint",
-		traitId = "focus",
+		kind = "LearnSkill",
+		skill = 1,
 		expectedRevision = 9,
 	})
 	check("budget-stale-revision-precheck", "StaleRevision", bud.last(37).reason, 0)
 	for index = 1, 6 do
 		bud.now += 0.2
 		bud.command(37, {
-			protocolVersion = 1,
+			protocolVersion = Protocol.VERSION,
 			requestId = REQ .. "bud" .. index,
-			kind = "AllocatePoint",
-			traitId = "focus",
+			kind = "LearnSkill",
+			skill = 1,
 			expectedRevision = 0,
 		})
 	end
@@ -759,21 +818,26 @@ return function(env: any, check: Check)
 	-- receipts are bound to the operation kind
 	local kd = world()
 	kd.gateway.playerAdded(38)
-	kd.start(38, "s01", "kind1")
+	kd.slot(38)
+	kd.start(38, 1, "kind1")
 	local mismatch
-	kd.profiles.upgradeUnit(
-		38,
-		{ requestId = REQ .. "kind1", expectedRevision = 1, unitId = "vanguard" },
-		function(_, reason)
-			mismatch = reason
-		end
-	)
+	kd.profiles.transact(38, {
+		kind = "UpgradeUnit",
+		requestId = REQ .. "kind1",
+		expectedRevision = 2,
+		mutate = function(doc: any)
+			return env.Economy.upgradeUnit(doc, 1)
+		end,
+	}, function(_, reason)
+		mismatch = reason
+	end)
 	check("receipt-kind-mismatch", "StaleCommand", mismatch, 0)
 
 	-- commands queued by a previous session are dropped at drain, queue accounting stays non-negative
 	local qq = world()
 	qq.gateway.playerAdded(39)
-	local mq = qq.start(39, "s01", "qq0").matchId
+	qq.slot(39)
+	local mq = qq.start(39, 1, "qq0").matchId
 	qq.now += 0.2
 	qq.gateway.clientCommand(39, summon({ requestId = REQ .. "qq1", matchId = mq, commandSeq = 1 }))
 	qq.gateway.playerRemoving(39)

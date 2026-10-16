@@ -22,7 +22,12 @@
     "D-WAGON-01": "The escort wagon rolls at its row speed unless an enemy body touches its front.",
     "D-TOWER-01": "Tower button 0 summons the chosen unit on all five lanes, button 1 five of it on one lane, button 2 heals all allied units to full.",
     "D-TOWER-02": "The tower mid boss holds lane 3.",
-    "D-REVIVE-02": "An unanswered revive offer gives up after 10 s."
+    "D-REVIVE-02": "An unanswered revive offer gives up after 10 s.",
+    "D-SAVE-01": "Profile validator bound raised to 16384 nodes / 262144 conservative bytes for the v2 worst case (DataStore limit 4 MB).",
+    "D-SHOP-01": "Helmets/armor/mounts cost gems at a base of 100..500 by item number; their gold sale value is base + base*0.1*grade^2.",
+    "D-DROP-01": "Drops are a hero weapon or ring/amulet (50/50), number 1..10, grade (chapter-1)*2 + 0..2 capped by the grade limit, seeded per run.",
+    "D-DROP-02": "An item that does not fit the 100-slot inventory is sold on the spot.",
+    "D-QUEST-02": "Sub quest 1 time limit = floor((iCrSec + 120) / 10) * 10 seconds (matches the 1-1 example of 5:20)."
   },
   "anim": {
     "known": {

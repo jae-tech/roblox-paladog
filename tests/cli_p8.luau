@@ -9,9 +9,8 @@ local report = Runner.run("PureLuau", "cli-p8", 12345, function(check)
 		Schema = require("../src/server/Services/ProfileSchema"),
 		ProfileService = require("../src/server/Services/ProfileService"),
 		MatchService = require("../src/server/Services/MatchService"),
-		Catalog = require("../src/shared/PublicCatalog"),
-		ClientController = require("../src/client/Net/ClientController"),
-		Protocol = require("../src/shared/Protocol"),
+		Economy = require("../src/server/Services/Economy"),
+		Db = require("../src/server/Config/Remake/Db"),
 		newBackend = require("./fixtures/FakeDataStore"),
 	}, check)
 end, "T-P8")

@@ -1,5 +1,7 @@
 --!strict
 -- Reject malformed/cyclic/non-serializable documents before acquiring a lock or applying a transform.
+-- D-SAVE-01: bounds sized for the remake v2 worst case (3 full slots, 300 items, 64 receipts) under the
+-- conservative byte estimate below; the DataStore value limit itself is 4 MB.
 local Schema = require("../Services/ProfileSchema")
 
 local function validate(value: any): (boolean, string?)
@@ -7,7 +9,7 @@ local function validate(value: any): (boolean, string?)
 	local seen: { [any]: boolean } = {}
 	local function visit(item: any, depth: number): boolean
 		nodes += 1
-		if nodes > 8192 or depth > 16 then
+		if nodes > 16384 or depth > 16 then
 			return false
 		end
 		local kind = type(item)
@@ -51,7 +53,7 @@ local function validate(value: any): (boolean, string?)
 		else
 			return false
 		end
-		return bytes <= 65536
+		return bytes <= 262144
 	end
 	if not visit(value, 0) then
 		return false, "not a bounded serializable profile"

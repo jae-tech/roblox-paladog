@@ -5667,6 +5667,4208 @@ return table.freeze({
 			speed = 0,
 		}),
 	}),
+	quests = table.freeze({
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 300,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 20,
+				gold = 200,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 10,
+				gold = 400,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 310,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 30,
+				gold = 210,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 430,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 320,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 3,
+			}),
+			table.freeze({
+				a = 5,
+				b = 20,
+				gold = 220,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 1,
+					num = 1,
+				}),
+				type = 4,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 320,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 10,
+				gold = 220,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 450,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 330,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 0,
+				gold = 230,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 480,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 340,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 5,
+			}),
+			table.freeze({
+				a = 5,
+				b = 50,
+				gold = 240,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 1,
+					num = 1,
+				}),
+				type = 6,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 350,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 250,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 500,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 350,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 20,
+				gold = 250,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 530,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 360,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 7,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 260,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 1,
+					num = 2,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 370,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 30,
+				gold = 270,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 10,
+				gold = 550,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 380,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 0,
+				gold = 280,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 580,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 380,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 9,
+			}),
+			table.freeze({
+				a = 10,
+				b = 40,
+				gold = 280,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 200,
+				b = 0,
+				gold = 600,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 11,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 390,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 0,
+				gold = 290,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 630,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 400,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 40,
+				gold = 300,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 650,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 410,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 3,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 310,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 2,
+					num = 2,
+				}),
+				type = 4,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 410,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 30,
+				gold = 310,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 680,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 420,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 0,
+				gold = 320,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 700,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 430,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 5,
+			}),
+			table.freeze({
+				a = 4,
+				b = 50,
+				gold = 330,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 2,
+					num = 3,
+				}),
+				type = 6,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 440,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 50,
+				gold = 340,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 10,
+				gold = 730,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 440,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 0,
+				gold = 340,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 750,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 450,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 7,
+			}),
+			table.freeze({
+				a = 6,
+				b = 20,
+				gold = 350,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 2,
+					num = 3,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 460,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 10,
+				gold = 360,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 780,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 470,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 370,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 800,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 2,
+				b = 0,
+				gold = 470,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 9,
+			}),
+			table.freeze({
+				a = 8,
+				b = 20,
+				gold = 370,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 3,
+				gold = 830,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 17,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 480,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 0,
+				gold = 380,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 850,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 490,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 0,
+				gold = 390,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 880,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 500,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 3,
+			}),
+			table.freeze({
+				a = 5,
+				b = 30,
+				gold = 400,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 3,
+					num = 4,
+				}),
+				type = 4,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 500,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 50,
+				gold = 400,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 10,
+				gold = 900,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 510,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 30,
+				gold = 410,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 930,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 520,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 5,
+			}),
+			table.freeze({
+				a = 4,
+				b = 50,
+				gold = 420,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 3,
+					num = 4,
+				}),
+				type = 6,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 530,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 430,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 950,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 530,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 20,
+				gold = 430,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 980,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 540,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 7,
+			}),
+			table.freeze({
+				a = 4,
+				b = 30,
+				gold = 440,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 3,
+					num = 5,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 550,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 20,
+				gold = 450,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1000,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 560,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 30,
+				gold = 460,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1030,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 560,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 9,
+			}),
+			table.freeze({
+				a = 9,
+				b = 20,
+				gold = 460,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 1050,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 570,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 50,
+				gold = 470,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 10,
+				gold = 1080,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 580,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 20,
+				gold = 480,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 1100,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 590,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 3,
+			}),
+			table.freeze({
+				a = 4,
+				b = 50,
+				gold = 490,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 4,
+					num = 5,
+				}),
+				type = 4,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 590,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 8,
+				b = 10,
+				gold = 490,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 1130,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 600,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 10,
+				gold = 500,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 1150,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 610,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 5,
+			}),
+			table.freeze({
+				a = 4,
+				b = 40,
+				gold = 510,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 4,
+					num = 6,
+				}),
+				type = 6,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 620,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 10,
+				gold = 520,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1180,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 630,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 50,
+				gold = 530,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1200,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 630,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 7,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 530,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 4,
+					num = 6,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 640,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 8,
+				b = 20,
+				gold = 540,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 10,
+				gold = 1230,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 650,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 40,
+				gold = 550,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 1250,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 4,
+				b = 0,
+				gold = 660,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 9,
+			}),
+			table.freeze({
+				a = 9,
+				b = 10,
+				gold = 560,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 800,
+				b = 0,
+				gold = 1280,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 11,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 660,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 40,
+				gold = 560,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 7,
+				b = 0,
+				gold = 1300,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 670,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 0,
+				gold = 570,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 1330,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 680,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 3,
+			}),
+			table.freeze({
+				a = 5,
+				b = 30,
+				gold = 580,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 5,
+					num = 7,
+				}),
+				type = 4,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 690,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 8,
+				b = 20,
+				gold = 590,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1350,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 690,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 8,
+				b = 0,
+				gold = 590,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1380,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 700,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 5,
+			}),
+			table.freeze({
+				a = 5,
+				b = 20,
+				gold = 600,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 5,
+					num = 7,
+				}),
+				type = 6,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 710,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 50,
+				gold = 610,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 1400,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 720,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 8,
+				b = 10,
+				gold = 620,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 1430,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 720,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 7,
+			}),
+			table.freeze({
+				a = 4,
+				b = 20,
+				gold = 620,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 5,
+					num = 8,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 730,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 10,
+				gold = 630,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 7,
+				b = 0,
+				gold = 1450,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 740,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 30,
+				gold = 640,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 1480,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 750,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 9,
+			}),
+			table.freeze({
+				a = 13,
+				b = 10,
+				gold = 650,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 3,
+				gold = 1500,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 17,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 750,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 650,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1530,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 760,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 30,
+				gold = 660,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1550,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 770,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 3,
+			}),
+			table.freeze({
+				a = 4,
+				b = 50,
+				gold = 670,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 6,
+					num = 8,
+				}),
+				type = 4,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 780,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 9,
+				b = 0,
+				gold = 680,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 1580,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 780,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 30,
+				gold = 680,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 1600,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 790,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 5,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 690,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 6,
+					num = 9,
+				}),
+				type = 6,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 800,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 20,
+				gold = 700,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 7,
+				b = 0,
+				gold = 1630,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 810,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 30,
+				gold = 710,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 1650,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 810,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 7,
+			}),
+			table.freeze({
+				a = 6,
+				b = 0,
+				gold = 710,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 6,
+					num = 9,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 820,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 0,
+				gold = 720,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1680,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 830,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 10,
+				gold = 730,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1700,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 6,
+				b = 0,
+				gold = 840,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 9,
+			}),
+			table.freeze({
+				a = 7,
+				b = 20,
+				gold = 740,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 1730,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 840,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 50,
+				gold = 740,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 7,
+				b = 10,
+				gold = 1760,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 850,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 20,
+				gold = 750,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 1780,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 860,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 3,
+			}),
+			table.freeze({
+				a = 5,
+				b = 20,
+				gold = 760,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 7,
+					num = 10,
+				}),
+				type = 4,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 870,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 40,
+				gold = 770,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 9,
+				b = 0,
+				gold = 1810,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 870,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 30,
+				gold = 770,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 1830,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 880,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 5,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 780,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 7,
+					num = 10,
+				}),
+				type = 6,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 890,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 20,
+				gold = 790,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1860,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 900,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 10,
+				gold = 800,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 1880,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 910,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 7,
+			}),
+			table.freeze({
+				a = 4,
+				b = 20,
+				gold = 810,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 7,
+					num = 1,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 910,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 0,
+				gold = 810,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 7,
+				b = 10,
+				gold = 1910,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 920,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 4,
+				b = 40,
+				gold = 820,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 1930,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 7,
+				b = 0,
+				gold = 930,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 9,
+			}),
+			table.freeze({
+				a = 12,
+				b = 50,
+				gold = 830,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1400,
+				b = 0,
+				gold = 1960,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 11,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 940,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 840,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 9,
+				b = 0,
+				gold = 1980,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 940,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 840,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 2010,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 950,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 3,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 850,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 8,
+					num = 1,
+				}),
+				type = 4,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 960,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 860,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 2030,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 970,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 8,
+				b = 0,
+				gold = 870,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 2060,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 970,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 5,
+			}),
+			table.freeze({
+				a = 4,
+				b = 40,
+				gold = 870,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 8,
+					num = 2,
+				}),
+				type = 6,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 980,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 0,
+				gold = 880,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 7,
+				b = 10,
+				gold = 2080,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 990,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 8,
+				b = 20,
+				gold = 890,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 2110,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1000,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 7,
+			}),
+			table.freeze({
+				a = 4,
+				b = 10,
+				gold = 900,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 8,
+					num = 2,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1000,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 8,
+				b = 10,
+				gold = 900,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 9,
+				b = 0,
+				gold = 2130,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1010,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 0,
+				gold = 910,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 2160,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 8,
+				b = 0,
+				gold = 1020,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 9,
+			}),
+			table.freeze({
+				a = 10,
+				b = 10,
+				gold = 920,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 3,
+				gold = 2180,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 17,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1030,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 10,
+				gold = 930,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 2210,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1030,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 30,
+				gold = 930,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 2230,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1040,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 3,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 940,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 9,
+					num = 3,
+				}),
+				type = 4,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1050,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 40,
+				gold = 950,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 9,
+				b = 10,
+				gold = 2260,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1060,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 50,
+				gold = 960,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 2280,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1060,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 5,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 960,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 9,
+					num = 3,
+				}),
+				type = 6,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1070,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 50,
+				gold = 970,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 11,
+				b = 0,
+				gold = 2310,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1080,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 8,
+				b = 50,
+				gold = 980,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 2330,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1090,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 7,
+			}),
+			table.freeze({
+				a = 5,
+				b = 10,
+				gold = 990,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 9,
+					num = 4,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1090,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 20,
+				gold = 990,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 2360,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1100,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 5,
+				b = 30,
+				gold = 1000,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 2380,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 9,
+				b = 0,
+				gold = 1110,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 9,
+			}),
+			table.freeze({
+				a = 9,
+				b = 50,
+				gold = 1010,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 2410,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1120,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 0,
+				gold = 1020,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 9,
+				b = 10,
+				gold = 2430,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1120,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 8,
+				b = 20,
+				gold = 1020,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 2460,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1130,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 3,
+			}),
+			table.freeze({
+				a = 5,
+				b = 20,
+				gold = 1030,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 3,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 10,
+					num = 4,
+				}),
+				type = 4,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1140,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 40,
+				gold = 1040,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 11,
+				b = 0,
+				gold = 2480,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 12,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1150,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 50,
+				gold = 1050,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 2510,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 15,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1150,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 5,
+			}),
+			table.freeze({
+				a = 4,
+				b = 50,
+				gold = 1050,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "mace",
+					grade = 10,
+					num = 5,
+				}),
+				type = 6,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1160,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 40,
+				gold = 1060,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 2530,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 13,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1170,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 10,
+				gold = 1070,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 1,
+				b = 0,
+				gold = 2560,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 16,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1180,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 7,
+			}),
+			table.freeze({
+				a = 4,
+				b = 30,
+				gold = 1080,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 5,
+				b = 0,
+				gold = 0,
+				item = table.freeze({
+					category = "ring",
+					grade = 10,
+					num = 5,
+				}),
+				type = 8,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1180,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 7,
+				b = 20,
+				gold = 1080,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 9,
+				b = 10,
+				gold = 2580,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 14,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 0,
+				b = 0,
+				gold = 1190,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 1,
+			}),
+			table.freeze({
+				a = 6,
+				b = 50,
+				gold = 1090,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 50,
+				b = 0,
+				gold = 2610,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 2,
+			}),
+		}),
+		table.freeze({
+			table.freeze({
+				a = 10,
+				b = 0,
+				gold = 1200,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 9,
+			}),
+			table.freeze({
+				a = 12,
+				b = 0,
+				gold = 1100,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 10,
+			}),
+			table.freeze({
+				a = 2000,
+				b = 0,
+				gold = 2600,
+				item = table.freeze({
+					category = "",
+					grade = 0,
+					num = 0,
+				}),
+				type = 11,
+			}),
+		}),
+	}),
 	regen = table.freeze({
 		light = table.freeze({
 			fAtDly = 0,
