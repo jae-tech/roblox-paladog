@@ -54,10 +54,18 @@ function Harness.runSuite(suiteId: string, seed: number)
 			or suiteId == "T-P5"
 			or suiteId == "T-P6"
 			or suiteId == "T-P7"
-			or suiteId == "T-P8",
+			or suiteId == "T-P8"
+			or suiteId == "T-P9",
 		"unsupported P0 suite"
 	)
 	return Runner.run("StudioServer", HttpService:GenerateGUID(false), seed, function(check)
+		if suiteId == "T-P9" then
+			local p9: any = p2Env()
+			p9.Schema = p9.ProfileSchema
+			p9.World = require(GameServer.Simulation.World)
+			require(tests.unit.P9)(p9, check)
+			return
+		end
 		if suiteId == "T-P8" then
 			local client = game:GetService("StarterPlayer").StarterPlayerScripts.GameClient
 			require(tests.unit.P8)({

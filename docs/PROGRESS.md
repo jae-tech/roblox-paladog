@@ -1,6 +1,6 @@
 # 개발 진행
 
-- 현재: P8 저장 안전장치 핵심 구현, 실행 검증 보류. 단일 에이전트, 실행 테스트·Studio·실 DataStore 접근 중단 유지.
+- 현재: P9 수용 suite 작성(실행 보류). 단일 에이전트, 실행 테스트·Studio·실 DataStore 접근 중단 유지.
 
 ## MVP 연결 기준선(이전 커밋)
 
@@ -49,3 +49,14 @@
 - 참조: [UpdateAsync/콜백·예산 공식 계약](https://create.roblox.com/docs/cloud-services/data-stores), [요청 budget API](https://create.roblox.com/docs/reference/engine/classes/DataStoreService#GetRequestBudgetForRequestType).
 - 미완료: P6~P8 실행 회귀, 실제 DataStore 승인·활성화·재시작 복원/두 Studio 경쟁 검증. 장기 API 지연·강제 종료의 미확정 보상 손실은 남는 한계이며 무손실/실서비스 PASS를 주장하지 않는다.
 - 브랜치: `p8-persistence-safety`. 실서비스 검증 전이므로 P8 full gate PASS·main 병합으로 처리하지 않는다. P9는 진행하지 않았다.
+
+## P9 수용 suite 작성(실행 보류)
+
+- 사용자 선택(2026-10-16): 테스트 실행 중단 유지, P9 코드만 작성.
+- `tests/unit/P9.luau` + `tests/cli_p9.luau`, Studio `ServerHarness.runSuite("T-P9")` 등록. 모든 입력은 `RemoteGateway`(검증·rate limit·ingress 순서)를 거치고 Runtime과 같은 drain→stepAll 순서로 진행한다. 저장은 Mock/InMemory.
+- P9.1(E2E Mock): 클라이언트 합법 명령만 쓰는 봇(10tick마다 소환3·시전)으로 s01→s02→s03 각 최대3회 도전. 수치 조작 없음. 매 경기 12000tick 내 종결·Settled·승리 시에만 wins+1/골드 증가·activeRun 닫힘·로비 복귀를 검사하고, s01 정상 플레이 승리를 요구한다. s02 미승리면 s03 잠김 확인. 로비 강화 후 같은 store로 새 세션 재접속해 골드·XP·유닛 레벨·wins·revision 복원과 schema 유효성 검사.
+- P9.2(T-SEC): 같은 seed의 공격 서버와 대조 서버를 나란히 돌려, 허용 외 필드(hp/gold)·NaN/inf/음수/소수/범위 밖 slot·NaN seq·긴 matchId·100KB requestId·중첩/순환 table·미지 kind/stage·타인 match(Summon/Cast)·과거/재사용 seq·전투 중 구매·비table 원시값·잘못된 move 5종 뒤 두 플레이어 World digest·골드·revision이 대조군과 동일한지, 예외0·피해자 거부 메시지0·reason별 집계 상한을 검사한다. flood(1000건)는 기존 T-P2가 담당.
+- P9.4(T-PERF 축소판): 4경기 s03에 아군30/적40 cap을 주기적으로 채우고 1200tick(60초) step 시간 p95≤10ms·cap 초과0·탄 발생을 검사한다. 헤드리스 fixture이며 10분 Studio 측정·클라이언트 frame·메모리 기준선 복귀를 대체하지 않는다.
+- 정적 확인: luau-analyze(tests), luau-lsp Roblox 분석, selene 0경고, StyLua, production/test Rojo 빌드 PASS. **T-P9는 한 번도 실행하지 않았다**(s01 승리·p95 기준은 미측정 가정).
+- 미작성: `verify_p9.py` gate, P9.3 실기기/멀티터치, P9.5 production 에셋 audit 확장, 100회 경기 생성/종료 누수 측정. P6~P8 실행 회귀가 선행 미완료다.
+- 브랜치: `p9-acceptance-suite`(P8 위). 실행 전이므로 PASS·main 병합으로 처리하지 않는다.
