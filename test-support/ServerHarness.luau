@@ -64,6 +64,7 @@ function Harness.runSuite(suiteId: string, seed: number)
 			p9.Schema = p9.ProfileSchema
 			p9.World = require(GameServer.Simulation.World)
 			p9.SessionStore = require(GameServer.Services.SessionStore)
+			p9.ProjectileSystem = require(GameServer.Simulation.ProjectileSystem)
 			require(tests.unit.P9)(p9, check)
 			return
 		end

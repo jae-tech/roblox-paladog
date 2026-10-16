@@ -111,9 +111,10 @@ return function(env: any, check: any)
 		local deadline = a.tick + 12100
 		while a.match.phaseOf(1) == "Running" and a.tick < deadline do
 			if a.tick % 10 == 0 then
-				for _, kind in { "Summon", "Summon", "Summon", "Cast" } do
+				-- Slinger (slot 2) first: the cheapest-unit spam loses s02 on every probed seed.
+				for _, kind in { "Summon", "Cast" } do
 					commandSeq += 1
-					local slot = if kind == "Cast" then 1 else (commandSeq % 3) + 1
+					local slot = if kind == "Cast" then 1 else 2
 					a.send(
 						1,
 						{ kind = kind, matchId = matchId, commandSeq = commandSeq, slot = slot }
@@ -162,6 +163,7 @@ return function(env: any, check: any)
 	end
 	check("e2e-s01-normal-play-victory", true, won.s01 == true, a.tick)
 	-- Unlock order is the invariant; s02/s03 balance is what this run measures, not a fixture.
+	check("e2e-s02-normal-play-victory", true, won.s02 == true, a.tick)
 	if not won.s02 then
 		a.start(1, "s03")
 		check("e2e-s03-locked-without-s02", "LockedStage", a.last(1).reason, a.tick)
@@ -353,6 +355,22 @@ return function(env: any, check: any)
 				end
 			end
 		end
+		for _, w in worlds do -- keep projectiles near the 128 cap; damage 1 so the battle still runs
+			for _ = 1, w.limits.projectileCap do
+				if
+					not env.ProjectileSystem.launch(w, {
+						ownerId = w.heroId,
+						projectileId = "pulse_bolt",
+						damage = 1,
+						releaseTick = w.tick,
+						x = 10,
+						direction = 1,
+					})
+				then
+					break
+				end
+			end
+		end
 		local started = os.clock()
 		for _, w in worlds do
 			World.step(w)
@@ -372,6 +390,6 @@ return function(env: any, check: any)
 	table.sort(durations)
 	local p95 = durations[math.ceil(#durations * 0.95)]
 	check("perf-caps-held", 0, overCap, 1200)
-	check("perf-projectiles-exercised", true, peakProjectiles > 0, 1200)
+	check("perf-projectile-cap-reached", 128, peakProjectiles, 1200)
 	check("perf-tick-p95-under-10ms", true, p95 <= 0.010, 1200)
 end
