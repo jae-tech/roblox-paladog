@@ -24,6 +24,16 @@ local function new(playerGui: PlayerGui, catalog: any, handlers: Handlers)
 	gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
+	-- the menu also covers the Roblox top bar strip, which the safe-inset gui above cannot reach
+	local backdropGui = Instance.new("ScreenGui")
+	backdropGui.Name = "LanternBackdrop"
+	backdropGui.ResetOnSpawn = false
+	backdropGui.ScreenInsets = Enum.ScreenInsets.None
+	backdropGui.DisplayOrder = -1
+	backdropGui.Parent = playerGui
+	local backdrop = Widgets.frame(backdropGui, "Backdrop", Theme.backgroundTop)
+	backdrop.Size = UDim2.fromScale(1, 1)
+	backdrop.Visible = false
 	local field = Field.new(gui, catalog)
 	local hud =
 		Hud.new(gui, catalog, { battle = handlers.battle, returnToLobby = handlers.returnToLobby })
@@ -80,6 +90,7 @@ local function new(playerGui: PlayerGui, catalog: any, handlers: Handlers)
 			end
 			hud.update(model)
 			lobby.update(model)
+			backdrop.Visible = lobby.root.Visible
 		end,
 		render = function(view: any, dt: number)
 			if BATTLE_PHASES[phase] then
@@ -100,6 +111,7 @@ local function new(playerGui: PlayerGui, catalog: any, handlers: Handlers)
 			hud.destroy()
 			lobby.destroy()
 			gui:Destroy()
+			backdropGui:Destroy()
 		end,
 	}
 end

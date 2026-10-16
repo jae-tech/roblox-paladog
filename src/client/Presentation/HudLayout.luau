@@ -1,10 +1,14 @@
 --!strict
 -- Safe-content px. Narrow screens put the scrollable summon strip above movement/weapon controls.
-local function plan(width: number): any
+-- reserveRight keeps the bottom-right corner free (Roblox's touch jump button in avatar combat).
+local function plan(width: number, reserveRight: number?): any
 	local compact = width < 900
 	local inner = math.max(width - 16, 1)
 	local weaponWidth = if compact then (if width < 360 then 56 else 64) else 74
-	local unitWidth = if compact then inner else inner - 380
+	-- never push the weapons into the left-hand movement area; narrow portrait screens get less
+	local reserve =
+		math.clamp(reserveRight or 0, 0, math.max(inner - (weaponWidth * 3 + 8) - (48 * 2 + 8), 0))
+	local unitWidth = if compact then inner else inner - 380 - reserve
 	return {
 		compact = compact,
 		bottomHeight = if compact then 228 else 128,
@@ -17,7 +21,7 @@ local function plan(width: number): any
 		moveY = if compact then 116 else 24,
 		strafeY = if compact then 172 else 80,
 		weaponWidth = weaponWidth,
-		weaponX = inner - (weaponWidth * 3 + 8),
+		weaponX = inner - (weaponWidth * 3 + 8) - reserve,
 		weaponY = if compact then 164 else 22,
 		weaponHeight = if compact then 64 else 100,
 		foodX = if compact then 0 else 142,

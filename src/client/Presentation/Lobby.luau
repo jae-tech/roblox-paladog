@@ -41,6 +41,8 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		fit()
 	end
 	root.ZIndex = 30
+	-- the gradient multiplies BackgroundColor3, so the base colour is white
+	root.BackgroundColor3 = Color3.new(1, 1, 1)
 	local backdrop = Instance.new("UIGradient")
 	backdrop.Color = ColorSequence.new(Theme.backgroundTop, Theme.background)
 	backdrop.Rotation = 90
@@ -101,6 +103,15 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	nav.BackgroundTransparency = 0.2
 	nav.Size = UDim2.new(0, 132, 1, -56)
 	nav.Position = UDim2.fromOffset(0, 52)
+	-- visible tabs stack from the top (only "기록" shows before a record is chosen)
+	local navLayout = Instance.new("UIListLayout")
+	navLayout.Padding = UDim.new(0, 6)
+	navLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	navLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	navLayout.Parent = nav
+	local navPad = Instance.new("UIPadding")
+	navPad.PaddingTop = UDim.new(0, 6)
+	navPad.Parent = nav
 	local content = Widgets.frame(root, "Content")
 	content.Size = UDim2.new(1, -148, 1, -60)
 	content.Position = UDim2.fromOffset(140, 54)
@@ -125,7 +136,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	for index, entry in NAV do
 		local b = Widgets.button(nav, entry[1], entry[2], 15)
 		b.Size = UDim2.new(1, -12, 0, 44)
-		b.Position = UDim2.fromOffset(6, 6 + (index - 1) * 50)
+		b.LayoutOrder = index
 		-- gold marker on the open tab
 		local marker = Widgets.frame(b, "Marker", Theme.gold, 2)
 		marker.Size = UDim2.new(0, 4, 1, -14)
@@ -483,7 +494,8 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				13,
 				if level >= 20 or blocked or slot.gold < price then Theme.locked else Theme.gold
 			)
-			place(b, 400, 6, 120, 52)
+			b.Position = UDim2.new(1, -130, 0, 6)
+			b.Size = UDim2.fromOffset(120, 52)
 			b.Activated:Connect(function()
 				handlers.lobby("UpgradeUnit", { unit = n })
 			end)
@@ -511,8 +523,14 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				"Slot" .. i,
 				text,
 				12,
-				if ui.item == "equip:" .. i then Theme.buttonHot else Theme.panelLight
+				if ui.item == "equip:" .. i
+					then Theme.buttonHot
+					elseif locked or code == 0 then Theme.panelDeep
+					else Theme.button
 			)
+			if locked or code == 0 then
+				b.TextColor3 = Theme.muted
+			end
 			b.LayoutOrder = i
 			b.Activated:Connect(function()
 				if code ~= 0 then
@@ -544,6 +562,17 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				Theme.muted
 			)
 			sub.Size = UDim2.new(1, 0, 0, 20)
+			if #slot.inventory == 0 then
+				local none = Widgets.label(
+					list,
+					"Empty",
+					"가방이 비었습니다. 상점에서 장비를 사 보세요.",
+					13,
+					Theme.muted
+				)
+				none.Size = UDim2.new(1, -8, 0, 40)
+				none.LayoutOrder = 1
+			end
 			for index, code in slot.inventory do
 				local b = Widgets.button(
 					list,
@@ -693,6 +722,17 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				Theme.muted
 			)
 			place(hint, 10, 10, 360, 24)
+			hint.TextXAlignment = Enum.TextXAlignment.Left
+			local tip = Widgets.label(
+				detail,
+				"Tip",
+				"장비 칸이나 가방의 아이템을 누르면 장착·판매·강화할 수 있습니다.",
+				13,
+				Theme.muted
+			)
+			place(tip, 10, 40, 360, 40)
+			tip.TextXAlignment = Enum.TextXAlignment.Left
+			tip.Font = Theme.fontBody
 		end
 	end
 
@@ -820,11 +860,10 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			return
 		end
 		local slot = model.slot
-		if not slot and ui.screen ~= "Records" then
-			ui.screen = "Records"
-		end
+		-- without a record only "기록" works; keep the chosen tab so creating a record lands on it
+		local screen = if slot then ui.screen else "Records"
 		for name, b in navButtons do
-			local open = name == ui.screen
+			local open = name == screen
 			b.BackgroundColor3 = if open then Theme.panelLight else Theme.button
 			b.TextColor3 = if open then Theme.gold else Theme.text
 			local marker = b:FindFirstChild("Marker")
@@ -833,17 +872,17 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			end
 			b.Visible = slot ~= nil or name == "Records"
 		end
-		if ui.screen == "Records" then
+		if screen == "Records" then
 			records(summary)
-		elseif ui.screen == "Stages" then
+		elseif screen == "Stages" then
 			stages(slot)
-		elseif ui.screen == "Units" then
+		elseif screen == "Units" then
 			unitsScreen(slot)
-		elseif ui.screen == "Equipment" then
+		elseif screen == "Equipment" then
 			equipment(slot, summary)
-		elseif ui.screen == "Skills" then
+		elseif screen == "Skills" then
 			skills(slot)
-		elseif ui.screen == "Achievements" then
+		elseif screen == "Achievements" then
 			achievements(summary)
 		end
 	end

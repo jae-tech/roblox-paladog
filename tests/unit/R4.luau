@@ -334,6 +334,16 @@ return function(env: any, check: any)
 				p.weaponX + p.weaponWidth * 3 + 8 <= width - 16,
 				0
 			)
+			-- touch avatar combat keeps the jump button corner (110 px) clear where the screen allows
+			local r = env.HudLayout.plan(width, 110)
+			check(
+				"hud-jump-corner-clear-" .. width,
+				true,
+				(width < 640 or r.weaponX + r.weaponWidth * 3 + 8 <= width - 16 - 110)
+					and r.weaponX >= r.moveSize * 2 + 8
+					and (r.compact or r.unitX + r.unitWidth <= r.weaponX),
+				0
+			)
 			check(
 				"hud-strip-in-bounds-" .. width,
 				true,

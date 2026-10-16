@@ -12,6 +12,7 @@ local ClientController = require("./Net/ClientController")
 local Ui = require("./Presentation/Ui")
 local PlazaState = require("./Presentation/PlazaState")
 local ProximityPromptService = game:GetService("ProximityPromptService")
+local GuiService = game:GetService("GuiService")
 
 local active: any = nil
 local function start(): any
@@ -48,6 +49,10 @@ local function start(): any
 	-- character physics, so the local Humanoid values are what count (the server leashes the result).
 	local StarterPlayer = game:GetService("StarterPlayer")
 	local function setControls(enabled: boolean)
+		-- the touch thumbstick/jump button would sit on top of the menu and battle buttons
+		if GuiService.TouchControlsEnabled ~= enabled then
+			GuiService.TouchControlsEnabled = enabled
+		end
 		local player = Players.LocalPlayer
 		local character = player.Character
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -292,6 +297,7 @@ local function start(): any
 			return
 		end
 		destroyed = true
+		GuiService.TouchControlsEnabled = true
 		adapter.destroy()
 		for _, connection in connections do
 			connection:Disconnect()

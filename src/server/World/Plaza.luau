@@ -28,6 +28,11 @@ local function label(parent: Instance, text: string, size: number, color: Color3
 	l.TextSize = size
 	l.TextColor3 = color
 	l.Font = Enum.Font.BuilderSansBold
+	-- shrink to the box on small boards, never past `size`
+	l.TextScaled = true
+	local limit = Instance.new("UITextSizeConstraint")
+	limit.MaxTextSize = size
+	limit.Parent = l
 	l.Parent = parent
 	return l
 end
@@ -142,6 +147,7 @@ local function new(parent: Instance)
 	prompt.Parent = portal
 	local sign = Instance.new("SurfaceGui")
 	sign.Face = Enum.NormalId.Back
+	sign.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	sign.PixelsPerStud = 20
 	sign.Parent = root:FindFirstChild("GateTop")
 	sign.LightInfluence = 0
@@ -171,12 +177,13 @@ local function new(parent: Instance)
 	)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Right
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 20
 	gui.LightInfluence = 0
 	gui.Parent = board
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.fromScale(1, 1)
-	frame.BackgroundColor3 = Color3.fromRGB(26, 29, 44)
+	frame.BackgroundColor3 = Color3.new(1, 1, 1) -- the gradient below supplies the colour
 	frame.BorderSizePixel = 0
 	frame.Parent = gui
 	local gradient = Instance.new("UIGradient")
@@ -247,7 +254,7 @@ local function new(parent: Instance)
 				cells[2].Text = row.name
 				cells[3].Text = PlazaBoard.stageLabel(row.stage)
 				cells[4].Text = if row.wave > 0 then "W" .. row.wave else "-"
-				cells[5].Text = "Lv." .. row.level
+				cells[5].Text = if row.level > 0 then "Lv." .. row.level else "-"
 			end
 		end
 	end

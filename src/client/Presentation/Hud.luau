@@ -294,6 +294,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		handlers.battle("GiveUp", nil)
 	end)
 
+	local retreated = false -- the server reports a retreat as Defeat; the title says what the player did
 	local pauseShade = modal("PauseMenu")
 	local pauseCard = card(pauseShade, 380, 200)
 	heading(pauseCard, "일시정지")
@@ -323,6 +324,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		showModal(pauseShade, pauseCard, false)
 	end)
 	retreat.Activated:Connect(function()
+		retreated = true
 		showModal(pauseShade, pauseCard, false)
 		handlers.battle("Retreat", nil)
 	end)
@@ -427,13 +429,15 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 
 	local currentView: any = nil
 	local layoutWidth, layoutKey = -1, ""
+	local reserveRight = 0
 	local function applyLayout()
 		local width = root.AbsoluteSize.X
-		if width == layoutWidth and layoutKey == unitKey then
+		local key = unitKey .. reserveRight
+		if width == layoutWidth and layoutKey == key then
 			return
 		end
-		layoutWidth, layoutKey = width, unitKey
-		local p = HudLayout.plan(width)
+		layoutWidth, layoutKey = width, key
+		local p = HudLayout.plan(width, reserveRight)
 		bottom.Size = UDim2.new(1, -16, 0, p.bottomHeight)
 		bottom.Position = UDim2.new(0, 8, 1, -p.bottomHeight - 6)
 		left.Size, right.Size =
@@ -493,6 +497,9 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		root.Visible = model.phase == "Running"
 			or model.phase == "Settling"
 			or model.phase == "Settled"
+		if not root.Visible then
+			retreated = false
+		end
 		if not view or not slot then
 			return
 		end
@@ -586,6 +593,8 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			string.format("마나 %d / %d", math.floor(view.mana), view.maxMana)
 		)
 		rebuildUnits(slot, view)
+		-- avatar combat on touch shows Roblox's jump button in the bottom-right corner
+		reserveRight = if model.avatarCombat and UserInputService.TouchEnabled then 110 else 0
 		applyLayout()
 		if view.mode == "Destiny" then
 			for index, c in unitCards do
@@ -682,10 +691,11 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			resultTitle.Text = if outcome == "Victory"
 				then "승리!"
 				elseif view.mode == "Survival" then "원정 종료"
+				elseif retreated then "후퇴"
 				else "패배"
 			resultTitle.TextColor3 = if outcome == "Victory"
 				then Theme.gold
-				elseif view.mode == "Survival" then Theme.text
+				elseif view.mode == "Survival" or retreated then Theme.text
 				else Theme.bad
 			local rewards = model.rewards
 			local committed = model.settlementStatus == "Committed" and rewards ~= nil
@@ -721,6 +731,13 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 						rewardLine(order, "획득", Text.itemName(catalog, code), Theme.text)
 						order += 1
 					end
+					-- the card grows with its reward lines (two lines minimum, scrolls past eight)
+					local height = 156 + math.clamp(order - 1, 2, 8) * 30
+					local limit = resultCard:FindFirstChildOfClass("UISizeConstraint")
+					if limit then
+						limit.MaxSize = Vector2.new(460, height)
+					end
+					resultCard.Size = UDim2.new(0.94, 0, 0, height)
 				end
 			end
 			back.Visible = model.settlementStatus == "Committed"
