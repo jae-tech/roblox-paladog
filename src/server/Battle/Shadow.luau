@@ -25,6 +25,9 @@ function Shadow.spawnTotem(api: any, b: any, n: number): any
 	local h = api.hero(b)
 	local e = api.newEntity(b, "Totem", n, 1)
 	e.hp, e.maxHp, e.ap = row.levels.hp[level], row.levels.hp[level], row.levels.ap[level]
+	if b.mode == "Survival" then
+		e.hp, e.maxHp, e.ap = api.survivalLevel(row, level)
+	end
 	e.speed, e.attackDist, e.hitDist, e.attackDelay =
 		row.moveSpeed * b.scale, row.attackDist, row.hitDist, row.attackDelay
 	e.atkFrame = row.attackFrame

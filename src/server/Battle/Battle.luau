@@ -40,6 +40,11 @@ local MODE_BY_REMAINDER = { [0] = "Boss", [3] = "Destiny", [6] = "Wagon", [9] = 
 -- The shadow hero swaps destiny/escort/tower for boar jump, siege horse and dungeon (E04 §0).
 local SHADOW_MODE_BY_REMAINDER = { [0] = "Boss", [3] = "Jump", [6] = "Horse", [9] = "Dungeon" }
 local HORSE_LOSE_X = 140 -- the siege horse reaching x <= 140 loses the stage (E04 §4)
+-- Survival (E04 §4-4): stage 0, waves 1..30 use rows 140..169 once, then rows 170..189 loop.
+local SVV_PRE, SVV_LOOP = 30, 20
+local SVV_REST_TICKS = 90 -- D-SVV-02 wave interlude
+local DARK_EVENT_WAVE = 4 -- D-SVV-05
+local SHADOW_BOSS_ID = 113
 -- Engine internals handed to Shadow (filled at the bottom of this file).
 local api: any = {}
 
@@ -98,6 +103,7 @@ export type Entity = {
 	burnDamage: number,
 	oneGold: boolean,
 	struck: boolean,
+	boosted: boolean,
 	removed: boolean,
 }
 
@@ -144,10 +150,27 @@ export type Options = {
 	cleared: boolean?, -- stage already has a star: kill rewards x0.5 (E04 §2-2)
 	goldAvailable: number?, -- profile gold, for the gold weapon (E03 §3.1)
 	revives: number?, -- revive offers available (gems checked by the caller, D-REVIVE-01)
+	darkEvent: boolean?, -- survival: account lacks the shadow hero (D-SVV-05)
 }
 
 local function modeOf(stage: number, shadow: boolean?): string
+	if stage == 0 then
+		return "Survival"
+	end
 	return (if shadow then SHADOW_MODE_BY_REMAINDER else MODE_BY_REMAINDER)[stage % 12] or "Normal"
+end
+
+-- E04 §4-4 GetWaveDBPos: index into Db.survival (row 140 = index 1).
+local function waveRow(wave: number): number
+	return if wave <= SVV_PRE then wave else SVV_PRE + 1 + (wave - SVV_PRE - 1) % SVV_LOOP
+end
+
+-- E04 §4-4 GetWaveRepeatNum and the SVVScale / SVVStat multipliers ([140] holds the constants).
+local function survivalMul(wave: number, row: any): (number, number)
+	local base = Db.survival[1]
+	local repeats = if wave - 1 < SVV_PRE then 0 else (wave - 1 - SVV_PRE) // SVV_LOOP + 1
+	local statBase = (if repeats > 0 then row.clearSec else base.clearSec) / 100
+	return 1 + base.ver * repeats, (1 + base.clearSec2 / 100 * repeats * (wave - 31)) * statBase
 end
 
 local function cloneLoadout(l: Rules.Loadout): Rules.Loadout
@@ -224,6 +247,7 @@ local function newEntity(b: any, kind: string, n: number, team: number): Entity
 		burnDamage = 0,
 		oneGold = false,
 		struck = false,
+		boosted = false,
 		removed = false,
 	}
 end
@@ -281,11 +305,20 @@ local function frames(hitFrame: number, known: number?): number
 	return known or math.max(hitFrame + 4, 10) -- D-ANIM-01
 end
 
+-- Survival units use the level-1 row x (1 + [142].fVer 0.2 x (L - 1)) for HP and attack (E05 B3).
+local function survivalLevel(row: any, level: number): (number, number, number)
+	local mul = 1 + Db.survival[3].ver * (level - 1)
+	return row.levels.hp[1] * mul, row.levels.hp[1] * mul, row.levels.ap[1] * mul
+end
+
 local function spawnUnit(b: any, n: number, lane: number?): Entity
 	local row = Db.units[n]
 	local level = math.clamp(b.loadout.unitLevels[n] or 1, 1, 20)
 	local e = newEntity(b, "Unit", n, 1)
 	e.hp, e.maxHp, e.ap = row.levels.hp[level], row.levels.hp[level], row.levels.ap[level] -- level table replaces base (E02 §1.4)
+	if b.mode == "Survival" then
+		e.hp, e.maxHp, e.ap = survivalLevel(row, level)
+	end
 	e.speed, e.attackDist, e.hitDist, e.attackDelay =
 		row.moveSpeed * b.scale, row.attackDist, row.hitDist, row.attackDelay
 	e.skillPercent, e.skillDamage, e.knockPercent, e.skillDist =
@@ -327,7 +360,10 @@ local function spawnEnemy(
 	end
 	local boss = enemyId > 100
 	local base = if boss then enemyId - 100 elseif enemyId > 20 then enemyId - 20 else enemyId
-	local row = if boss then Db.bosses[base] else Db.enemies[base]
+	local row = if enemyId == SHADOW_BOSS_ID
+		then Db.shadowBoss
+		elseif boss then Db.bosses[base]
+		else Db.enemies[base]
 	local e = newEntity(b, if boss then "Boss" else "Enemy", base, 2)
 	local statMul, scale = 1, 1
 	if forceGiant or (slot == 3 and Rng.rand(b.rng) % 1000 <= 100) then
@@ -338,10 +374,20 @@ local function spawnEnemy(
 		statMul *= Db.multipliers.enhancedStat
 		e.enhanced = true
 	end
+	local hpMul, apMul = 1, 1
+	if b.mode == "Survival" and enemyId ~= SHADOW_BOSS_ID then
+		scale *= b.svvScale
+		statMul *= b.svvStat
+		if boss then
+			-- D-SVV-03: [144] boss HP, [145] boss 10 HP, [146] boss 8 attack
+			hpMul = if base == 10 then Db.survival[6].ver else Db.survival[5].ver
+			apMul = if base == 8 then Db.survival[7].ver else 1
+		end
+	end
 	e.statMul, e.scale = statMul, scale
-	e.hp = row.hp * statMul * b.difficulty.hp
+	e.hp = row.hp * statMul * b.difficulty.hp * hpMul
 	e.maxHp = e.hp
-	e.ap = row.attackPower * statMul
+	e.ap = row.attackPower * statMul * apMul
 	e.speed = row.moveSpeed * scale * b.scale
 	e.attackDist, e.hitDist, e.attackDelay = row.attackDist, row.hitDist, row.attackDelay
 	e.skillPercent, e.skillDamage, e.knockPercent, e.skillDist =
@@ -377,6 +423,8 @@ local function newRewards(): any
 		maceUses = {},
 		maceKills = 0,
 		passed = 0,
+		gems = 0, -- survival boss gems (E05 §B9)
+		darkUnlock = false, -- survival shadow unlock event won (D-SVV-05)
 	}
 end
 
@@ -393,7 +441,8 @@ end
 
 local function new(options: Options): any
 	local stageNumber = options.stage
-	local stage: any = Db.campaign[stageNumber]
+	local survival = stageNumber == 0
+	local stage: any = if survival then Db.survival[waveRow(1)] else Db.campaign[stageNumber]
 	assert(stage, "unknown stage " .. tostring(stageNumber))
 	local shadow = options.loadout.heroKind == "shadow"
 	local mode = modeOf(stageNumber, shadow)
@@ -425,7 +474,14 @@ local function new(options: Options): any
 		loadout.equip[3] = { num = destinyMace.u5, grade = grade }
 	end
 	local stats = Rules.heroStats(loadout)
+	local svvScale, svvStat = survivalMul(1, stage)
 	local b: any = {
+		wave = 1,
+		waveRest = 0,
+		svvScale = svvScale,
+		svvStat = svvStat,
+		darkPending = survival and not shadow and options.darkEvent == true,
+		darkBossId = 0,
 		tick = 0,
 		stageNumber = stageNumber,
 		stage = stage,
@@ -451,8 +507,11 @@ local function new(options: Options): any
 		horseId = 0,
 		loadout = loadout,
 		stats = stats,
-		difficulty = Rules.DIFFICULTY[loadout.difficulty] or Rules.DIFFICULTY[1],
-		clearedMul = if options.cleared then 0.5 else 1,
+		-- survival plays at normal difficulty whatever the slot (E04 §2-2)
+		difficulty = if survival
+			then Rules.DIFFICULTY[1]
+			else Rules.DIFFICULTY[loadout.difficulty] or Rules.DIFFICULTY[1],
+		clearedMul = if options.cleared and not survival then 0.5 else 1,
 		rng = Rng.new(options.seed),
 		seed = options.seed,
 		entities = {},
@@ -614,10 +673,16 @@ end
 
 local function reward(b: any, e: Entity)
 	local playTime = b.tick * DT
+	local survival = b.mode == "Survival"
 	local gold, exp
 	-- Boss-summoned minions and kills after 15 minutes outside survival pay 1 gold, 0 EXP (E04 §2-2).
-	if e.minion or playTime >= FIFTEEN_MINUTES then
+	if e.minion or (playTime >= FIFTEEN_MINUTES and not survival) then
 		gold, exp = 1, 0
+	elseif survival then
+		gold = e.rewardGold * b.difficulty.gold -- D-SVV-04
+		gold += b.stats.goldBonus * gold
+		exp = e.rewardExp * Db.survival[2].ver
+		exp += b.stats.expBonus * exp
 	else
 		gold = e.rewardGold * e.statMul * b.difficulty.gold * b.clearedMul
 		gold += b.stats.goldBonus * gold
@@ -629,6 +694,9 @@ local function reward(b: any, e: Entity)
 	end
 	b.rewards.gold += math.floor(gold)
 	gainExp(b, math.floor(exp))
+	if survival and e.kind == "Boss" and e.n <= 10 then
+		b.rewards.gems += math.min(b.wave // 30 + 1, 15) -- survival boss gems (E04 §2-5)
+	end
 	local allow = if e.kind == "Boss" then 100 else b.stats.dropPercent
 	if Rng.rand(b.rng) % 1000 < allow * 10 then
 		table.insert(b.rewards.drops, { tick = b.tick, boss = e.kind == "Boss", n = e.n })
@@ -1092,6 +1160,10 @@ local function bossRelease(b: any, e: Entity, target: Entity?)
 		target = nil
 	end
 	local n = e.n
+	if n == 13 and not e.boosted and e.hp <= e.maxHp * e.skillDist / 100 then
+		-- shadow boss transforms once at iSkDst% HP: attack x fSkDmg (E02 §4.4)
+		e.boosted, e.ap = true, e.ap * e.skillDamage
+	end
 	if n == 1 then
 		summonMinions(b, e, 1)
 		if target and alive(target) then
@@ -2047,8 +2119,54 @@ local function towerRush(b: any)
 	end
 end
 
+local function nextWave(b: any)
+	b.wave += 1
+	b.stage = Db.survival[waveRow(b.wave)]
+	b.svvScale, b.svvStat = survivalMul(b.wave, b.stage)
+	b.spawn = { created = 0, total = 0, fifth = 0, timer = 0, need = -1 }
+	if b.wave == DARK_EVENT_WAVE and b.darkPending then
+		b.darkPending = false
+		local boss = spawnEnemy(b, SHADOW_BOSS_ID, 0, SCROLL_MAX - 80)
+		if boss then
+			b.darkBossId = boss.id
+		end
+	end
+end
+
+-- E04 §4-4: a wave spawns iUCnt_ x 2 enemies; once the field is clear the next wave starts after the
+-- interlude. The shadow unlock event pauses spawning until its boss falls. True = spawner idle.
+local function stepSurvival(b: any): boolean
+	if b.mode ~= "Survival" then
+		return false
+	end
+	if b.darkBossId ~= 0 then
+		if alive(b.entities[b.darkBossId]) then
+			return true
+		end
+		b.darkBossId = 0
+		b.rewards.darkUnlock = true
+	end
+	if b.waveRest > 0 then
+		b.waveRest -= 1
+		if b.waveRest == 0 then
+			nextWave(b)
+		end
+		return true
+	end
+	if b.spawn.total >= b.stage.unitCount * 2 then
+		if count(b, 2, true) == 0 then
+			b.waveRest = SVV_REST_TICKS
+		end
+		return true
+	end
+	return false
+end
+
 local function stepSpawner(b: any)
 	local sp = b.spawn
+	if stepSurvival(b) then
+		return
+	end
 	if b.dPattern and sp.total >= DESTINY_SPAWNS then
 		return -- destiny and dungeon stop after 60 enemies (E04 §3-2)
 	end
@@ -2307,6 +2425,7 @@ local function cleanup(b: any)
 			or id == b.wagonId
 			or id == b.bossId
 			or id == b.horseId
+			or id == b.darkBossId
 		if e and (alive(e) or keep) then
 			table.insert(kept, id)
 		else
@@ -2456,6 +2575,10 @@ local function snapshot(b: any): any
 		exp = b.expBase + b.exp,
 		gold = b.rewards.gold,
 		kills = b.rewards.killTotal,
+		wave = if b.mode == "Survival" then b.wave else nil,
+		waveRest = if b.mode == "Survival" then b.waveRest else nil,
+		gems = if b.mode == "Survival" then b.rewards.gems else nil,
+		darkEvent = if b.darkBossId ~= 0 then true else nil,
 		points = b.points,
 		boxes = boxes,
 		offer = if b.offer then table.clone(b.offer) else nil,
@@ -2514,6 +2637,28 @@ local function digest(b: any): string
 		)
 		for _, trap in b.traps do
 			table.insert(parts, string.format("trap:%d:%.17g:%d", trap.row, trap.x, trap.line))
+		end
+	end
+	local survival: boolean = b.mode == "Survival"
+	if survival then
+		table.insert(
+			parts,
+			string.format(
+				"svv:%d:%d:%.17g:%.17g:%s:%d:%d:%s",
+				b.wave,
+				b.waveRest,
+				b.svvScale,
+				b.svvStat,
+				tostring(b.darkPending),
+				b.darkBossId,
+				b.rewards.gems,
+				tostring(b.rewards.darkUnlock)
+			)
+		)
+		for _, id in b.order do
+			if b.entities[id].boosted then
+				table.insert(parts, "boost" .. id)
+			end
 		end
 	end
 	if b.spatial then
@@ -2593,6 +2738,7 @@ local function digest(b: any): string
 	return string.format("%08x", hash)
 end
 
+api.survivalLevel = survivalLevel
 api.moveHero = moveHero
 api.distanceAt = Spatial.distanceAt
 api.hero = hero
@@ -2619,6 +2765,9 @@ return table.freeze({
 	SCROLL_MAX = SCROLL_MAX,
 	modeOf = modeOf,
 	destinyLevel = destinyLevel,
+	waveRow = waveRow,
+	survivalMul = survivalMul,
+	survivalLevel = survivalLevel,
 	new = new,
 	-- boar jump stages run their own small world (Jump.luau)
 	step = function(b: any, input: Input?): any

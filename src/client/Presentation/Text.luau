@@ -246,12 +246,16 @@ function Text.number(n: number): string
 end
 
 function Text.stageLabel(stage: number): string
+	if stage == 0 then
+		return "서바이벌"
+	end
 	return string.format("%d-%d", (stage - 1) // 24 + 1, (stage - 1) % 24 + 1)
 end
 
 local MODE_NAME = {
 	Normal = "",
 	Boss = "보스",
+	Survival = "서바이벌",
 	Destiny = "운명",
 	Wagon = "호위",
 	Tower = "점령",

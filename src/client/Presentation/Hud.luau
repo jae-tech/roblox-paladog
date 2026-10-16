@@ -381,6 +381,15 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		elseif view.mode == "Tower" then
 			setGoal((view.points + 15) / 30, string.format("점수 %+d", view.points))
 			goalLabel.Text = "+15 승리 · -15 패배"
+		elseif view.mode == "Survival" then
+			setGoal(
+				if (view.waveRest or 0) > 0 then 1 else 0,
+				string.format("웨이브 %d · 보석 +%d", view.wave or 1, view.gems or 0)
+			)
+			goalLabel.Text = if view.darkEvent
+				then "검은 그림자를 쓰러뜨리세요"
+				elseif (view.waveRest or 0) > 0 then "다음 웨이브 준비 중"
+				else "끝까지 버티세요"
 		elseif goal then
 			setGoal(
 				goal.hp / goal.maxHp,
@@ -466,21 +475,31 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		result.Visible = settled
 		if settled then
 			local outcome = view.outcome or (model.result and model.result.outcome)
-			resultTitle.Text = if outcome == "Victory" then "승리!" else "패배"
+			resultTitle.Text = if outcome == "Victory"
+				then "승리!"
+				elseif view.mode == "Survival" then "원정 종료"
+				else "패배"
 			local lines = {}
 			local rewards = model.rewards
 			if model.settlementStatus ~= "Committed" or not rewards then
 				table.insert(lines, "결과를 저장하는 중...")
 			else
-				local stars = rewards.stars or 0
-				table.insert(
-					lines,
-					"별: " .. string.rep("★", stars) .. string.rep("☆", 3 - stars)
-				)
+				if rewards.wave then
+					table.insert(lines, "도달 웨이브: " .. rewards.wave)
+				else
+					local stars = rewards.stars or 0
+					table.insert(
+						lines,
+						"별: " .. string.rep("★", stars) .. string.rep("☆", 3 - stars)
+					)
+				end
+				if rewards.darkUnlock then
+					table.insert(lines, "새 영웅 해금: " .. catalog.heroNames.shadow)
+				end
 				table.insert(lines, "골드: " .. Text.number(rewards.awardedGold) .. "G")
 				table.insert(lines, "경험치: " .. Text.number(rewards.awardedXp))
 				if rewards.gems and rewards.gems > 0 then
-					table.insert(lines, "업적 보석: " .. rewards.gems)
+					table.insert(lines, "보석: " .. rewards.gems)
 				end
 				for _, code in rewards.items or {} do
 					table.insert(lines, "획득: " .. Text.itemName(catalog, code))

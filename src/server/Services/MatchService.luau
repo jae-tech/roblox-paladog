@@ -297,11 +297,6 @@ local function new(deps: Deps)
 			reply(userId, command.requestId, "Rejected", "Busy")
 			return
 		end
-		-- Survival admission is implemented in R6; both campaign heroes use the same fenced run.
-		if command.stage == 0 then
-			reply(userId, command.requestId, "Rejected", "WrongMode")
-			return
-		end
 		local matchId = deps.newMatchId()
 		session.phase = "Preparing"
 		reply(userId, command.requestId, "Pending")
@@ -331,9 +326,10 @@ local function new(deps: Deps)
 					stage = run.stage,
 					seed = if deps.newSeed then deps.newSeed() else 12345,
 					loadout = ProfileSchema.loadoutOf(runSlot),
-					cleared = runSlot.stars[run.stage] >= 1,
+					cleared = run.stage >= 1 and runSlot.stars[run.stage] >= 1,
 					goldAvailable = runSlot.gold,
 					revives = if profile.gems >= REVIVE_GEMS then 1 else 0,
+					darkEvent = run.stage == 0 and not profile.darkUnlocked, -- D-SVV-05
 				})
 			session.phase, session.matchId, session.stage, session.runOrdinal =
 				"Running", run.matchId, run.stage, run.ordinal
@@ -474,6 +470,10 @@ local function new(deps: Deps)
 			killTotal = battle.rewards.killTotal,
 			quests = Quests.evaluate(session.stage :: number, stats, battle.loadout.heroKind),
 		}
+		if battle.mode == "Survival" then
+			frozen.wave, frozen.gems, frozen.darkUnlock =
+				battle.wave, battle.rewards.gems, battle.rewards.darkUnlock
+		end
 		freezeResult(frozen)
 		session.result = frozen
 		session.finalView = Battle.snapshot(battle)

@@ -14,6 +14,7 @@ type Slot = ServerTypes.Slot
 type Result = ServerTypes.MatchResult
 
 local REVIVE_GEMS = 20 -- E04 §2-5
+local SURVIVAL_GEMS_MAX = 15 -- per boss kill cap, min(wave/30 + 1, 15) (E04 §2-5)
 
 local function int(value: any, low: number, high: number): boolean
 	return type(value) == "number"
@@ -79,12 +80,37 @@ local function reduce(profile: Profile, result: Result): (Profile?, string?)
 	then
 		return nil, "InvalidPayload"
 	end
+	local survival = result.stage == 0
+	if survival then
+		-- Survival never wins; the wave, boss gems (at most the per-kill award for every kill) and the unlock
+		-- flag are re-checked.
+		local wave = result.wave
+		if
+			outcome == "Victory"
+			or not int(wave, 1, 2 ^ 31)
+			or not int(
+				result.gems,
+				0,
+				math.min((wave :: number) // 30 + 1, SURVIVAL_GEMS_MAX) * result.killTotal
+			)
+			or type(result.darkUnlock) ~= "boolean"
+		then
+			return nil, "InvalidPayload"
+		end
+	elseif result.wave ~= nil or result.gems ~= nil or result.darkUnlock ~= nil then
+		return nil, "InvalidPayload"
+	end
 	local nextProfile = Schema.deepClone(profile) :: Profile
 	local slot = nextProfile.slots[result.slot] :: Slot
 	if type(slot) ~= "table" then
 		return nil, "InvalidPayload"
 	end
+	local heroKind: string = slot.heroKind
+	if survival and result.darkUnlock and heroKind ~= "light" then
+		return nil, "InvalidPayload" -- only the light hero meets the shadow unlock event (D-SVV-05)
+	end
 	local stage = result.stage
+	local survivalGems = 0
 	local abandoned = outcome == "Abandoned"
 	local goldDelta, expGain = 0, 0
 	local items: { number } = {}
@@ -117,6 +143,14 @@ local function reduce(profile: Profile, result: Result): (Profile?, string?)
 				return nil, "InvalidPayload"
 			end
 			nextProfile.gems -= REVIVE_GEMS * result.revives
+		end
+		if survival then
+			survivalGems = result.gems :: number
+			nextProfile.gems = math.min(nextProfile.gems + survivalGems, Schema.GEM_MAX)
+			slot.survivalBest = math.max(slot.survivalBest, result.wave :: number)
+			if result.darkUnlock then
+				nextProfile.darkUnlocked = true
+			end
 		end
 		local rng = Rng.new(result.seed + result.runOrdinal)
 		for _ = 1, result.drops do
@@ -169,7 +203,9 @@ local function reduce(profile: Profile, result: Result): (Profile?, string?)
 		awardedXp = expGain,
 		stars = stars,
 		items = items,
-		gems = gems,
+		gems = gems + survivalGems,
+		wave = if survival and not abandoned then result.wave else nil,
+		darkUnlock = if survival and not abandoned and result.darkUnlock then true else nil,
 	}
 	nextProfile.activeRun = nil
 	return nextProfile, nil

@@ -449,10 +449,10 @@ return function(env: any, check: any)
 		check("abandon-owner-freed", 0, a.match.ownedMatchCount(), a.tick)
 	end
 
-	-- modes not wired yet are refused before any run opens
+	-- survival (stage 0) stays locked until stage 12 is cleared on the slot (D-UNLOCK-01, R6)
 	do
 		local zero = a.lobby(1, { kind = "StartStage", stage = 0 })
-		check("survival-not-yet", "WrongMode", zero.reason, a.tick)
+		check("survival-locked", "LockedStage", zero.reason, a.tick)
 	end
 
 	-- revive costs 20 gems at settlement; a defeat keeps kill gold and EXP

@@ -7,6 +7,8 @@ local ServerTypes = require("../ServerTypes")
 local Schema = require("./ProfileSchema")
 local Settlement = require("./Settlement")
 
+local SURVIVAL_UNLOCK_STAGE = 12 -- D-UNLOCK-01
+
 type ProfileV1 = ServerTypes.ProfileV1
 type Session = ServerTypes.Session
 
@@ -485,6 +487,8 @@ local function new(deps: Deps)
 					return "NoSlot"
 				elseif op.stage >= 1 and (slot.stars[op.stage] or -1) < 0 then
 					return "LockedStage"
+				elseif op.stage == 0 and slot.stars[SURVIVAL_UNLOCK_STAGE] < 1 then
+					return "LockedStage" -- D-UNLOCK-01 / D-SVV-01
 				end
 				profile.runCounter += 1
 				profile.activeRun = {

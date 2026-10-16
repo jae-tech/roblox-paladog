@@ -195,12 +195,54 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	end
 
 	-- Stages ----------------------------------------------------------------------------------------
+	-- Survival (stage 0): waves until the hero falls; opens with stage 12 cleared (D-UNLOCK-01).
+	local function survivalPanel(slot: any)
+		local open = slot.stars[12] >= 1
+		local detail = Widgets.frame(content, "Survival", Theme.panel, 8)
+		place(detail, 0, 42, 540, 200)
+		local head = Widgets.label(
+			detail,
+			"Head",
+			string.format("서바이벌 · 최고 웨이브 %d", slot.survivalBest),
+			16,
+			Theme.gold
+		)
+		place(head, 10, 6, 400, 24)
+		head.TextXAlignment = Enum.TextXAlignment.Left
+		local lines = {
+			"끝없이 몰려오는 웨이브를 버티세요. 웨이브마다 적이 강해집니다.",
+			"보스를 쓰러뜨리면 보석을 얻습니다. 쓰러지면 원정이 끝납니다.",
+			if open
+				then "난이도는 항상 보통입니다."
+				else "1-12 스테이지를 클리어하면 열립니다.",
+		}
+		for i, text in lines do
+			local line = Widgets.label(detail, "Line" .. i, text, 13)
+			place(line, 10, 36 + (i - 1) * 24, 400, 22)
+			line.TextXAlignment = Enum.TextXAlignment.Left
+		end
+		local go = Widgets.button(
+			detail,
+			"Start",
+			if open then "출전" else "잠김",
+			18,
+			if open then Theme.gold else Theme.locked
+		)
+		go.TextColor3 = Theme.background
+		place(go, 420, 60, 110, 70)
+		go.Activated:Connect(function()
+			if open then
+				handlers.start(0)
+			end
+		end)
+	end
+
 	local function stages(slot: any)
-		for c = 1, 5 do
+		for c = 1, 6 do
 			local b = Widgets.button(
 				content,
 				"Chapter" .. c,
-				c .. ". " .. catalog.chapters[c],
+				if c == 6 then "서바이벌" else c .. ". " .. catalog.chapters[c],
 				13,
 				if ui.chapter == c then Theme.buttonHot else Theme.button
 			)
@@ -208,6 +250,10 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			b.Activated:Connect(function()
 				ui.chapter, dirty = c, true
 			end)
+		end
+		if ui.chapter == 6 then
+			survivalPanel(slot)
+			return
 		end
 		local grid = Widgets.grid(content, "Grid", UDim2.fromOffset(84, 58), 6)
 		place(grid, 0, 42, 540, 260)

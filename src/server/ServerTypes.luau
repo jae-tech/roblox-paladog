@@ -32,6 +32,9 @@ export type MatchResult = {
 	revives: number,
 	killTotal: number,
 	quests: { boolean },
+	wave: number?, -- survival: wave reached
+	gems: number?, -- survival: boss gems earned
+	darkUnlock: boolean?, -- survival: shadow unlock event won
 }
 
 export type Slot = {
@@ -72,6 +75,8 @@ export type ProfileV1 = {
 		stars: number?,
 		items: { number }?,
 		gems: number?,
+		wave: number?,
+		darkUnlock: boolean?,
 	}?,
 	recentOperations: { Receipt },
 	lease: { sessionId: string, ownerJobId: string, expiresAt: number }?,

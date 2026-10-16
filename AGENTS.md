@@ -38,6 +38,7 @@ python3 tools/verify_p1.py                 # 데이터 golden·재생성 diff0·
 .tools/luau-0.742/luau tests/cli_r1.luau   # REMAKE 전투 코어
 .tools/luau-0.742/luau tests/cli_r2.luau   # REMAKE 모드·보스
 .tools/luau-0.742/luau tests/cli_r3.luau   # REMAKE 성장·서버 흐름·공격 매트릭스·생명주기
+.tools/luau-0.742/luau tests/cli_r6.luau   # REMAKE 서바이벌 웨이브·보석·해금 이벤트·정산
 .tools/luau-0.742/luau tests/cli_p2.luau   # 프로토콜 v2 허용목록·격리·세션·lease (P2 이식)
 .tools/luau-0.742/luau tests/cli_p8.luau   # 저장 어댑터·lease·장애 주입 (P8 이식)
 python3 tools/build_remake.py --check      # 원작 데이터·퀘스트 재생성 diff0

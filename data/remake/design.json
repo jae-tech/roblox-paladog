@@ -42,7 +42,13 @@
     "D-SWORD-04": "Poison dagger creates a one-second cloud with 25 px radius at the arrow hit, refreshing the documented ten-second poison without resetting its damage timer.",
     "D-JUMP-03": "The original runner speed is unknown: runner uses 90% of the boar speed, stopping at the finish. Coins use horizontal swept pickup during grounded or airborne movement (original tile geometry unavailable), so all coin goals are attainable.",
     "D-3D-01": "User-approved 3D companion combat: server X/Z ground-plane geometry, original food/mana economy, summons 30 px behind hero with +/-12 px spread; corridor depth +/-90 px, normalized diagonal speed.",
-    "D-3D-02": "Presentation only: 1 px = 0.12 studs; behind-hero Scriptable camera offset (-22,14,0), WASD movement and Q/E/R or left-click magic. Models are original client-only anchored code geometry; server snapshots own movement/damage."
+    "D-3D-02": "Presentation only: 1 px = 0.12 studs; behind-hero Scriptable camera offset (-22,14,0), WASD movement and Q/E/R or left-click magic. Models are original client-only anchored code geometry; server snapshots own movement/damage.",
+    "D-SVV-01": "Survival is stage 0 for the current slot of either hero; it unlocks with stage 12 cleared on that slot (D-UNLOCK-01). The run always ends in Defeat/Abandoned and records the wave reached as survivalBest.",
+    "D-SVV-02": "Wave interlude (original result animation, length not in the research): 3 s (90 ticks) without spawning after a wave is cleared; food, mana, kills and the field carry over (E04 §1-2).",
+    "D-SVV-03": "Survival boss multipliers: HP x [144].fVer 0.2 for bosses, replaced by [145].fVer 0.5 for boss 10; boss 8 attack x [146].fVer 0.5 (E04 §4-4 values, combination rule assumed).",
+    "D-SVV-04": "Survival kill rewards: gold = iRwGld x 1.0 x normal difficulty, EXP = iRwExp x [141].fVer 27 (no stat multiplier, no 15-minute or replay rule); skill/ring gold and EXP bonuses still apply; boss-summoned minions pay 1 gold.",
+    "D-SVV-05": "Shadow unlock event: a light-hero run whose account lacks the shadow hero stops spawning at the start of wave 4 and releases the shadow boss row as-is (no survival multipliers). Killing it unlocks the shadow hero at settlement and waves resume; it gives no gems. At HP <= iSkDst 40% it transforms once, attack x fSkDmg 5.",
+    "D-SVV-06": "Not reproduced: iLevel2Allow (level cap 999, major skills 99) because the research does not list which skills reach 99; level cap stays 200 in survival. Rankings are excluded (no social server)."
   },
   "anim": {
     "known": {

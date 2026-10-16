@@ -52,6 +52,7 @@ local SUITES = {
 	["T-R2"] = true,
 	["T-R3"] = true,
 	["T-R5"] = true,
+	["T-R6"] = true,
 	["T-3D"] = true,
 }
 
@@ -112,6 +113,19 @@ function Harness.runSuite(suiteId: string, seed: number)
 				catalog = require(ReplicatedStorage.Shared.RemakeCatalog),
 				ActionRouter = require(GameClient.Input.ActionRouter),
 				SnapshotBuffer = require(GameClient.Net.SnapshotBuffer),
+			}, check)
+			return
+		elseif suiteId == "T-R6" then
+			require(tests.unit.R6)({
+				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				Schema = require(GameServer.Services.ProfileSchema),
+				Settlement = require(GameServer.Services.Settlement),
+				Battle = battle.Battle,
+				Db = require(GameServer.Config.Remake.Db),
+				ProfileService = require(GameServer.Services.ProfileService),
+				MatchService = require(GameServer.Services.MatchService),
+				RemoteGateway = require(GameServer.Net.RemoteGateway),
+				SessionStore = require(GameServer.Services.SessionStore),
 			}, check)
 			return
 		elseif suiteId == "T-P8" then
