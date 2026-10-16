@@ -229,11 +229,18 @@ def golden(db):
 
 
 def strip(value):
-    """Drop research names and None for the release tree."""
+    """Drop research names and None for the release tree. Records in one list share one key set (missing
+    numeric cells become 0) so Luau infers a single element type for the array."""
     if isinstance(value, dict):
         return {k: strip(v) for k, v in value.items() if k != "research" and v is not None}
     if isinstance(value, list):
-        return [strip(v) for v in value]
+        items = [strip(v) for v in value]
+        if items and all(isinstance(v, dict) for v in items):
+            keys = set().union(*items)
+            for item in items:
+                for key in keys - set(item):
+                    item[key] = 0
+        return items
     return value
 
 

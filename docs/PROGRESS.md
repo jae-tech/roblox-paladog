@@ -140,3 +140,16 @@
 - Studio에서 발견: rbxm import에는 `ReplicatedStorage.StageGameplay` 속성이 빠져 클라이언트가 스테이지 모드로 뜨지 않는다. 미저장 편집본에서만 `true`로 맞췄다.
 - 결과: `verify_p9.py` **BLOCKED(exit 2)**. device-touch(Android 실기기)만 남았다. P0 local PASS.
 - 출시 전 수동 확인: PersistencePolicy 활성화(현재 false, QA universe 고정), 에셋 시각·라이선스 검토, 실기기 터치. reviewer 서명은 없다(테스트 정책상 다중 에이전트 리뷰 생략).
+
+## 원작 재현 확장 R0·R1 (2026-10-16)
+
+사용자 지시로 범위를 원작 재현(시스템·수치 동일, 외형·이름 오리지널, 팔라독·다크독 캠페인 + 서바이벌)으로 넓혔다. 계획·결정은 `docs/REMAKE_PLAN.md`.
+
+- R0: `tools/build_remake.py`가 부록 A1~A14 전체(스테이지 241행 포함)를 파싱한다. golden 30개와 행 수 검사를 거쳐 `data/remake/db.json`, `src/server/Config/Remake/Db.luau`, `src/shared/RemakeCatalog.luau`를 만든다. 연구 원문 이름은 출시 트리에 넣지 않는다(테스트로 확인). Python 3개 PASS.
+- R1: `src/server/Battle/`(30Hz 원작 단위 전투)를 만들었다.
+  - 식량·마나·HP 재생, 소환 비용·쿨·리더십, 유닛 9종(레벨표 대체, 스킬, 오오라 밖 스킬 불가, 캥거루 주먹, 거북 대기, 곰·용 범위, 원숭이 포물선, 펭귄 빙결)
+  - 적 1~40(거대·강화 배수, 원거리 5종, 유령, 벽형, 자폭), 본진·50% 거대 러시, 처치 보상(난이도·재클리어·15분 규칙·스킬 보너스)·드롭 판정
+  - 메이스 11종, 레벨업 3지선다(전투 일시정지, 5의 배수 고정 후보), 결정론 digest
+  - `tests/cli_r1.luau` 112 PASS, P0 local PASS.
+- 미구현(다음 단계): 보스 패턴·운명·목마·타워(R2), 프로필 v2·정산·MatchService 교체(R3), 클라이언트(R4), 다크독(R5), 서바이벌(R6). 기존 MVP 시뮬레이션은 R3에서 교체한다.
+- [추정]: 투사체 판정 폭 10px(D-PROJ-01), 메이스 모션 18프레임·효과 8프레임(D-ANIM-02), 유령 이동 속도, 서버 보호 상한 아군 80·적 120(원작 무제한).
