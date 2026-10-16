@@ -69,3 +69,11 @@
 - 봇 결과(seed 12345): s01 첫 도전 승리, s02 3회 모두 패배 → s03 잠김 유지 확인. 정상 입력 기준 s02 난이도가 봇 전략보다 높다. 밸런스/봇 판단은 미결.
 - 부하 축소판(4경기·cap·1200tick) p95≤10ms PASS(CLI 환경 한정).
 - NOT_RUN: P6·P8·P9 Studio 검증, 실 DataStore(승인 필요), 10분 부하, 실기기/멀티터치, `verify_p9.py`.
+
+## Studio·부하 검증 (2026-10-16)
+
+- 승인 universe `10771015944`. Rojo가 기존 스크립트 14개에 패치를 적용하지 못해 Studio가 P5 소스로 남아 있었다. 이전의 "Studio 실행 소스 불일치" 원인으로 보인다. 재연결 후에도 같아서, 현재 소스를 `rojo build` rbxm으로 만들어 MCP `import_rbxm`으로 교체했다(저장 안 함). 스크립트 91개 바이트 길이가 로컬 sourcemap과 일치.
+- 2-client playtest 서버: T-P6 162 / T-P8 52 / T-P9 78 PASS. CLI와 순서별 assertion 해시 일치.
+- 부하(Studio 서버 VM, 헤드리스 World): 4경기 cap 유지, 워밍업 1200 + 측정 12000 tick(게임 10분, 실제 약 15Hz로 14.8분). tick p50 1.46 / p95 1.97 / p99 2.66 / max 5.10ms, cap 초과 0, GC 1517→1479KB. 한계: Remote·snapshot 미포함, 탄 최대 14개라 탄 상한 128은 미달.
+- `tools/verify_p9.py`: CLI P6~P9 재실행 + Studio 증거(소스 길이·suite 해시) 검증. 결과 BLOCKED(exit 2): studio-suites·perf PASS, 실 DataStore(사용자 미승인)·실기기/멀티터치(도구 없음) BLOCKED. 위조 해시는 FAIL로 확인.
+- 미해결: Rojo 패치 미적용 원인(플러그인 쪽), place 반복 재열림, s02 봇 3연패(밸런스), 탄 상한 부하.
