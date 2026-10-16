@@ -123,3 +123,7 @@
 - 한계: Studio 프로세스 하나 안의 서로 다른 세션이며 Studio 두 개를 쓴 경합이 아니다. 강제 종료(crash) 시험은 하지 않았다.
 - `verify_p9.py`: datastore-live PASS. 전체는 **BLOCKED(exit 2)**: device-touch(실기기 멀티터치)만 남음.
 - 사용자 조치: 검증이 끝났으므로 "Studio API 서비스 액세스"는 다시 꺼도 된다.
+
+## 밸런스 결정 승인 (2026-10-16)
+
+- 사용자 승인: overlay 결정 14개 전체(MVP-STAGE-02 포함), approvedBy "jaetech". 재생성 결과 바뀐 것은 balance JSON의 overlayFileSha256뿐이고 생성 Luau·balanceHash는 그대로다. P1 gate·Python 테스트 PASS.
