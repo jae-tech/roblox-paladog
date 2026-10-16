@@ -465,5 +465,14 @@ return function(env: any, check: any)
 		check("plaza-unavailable-shown", true, P.view("Unavailable", false).menuVisible, 0)
 		check("plaza-loading-walks", true, P.view("ProfileLoading", false).controlsEnabled, 0)
 		check("plaza-nil-phase", true, P.view(nil, true).controlsEnabled, 0)
+		-- D-PLAZA-03: in an arena the real character walks during the battle, not on the result screen
+		check("plaza-avatar-battle-walks", true, P.view("Running", false, true).controlsEnabled, 0)
+		check("plaza-avatar-still-battle", true, P.view("Running", false, true).inBattle, 0)
+		check(
+			"plaza-avatar-result-locked",
+			false,
+			P.view("Settled", false, true).controlsEnabled,
+			0
+		)
 	end
 end

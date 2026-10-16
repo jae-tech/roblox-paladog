@@ -12,6 +12,7 @@ local RemoteBinding = require("./Net/RemoteBinding")
 local FixedStep = require("./Simulation/FixedStep")
 local PersistencePolicy = require("./Persistence/PersistencePolicy")
 local Plaza = require("./World/Plaza")
+local Arena = require("./World/Arena")
 local PlazaBoard = require("./World/PlazaBoard")
 
 local active: any = nil
@@ -44,8 +45,16 @@ local function start(): any
 		queueCap = protocol.LIMITS.profileQueueCap,
 		log = warn,
 	})
+	local arena: any = nil -- R8 avatar combat arenas, created with the plaza below
 	local match = MatchService.new({
 		spatial = true,
+		follow = function(userId: number)
+			local player = Players:GetPlayerByUserId(userId)
+			if arena and player then
+				return arena.follow(player)
+			end
+			return nil, nil
+		end,
 		profiles = profiles,
 		tick = function()
 			return tick
@@ -90,6 +99,9 @@ local function start(): any
 			match.stepAll()
 			if tick % 3 == 0 then -- 10 Hz owner snapshots at the 30 Hz battle tick
 				core.publishSnapshots()
+				if arena then
+					arena.step()
+				end
 			end
 		end)
 	end)
@@ -109,6 +121,31 @@ local function start(): any
 	end)
 	-- Plaza (R8): shared square, Roblox leaderstats and the per-server board, refreshed every 2 s.
 	local plaza = Plaza.new(workspace)
+	-- Avatar combat: the real character enters an arena while its match runs, then returns to the gate.
+	local arenas = Arena.new(workspace)
+	local backToGate = plaza.portal.CFrame * CFrame.new(0, -5, 8)
+	local MANUAL: { [string]: boolean } = { Destiny = true, Tower = true, Dungeon = true }
+	arena = {
+		follow = arenas.follow,
+		step = function()
+			for _, player in Players:GetPlayers() do
+				local phase = match.phaseOf(player.UserId)
+				local battle = match.battleOf(player.UserId)
+				if phase == "Running" and battle and battle.spatial and not battle.jump then
+					if arenas.enter(player, battle, not MANUAL[battle.mode]) then
+						arenas.leash(player, battle)
+					end
+				elseif phase == "Settling" or phase == "Settled" then
+					arenas.hold(player)
+				else
+					arenas.leave(player, backToGate)
+				end
+			end
+		end,
+	}
+	Players.PlayerRemoving:Connect(function(player)
+		arenas.release(player.UserId)
+	end)
 	local function leaderstats(player: Player): Folder
 		local folder = player:FindFirstChild("leaderstats") :: Folder?
 		if folder then

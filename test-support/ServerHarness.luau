@@ -154,6 +154,13 @@ function Harness.runSuite(suiteId: string, seed: number, options: { loadTicks: n
 			require(tests.unit.R8)({
 				PlazaBoard = require(GameServer.World.PlazaBoard),
 				Schema = require(GameServer.Services.ProfileSchema),
+				ArenaSpace = require(ReplicatedStorage.Shared.ArenaSpace),
+				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				Battle = battle.Battle,
+				ProfileService = require(GameServer.Services.ProfileService),
+				MatchService = require(GameServer.Services.MatchService),
+				RemoteGateway = require(GameServer.Net.RemoteGateway),
+				SessionStore = require(GameServer.Services.SessionStore),
 			}, check)
 			return
 		elseif suiteId == "T-P8" then

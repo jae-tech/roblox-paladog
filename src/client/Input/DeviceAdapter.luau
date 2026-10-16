@@ -34,8 +34,11 @@ function DeviceAdapter.new(router: Router, buttons: { [string]: any })
 	local touches: { [InputObject]: RBXScriptConnection } = {}
 	local names: { string } = {}
 	local destroyed = false
-	-- R8: outside a battle the keys belong to the Roblox avatar and the plaza's E prompt.
-	local passive = false
+	-- R8: outside a battle every key belongs to the Roblox avatar and the plaza's E prompt; in avatar
+	-- combat only the movement keys do (summon/weapon keys still reach the router).
+	local passive = "none"
+	local MOVEMENT: { [string]: boolean } =
+		{ Left = true, Right = true, StrafeLeft = true, StrafeRight = true }
 	local function connect(signal: RBXScriptSignal, callback: (...any) -> ())
 		table.insert(connections, signal:Connect(callback))
 	end
@@ -60,7 +63,11 @@ function DeviceAdapter.new(router: Router, buttons: { [string]: any })
 			elseif state == Enum.UserInputState.End then
 				router.finish(input.KeyCode)
 			end
-			if passive or UserInputService:GetFocusedTextBox() ~= nil then
+			if
+				passive == "all"
+				or (passive == "movement" and MOVEMENT[action])
+				or UserInputService:GetFocusedTextBox() ~= nil
+			then
 				return Enum.ContextActionResult.Pass
 			end
 			if state == Enum.UserInputState.Begin then
@@ -135,8 +142,14 @@ function DeviceAdapter.new(router: Router, buttons: { [string]: any })
 	router.setBlocked("text", UserInputService:GetFocusedTextBox() ~= nil)
 	router.setBlocked("roblox-menu", GuiService.MenuIsOpen)
 	local adapter = {}
-	function adapter.setPassive(value: boolean)
-		passive = value
+	function adapter.setPassive(value: string)
+		if passive ~= value then
+			passive = value
+			for action in MOVEMENT do
+				router.finish(KEYS[action][1]) -- drop a held battle move when the keys change owner
+				router.finish(KEYS[action][2])
+			end
+		end
 	end
 	function adapter.setBlocked(reason: string, value: boolean)
 		if not destroyed then

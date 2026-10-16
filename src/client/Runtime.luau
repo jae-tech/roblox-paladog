@@ -43,35 +43,33 @@ local function start(): any
 	local controller = makeController()
 	local lastUnit = 1
 	local menuOpen = false -- R8: the dungeon entrance in the plaza opens the expedition menu
-	-- The local avatar stands still while the menu or a battle owns WASD/touch (the client owns its
-	-- character physics, so zero walk speed / jump height stops it; PlayerModule may not exist).
-	local controlsOn: boolean? = nil
-	local savedWalk, savedJump, savedPower = 16, 7.2, 50
+	-- Avatar movement: locked (0) while the menu or a non-avatar battle owns input; inside an arena the
+	-- server-chosen ArenaWalkSpeed matches the hero; otherwise the place defaults. The client owns its
+	-- character physics, so the local Humanoid values are what count (the server leashes the result).
+	local StarterPlayer = game:GetService("StarterPlayer")
 	local function setControls(enabled: boolean)
-		local character = Players.LocalPlayer.Character
+		local player = Players.LocalPlayer
+		local character = player.Character
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 		if not humanoid then
-			controlsOn = nil -- apply again once the avatar (re)spawns
 			return
 		end
-		if controlsOn == enabled and humanoid:GetAttribute("PlazaLocked") == not enabled then
-			return
+		local arenaSpeed = player:GetAttribute("ArenaWalkSpeed")
+		local walk = if not enabled
+			then 0
+			elseif type(arenaSpeed) == "number" then arenaSpeed
+			else StarterPlayer.CharacterWalkSpeed
+		local jump = if enabled then StarterPlayer.CharacterJumpHeight else 0
+		local power = if enabled then StarterPlayer.CharacterJumpPower else 0
+		if humanoid.WalkSpeed ~= walk then
+			humanoid.WalkSpeed = walk
 		end
-		if enabled then
-			if humanoid:GetAttribute("PlazaLocked") then
-				humanoid.WalkSpeed, humanoid.JumpHeight = savedWalk, savedJump
-				humanoid.JumpPower = savedPower
-			end
-			humanoid:SetAttribute("PlazaLocked", false)
-		else
-			if not humanoid:GetAttribute("PlazaLocked") then
-				savedWalk, savedJump = humanoid.WalkSpeed, humanoid.JumpHeight
-				savedPower = humanoid.JumpPower
-			end
-			humanoid.WalkSpeed, humanoid.JumpHeight, humanoid.JumpPower = 0, 0, 0
-			humanoid:SetAttribute("PlazaLocked", true)
+		if humanoid.JumpHeight ~= jump then
+			humanoid.JumpHeight = jump
 		end
-		controlsOn = enabled
+		if humanoid.JumpPower ~= power then
+			humanoid.JumpPower = power
+		end
 	end
 	local auto = AutoAssist.new(catalog)
 	-- Summon/weapon presses toggle that slot's auto (D-AUTO-01) in plain battle modes; others pass through.
@@ -219,10 +217,15 @@ local function start(): any
 					and (model.battle.offer ~= nil or model.battle.reviveOffer == true)
 			)
 			router.step(now)
-			local plaza = PlazaState.view(model.phase, menuOpen)
+			local avatarCombat = Players.LocalPlayer:GetAttribute("ArenaOrigin") ~= nil
+			local plaza = PlazaState.view(model.phase, menuOpen, avatarCombat)
 			model.menuVisible = plaza.menuVisible
+			model.avatarCombat = avatarCombat and plaza.inBattle
 			setControls(plaza.controlsEnabled)
-			adapter.setPassive(not plaza.inBattle)
+			-- outside battles every key is Roblox's; in avatar combat only the movement keys are
+			adapter.setPassive(
+				if not plaza.inBattle then "all" elseif avatarCombat then "movement" else "none"
+			)
 			if model.battle and model.phase == "Running" and not router.inspect().blocked then
 				for _, d in auto.decide(model.battle, model.slot, now) do
 					if d.kind == "Summon" then
@@ -238,6 +241,37 @@ local function start(): any
 				hudAt = now
 			end
 			ui.render(controller.frame(now), dt)
+		end)
+	)
+	-- Entering an arena: start the Roblox camera behind the character, looking down the dungeon (+X).
+	table.insert(
+		connections,
+		Players.LocalPlayer:GetAttributeChangedSignal("ArenaOrigin"):Connect(function()
+			local origin = Players.LocalPlayer:GetAttribute("ArenaOrigin")
+			if typeof(origin) ~= "Vector3" then
+				return
+			end
+			task.spawn(function()
+				local character = Players.LocalPlayer.Character
+				local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+				local camera = workspace.CurrentCamera
+				-- the server's teleport can land a few frames after the attribute
+				for _ = 1, 40 do
+					if
+						not rootPart
+						or not rootPart:IsA("BasePart")
+						or (rootPart.Position - origin).Magnitude < 250
+					then
+						break
+					end
+					task.wait(0.05)
+				end
+				if rootPart and rootPart:IsA("BasePart") and camera then
+					local at = rootPart.Position
+					camera.CFrame =
+						CFrame.lookAt(at + Vector3.new(-14, 7, 0), at + Vector3.new(12, 0, 0))
+				end
+			end)
 		end)
 	)
 	table.insert(

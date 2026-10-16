@@ -60,7 +60,12 @@ export type Deps = {
 	moveTtlTicks: number,
 	newSeed: (() -> number)?,
 	spatial: boolean?,
+	-- R8 avatar combat: battle-unit (x, z) of the player's real character; the hero walks toward it.
+	follow: ((userId: number) -> (number?, number?))?,
 }
+
+-- Within this many battle units the hero stops chasing the character (no jitter around the target).
+local FOLLOW_DEAD_ZONE = 4
 
 local ACTIVE: { [Phase]: boolean } =
 	{ Preparing = true, Running = true, Settling = true, Settled = true }
@@ -499,10 +504,22 @@ local function new(deps: Deps)
 			if session.phase == "Running" and battle then
 				local commands = session.pending
 				session.pending = {}
+				local axis, strafe = effectiveAxis(userId), effectiveStrafe(userId)
+				local follow = deps.follow
+				if follow and battle.spatial and not battle.jump then
+					-- server-side chase at the hero's own speed: the character never moves the hero faster
+					local tx, tz = follow(userId)
+					local hero = Battle.hero(battle)
+					if tx and tz and hero then
+						local dx, dz = tx - hero.x, tz - (hero.z or 0)
+						axis = if math.abs(dx) > FOLLOW_DEAD_ZONE then math.sign(dx) else 0
+						strafe = if math.abs(dz) > FOLLOW_DEAD_ZONE then math.sign(dz) else 0
+					end
+				end
 				local result = Battle.step(battle, {
 					commands = commands,
-					axis = effectiveAxis(userId),
-					strafe = effectiveStrafe(userId),
+					axis = axis,
+					strafe = strafe,
 				})
 				for _, outcome in result.results do
 					local requestId = outcome.requestId or ""

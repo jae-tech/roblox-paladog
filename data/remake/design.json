@@ -52,7 +52,7 @@
     "D-AUTO-01": "Not in the original (no auto summon/attack). Summon and weapon buttons toggle per-slot auto in plain battle modes (not Destiny/Tower/Jump); the client sends the same commands when the HUD shows ready, weapons only with an enemy within 500 and never the gold weapon. Server rules, quests and rewards are unchanged.",
     "D-PLAZA-01": "Not in the original. Players join a shared code-built plaza with their Roblox avatars; the dungeon gate prompt opens the expedition menu; battles stay server-authoritative and client-rendered away from the plaza; avatar movement is locked while the menu or a battle owns input.",
     "D-PLAZA-02": "Leaderboard is per server (leaderstats + plaza board): highest cleared stage, then survival best wave, then level. A global board needs an OrderedDataStore and waits for persistence approval.",
-    "D-PLAZA-03": "In the dungeon the hero is drawn as a local, script-free copy of the player's own Roblox avatar, posed from server snapshots with a procedural walk and an arm raise while attacking; the jump (boar) stages keep their mount figure. Combat values do not change."
+    "D-PLAZA-03": "Avatar combat: each running spatial match borrows a server arena slot (invisible collision floor/walls far from the plaza, drawn by the client dungeon renderer). The player's real Roblox character is moved in and walks with normal Roblox controls and camera; the server hero chases it at the hero's own speed (dead zone 4 units) and the server leashes the character back to the hero beyond 10 studs, so moving faster gains nothing. Modes where the hero cannot move (Destiny/Tower/Dungeon) pin the character; boar jump stages keep the old screen. Combat values do not change."
   },
   "anim": {
     "known": {

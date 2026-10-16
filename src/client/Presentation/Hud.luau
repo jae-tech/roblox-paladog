@@ -328,7 +328,9 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		local jumping = view.mode == "Jump"
 		jump.Visible = jumping
 		units.Visible, foodBar.Visible, manaBar.Visible = not jumping, not jumping, not jumping
+		-- R8 avatar combat: the Roblox thumbstick / WASD moves the real character instead
 		left.Visible = not jumping
+			and not model.avatarCombat
 			and view.mode ~= "Dungeon"
 			and view.mode ~= "Tower"
 			and view.mode ~= "Destiny"

@@ -13,70 +13,7 @@ type Figure = {
 	label: TextLabel?,
 	lastX: number,
 	lastZ: number,
-	joints: { [string]: Motor6D }?,
 }
-
--- R8 (D-PLAZA-03): the player's own Roblox avatar is the hero in the dungeon. A local, script-free copy
--- of the plaza character is posed from server snapshots; the server still decides every move and hit.
-local JOINTS: { [string]: { string } } = {
-	LeftHip = { "LeftHip", "Left Hip" },
-	RightHip = { "RightHip", "Right Hip" },
-	LeftShoulder = { "LeftShoulder", "Left Shoulder" },
-	RightShoulder = { "RightShoulder", "Right Shoulder" },
-}
-
-local function avatarCopy(): (Model?, { [string]: Motor6D })
-	local player = Players.LocalPlayer
-	local character = player and player.Character
-	local joints: { [string]: Motor6D } = {}
-	if not character or not character:FindFirstChild("HumanoidRootPart") then
-		return nil, joints
-	end
-	local was = character.Archivable
-	character.Archivable = true
-	local copy = character:Clone()
-	character.Archivable = was
-	if not copy then
-		return nil, joints
-	end
-	for _, d in copy:GetDescendants() do
-		if
-			d:IsA("LuaSourceContainer")
-			or d:IsA("Sound")
-			or d:IsA("ForceField")
-			or d:IsA("BillboardGui")
-			or d:IsA("ProximityPrompt")
-		then
-			d:Destroy()
-		elseif d:IsA("BasePart") then
-			d.CanCollide, d.CanTouch, d.CanQuery = false, false, false
-			d.Massless = true
-			d.Anchored = false
-		end
-	end
-	local humanoid = copy:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-		humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
-		humanoid.PlatformStand = true
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-	end
-	local root = copy:FindFirstChild("HumanoidRootPart") :: BasePart
-	root.Anchored = true
-	root.Transparency = 1
-	copy.PrimaryPart = root
-	for key, names in JOINTS do
-		for _, name in names do
-			local motor = copy:FindFirstChild(name, true)
-			if motor and motor:IsA("Motor6D") then
-				joints[key] = motor
-				break
-			end
-		end
-	end
-	copy.Name = "Avatar"
-	return copy, joints
-end
 
 local function part(
 	parent: Instance,
@@ -128,6 +65,7 @@ local function new(parent: Instance, catalog: any)
 	root.Size = UDim2.fromScale(1, 1)
 	local folder: Folder? = nil
 	local mapLength = 0
+	local mapOrigin = Vector3.zero
 	local figures: { [number]: Figure } = {}
 	local shots: { [number]: Part } = {}
 	local aura: Part? = nil
@@ -161,7 +99,7 @@ local function new(parent: Instance, catalog: any)
 		restoreCamera()
 	end
 
-	local function makeMap(length: number)
+	local function makeMap(length: number, origin: Vector3)
 		local arena = Instance.new("Folder")
 		arena.Name = "LanternExpedition3D"
 		arena:SetAttribute("ClientVisualOnly", true)
@@ -231,6 +169,15 @@ local function new(parent: Instance, catalog: any)
 			Enum.Material.Neon
 		).Transparency =
 			0.5
+		-- R8: the dungeon is drawn at the player's arena slot, over the server's collision floor
+		mapOrigin = origin
+		if origin ~= Vector3.zero then
+			for _, d in arena:GetDescendants() do
+				if d:IsA("BasePart") then
+					d.CFrame += origin
+				end
+			end
+		end
 		arena.Parent = Workspace
 	end
 
@@ -259,38 +206,6 @@ local function new(parent: Instance, catalog: any)
 		return if e.team == 1 then "아군" else "적"
 	end
 
-	-- Avatar hero: returns its height and joints, or nil to keep the block figure.
-	local function heroAvatar(m: Model, view: any): (number?, { [string]: Motor6D }?)
-		local copy, joints = avatarCopy()
-		if not copy then
-			return nil, nil
-		end
-		-- feet on the floor: the copy's bounding box bottom sits at the pivot
-		local _, size = copy:GetBoundingBox()
-		copy:PivotTo(CFrame.new(0, size.Y / 2, 0))
-		copy.Parent = m
-		local hand = copy:FindFirstChild("RightHand") or copy:FindFirstChild("Right Arm")
-		local orb = part(
-			m,
-			"Magic",
-			Vector3.new(0.65, 0.65, 0.65),
-			CFrame.new(1.2, size.Y * 0.62, -0.5),
-			if view.heroKind == "shadow"
-				then Color3.fromRGB(185, 105, 255)
-				else Color3.fromRGB(90, 201, 255),
-			Enum.Material.Neon
-		)
-		orb.Shape = Enum.PartType.Ball
-		if hand and hand:IsA("BasePart") then
-			orb.Anchored = false
-			orb.CFrame = hand.CFrame * CFrame.new(0, -hand.Size.Y / 2 - 0.3, 0)
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0, weld.Part1 = hand, orb
-			weld.Parent = orb
-		end
-		return size.Y, joints
-	end
-
 	local function build(e: any, view: any): Figure
 		local v = specOf(e, view)
 		local m = Instance.new("Model")
@@ -303,14 +218,7 @@ local function new(parent: Instance, catalog: any)
 		pivot.Transparency = 1
 		m.PrimaryPart = pivot
 		local tall = 1
-		local avatarJoints: { [string]: Motor6D }? = nil
-		local avatarTall: number? = nil
-		if e.kind == "Hero" and view.mode ~= "Jump" then
-			avatarTall, avatarJoints = heroAvatar(m, view)
-		end
-		if avatarTall then
-			tall = avatarTall
-		elseif e.kind == "Castle" then
+		if e.kind == "Castle" then
 			tall = 7
 			for _, z in { -3, 3 } do
 				part(
@@ -444,9 +352,6 @@ local function new(parent: Instance, catalog: any)
 			2
 		)
 		m.Parent = folder
-		if avatarJoints then
-			m:SetAttribute("Avatar", true)
-		end
 		return {
 			model = m,
 			root = pivot,
@@ -454,7 +359,6 @@ local function new(parent: Instance, catalog: any)
 			label = label,
 			lastX = e.x,
 			lastZ = e.z or 0,
-			joints = avatarJoints,
 		}
 	end
 
@@ -463,9 +367,13 @@ local function new(parent: Instance, catalog: any)
 			return
 		end
 		local length = if view.mode == "Jump" then view.heroMaxX else 1100
-		if not folder or mapLength ~= length then
+		-- R8 avatar combat: the server put the real character in an arena; it is the hero on screen
+		local arenaOrigin = Players.LocalPlayer and Players.LocalPlayer:GetAttribute("ArenaOrigin")
+		local origin = if typeof(arenaOrigin) == "Vector3" then arenaOrigin else Vector3.zero
+		local avatarHero = origin ~= Vector3.zero
+		if not folder or mapLength ~= length or mapOrigin ~= origin then
 			clear()
-			makeMap(length)
+			makeMap(length, origin)
 		end
 		local live: { [number]: boolean } = {}
 		local hero: any = nil
@@ -473,6 +381,10 @@ local function new(parent: Instance, catalog: any)
 			live[e.id] = true
 			if e.kind == "Hero" then
 				hero = e
+				if avatarHero then
+					live[e.id] = nil -- the player's own character stands here instead of a figure
+					continue
+				end
 			end
 			local figure = figures[e.id]
 			if not figure then
@@ -488,27 +400,8 @@ local function new(parent: Instance, catalog: any)
 			if moving then
 				y += math.sin(os.clock() * 10 + e.id) * 0.07
 			end
-			local pos = Vector3.new(e.x * SCALE, y, z * SCALE)
+			local pos = origin + Vector3.new(e.x * SCALE, y, z * SCALE)
 			figure.model:PivotTo(CFrame.lookAt(pos, pos + Vector3.new(e.dir or 1, 0, 0)))
-			local joints = figure.joints
-			if joints then
-				-- procedural walk / attack pose on the avatar copy (no animation assets)
-				local t = os.clock()
-				local swing = if moving then math.sin(t * 9) * 0.7 else 0
-				local attacking = view.heroState ~= nil
-					and view.heroState ~= "Idle"
-					and view.heroState ~= "Move"
-				local function pose(key: string, angle: number)
-					local motor = joints[key]
-					if motor then
-						motor.Transform = CFrame.Angles(angle, 0, 0)
-					end
-				end
-				pose("LeftHip", swing)
-				pose("RightHip", -swing)
-				pose("LeftShoulder", -swing)
-				pose("RightShoulder", if attacking then math.rad(150) else swing)
-			end
 			figure.root:SetAttribute("Hp", e.hp)
 			if figure.fill then
 				figure.fill.Size = UDim2.fromScale(math.clamp(e.hp / e.maxHp, 0, 1), 1)
@@ -560,7 +453,7 @@ local function new(parent: Instance, catalog: any)
 			elseif o.kind == "Drop" then
 				y += (1 - (o.t or 0)) * 5
 			end
-			shot.Position = Vector3.new(o.x * SCALE, y, (o.z or 0) * SCALE)
+			shot.Position = origin + Vector3.new(o.x * SCALE, y, (o.z or 0) * SCALE)
 		end
 		for _, o in view.objects do
 			draw(o)
@@ -577,7 +470,9 @@ local function new(parent: Instance, catalog: any)
 		if hero then
 			local focus = Vector3.new(hero.x * SCALE, 1.8, (hero.z or 0) * SCALE)
 			local camera = Workspace.CurrentCamera
-			if camera then
+			if avatarHero then
+				restoreCamera() -- the Roblox camera follows the real character
+			elseif camera then
 				if not saved or saved.camera ~= camera then
 					restoreCamera()
 					saved = {
@@ -620,8 +515,9 @@ local function new(parent: Instance, catalog: any)
 				local ring = aura :: Part
 				local diameter = view.auraRadius * SCALE * 2
 				ring.Size = Vector3.new(0.04, diameter, diameter)
-				ring.CFrame = CFrame.new(hero.x * SCALE, 0.04, (hero.z or 0) * SCALE)
-					* CFrame.Angles(0, 0, math.pi / 2)
+				ring.CFrame = CFrame.new(
+					origin + Vector3.new(hero.x * SCALE, 0.04, (hero.z or 0) * SCALE)
+				) * CFrame.Angles(0, 0, math.pi / 2)
 			elseif aura then
 				aura:Destroy()
 				aura = nil
