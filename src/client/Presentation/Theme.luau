@@ -2,6 +2,15 @@
 -- Remake palette: warm lantern light against a dusky undead frontier (original art direction).
 return table.freeze({
 	background = Color3.fromRGB(20, 22, 34),
+	backgroundTop = Color3.fromRGB(34, 32, 52),
+	panelDeep = Color3.fromRGB(26, 29, 44),
+	stroke = Color3.fromRGB(92, 100, 138),
+	ink = Color3.fromRGB(34, 26, 14),
+	auto = Color3.fromRGB(96, 214, 136),
+	shade = Color3.fromRGB(8, 8, 14),
+	fontBold = Enum.Font.BuilderSansBold,
+	fontHeavy = Enum.Font.BuilderSansExtraBold,
+	fontBody = Enum.Font.BuilderSansMedium,
 	panel = Color3.fromRGB(34, 38, 56),
 	panelLight = Color3.fromRGB(52, 58, 82),
 	button = Color3.fromRGB(64, 72, 102),

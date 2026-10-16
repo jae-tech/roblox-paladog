@@ -1,6 +1,8 @@
 --!strict
 -- Battle HUD (original screen flow: move buttons bottom-left, unit buttons along the bottom, three weapon
 -- buttons bottom-right, food/mana bars, objective on top). Buttons only raise intents; the server decides.
+-- Summon/weapon buttons are cards: name, cost tag, hotkey, AUTO tag and a cooldown curtain.
+local UserInputService = game:GetService("UserInputService")
 local Theme = require("./Theme")
 local Widgets = require("./Widgets")
 local Text = require("./Text")
@@ -11,43 +13,132 @@ export type Handlers = {
 	returnToLobby: () -> (),
 }
 
+type SlotCard = {
+	button: TextButton,
+	title: TextLabel,
+	key: Frame,
+	auto: Frame,
+	cost: Frame,
+	costText: TextLabel,
+	curtain: Frame,
+	wait: TextLabel,
+}
+
+local WEAPON_KEYS = { "Q", "E", "R" }
+
+-- Card button used for summons, destiny boxes and weapons. Children draw over the button (Sibling ZIndex).
+local function slotCard(parent: Instance, name: string, hotkey: string, color: Color3): SlotCard
+	local button = Widgets.button(parent, name, "", 12, color)
+	button.ClipsDescendants = true
+	local title = Widgets.label(button, "Title", "", 14)
+	title.Size = UDim2.new(1, -8, 0.5, -10)
+	title.Position = UDim2.fromOffset(4, 16)
+	Widgets.fit(title, 14)
+	local key, keyText = Widgets.pill(button, "Key", hotkey, 10, Theme.shade, Theme.muted)
+	key.Size = UDim2.fromOffset(16, 14)
+	key.Position = UDim2.fromOffset(3, 3)
+	key.BackgroundTransparency = 0.35
+	keyText.Font = Theme.fontHeavy
+	local auto, autoText = Widgets.pill(button, "Auto", "AUTO", 10, Theme.auto, Theme.ink)
+	auto.Size = UDim2.fromOffset(34, 14)
+	auto.Position = UDim2.new(1, -37, 0, 3)
+	autoText.Font = Theme.fontHeavy
+	auto.Visible = false
+	local cost, costText = Widgets.pill(button, "Cost", "", 12, Theme.shade, Theme.food)
+	cost.Size = UDim2.new(1, -8, 0, 18)
+	cost.Position = UDim2.new(0, 4, 1, -22)
+	cost.BackgroundTransparency = 0.4
+	local curtain = Widgets.frame(button, "Cooldown", Theme.shade, 8)
+	curtain.BackgroundTransparency = 0.3
+	curtain.AnchorPoint = Vector2.new(0, 1)
+	curtain.Position = UDim2.fromScale(0, 1)
+	curtain.Size = UDim2.fromScale(1, 0)
+	curtain.ZIndex = 4
+	local wait = Widgets.label(button, "Wait", "", 20)
+	wait.Size = UDim2.fromScale(1, 1)
+	wait.Font = Theme.fontHeavy
+	wait.TextStrokeTransparency = 0.3
+	wait.ZIndex = 5
+	return {
+		button = button,
+		title = title,
+		key = key,
+		auto = auto,
+		cost = cost,
+		costText = costText,
+		curtain = curtain,
+		wait = wait,
+	}
+end
+
 local function new(parent: Instance, catalog: any, handlers: Handlers)
 	local root = Widgets.frame(parent, "Hud")
 	root.Size = UDim2.fromScale(1, 1)
 	root.ZIndex = 20
+	-- keyboard hints only where a keyboard exists
+	local showKeys = UserInputService.KeyboardEnabled or not UserInputService.TouchEnabled
 
 	-- top bar ------------------------------------------------------------------------------------
 	local top = Widgets.frame(root, "Top")
-	top.Size = UDim2.new(1, -16, 0, 44)
+	top.Size = UDim2.new(1, -16, 0, 52)
 	top.Position = UDim2.fromOffset(8, 6)
-	local heroBar, setHero = Widgets.bar(top, "HeroHp", Theme.hp)
-	heroBar.Size = UDim2.new(0.32, 0, 0, 18)
-	local levelLabel = Widgets.label(top, "Level", "", 13, Theme.gold)
-	levelLabel.Size = UDim2.new(0.32, 0, 0, 18)
-	levelLabel.Position = UDim2.fromOffset(0, 22)
+	local heroPanel = Widgets.card(top, "HeroPanel", Theme.panelDeep, 10)
+	heroPanel.Size = UDim2.new(0.32, 0, 0, 52)
+	heroPanel.BackgroundTransparency = 0.2
+	local levelBadge, levelBadgeText =
+		Widgets.pill(heroPanel, "LevelBadge", "", 14, Theme.gold, Theme.ink)
+	levelBadge.Size = UDim2.fromOffset(52, 22)
+	levelBadge.Position = UDim2.fromOffset(6, 6)
+	levelBadgeText.Font = Theme.fontHeavy
+	local heroBar, setHero = Widgets.bar(heroPanel, "HeroHp", Theme.hp)
+	heroBar.Size = UDim2.new(1, -70, 0, 20)
+	heroBar.Position = UDim2.fromOffset(64, 7)
+	local expBar, setExp = Widgets.bar(heroPanel, "Exp", Theme.gold)
+	expBar.Size = UDim2.new(1, -70, 0, 5)
+	expBar.Position = UDim2.fromOffset(64, 31)
+	local levelLabel = Widgets.label(heroPanel, "Level", "", 12, Theme.muted)
+	levelLabel.Size = UDim2.new(1, -12, 0, 14)
+	levelLabel.Position = UDim2.fromOffset(6, 36)
 	levelLabel.TextXAlignment = Enum.TextXAlignment.Left
-	local goalBar, setGoal = Widgets.bar(top, "Goal", Theme.enemyHp)
-	goalBar.Size = UDim2.new(0.34, 0, 0, 18)
-	goalBar.Position = UDim2.fromScale(0.36, 0)
-	local goalLabel = Widgets.label(top, "GoalText", "", 13)
-	goalLabel.Size = UDim2.new(0.34, 0, 0, 18)
-	goalLabel.Position = UDim2.new(0.36, 0, 0, 22)
-	local pause = Widgets.button(top, "Pause", "II", 16)
-	pause.Size = UDim2.fromOffset(44, 40)
-	pause.Position = UDim2.new(1, -44, 0, 0)
+	levelLabel.Font = Theme.fontBody
+
+	local goalPanel = Widgets.card(top, "GoalPanel", Theme.panelDeep, 10)
+	goalPanel.AnchorPoint = Vector2.new(0.5, 0)
+	goalPanel.Size = UDim2.new(0.34, 0, 0, 52)
+	goalPanel.Position = UDim2.fromScale(0.5, 0)
+	goalPanel.BackgroundTransparency = 0.2
+	local goalLabel = Widgets.label(goalPanel, "GoalText", "", 14, Theme.gold)
+	goalLabel.Size = UDim2.new(1, -12, 0, 18)
+	goalLabel.Position = UDim2.fromOffset(6, 4)
+	goalLabel.Font = Theme.fontHeavy
+	local goalBar, setGoal = Widgets.bar(goalPanel, "Goal", Theme.enemyHp)
+	goalBar.Size = UDim2.new(1, -16, 0, 20)
+	goalBar.Position = UDim2.fromOffset(8, 25)
+
+	local pause = Widgets.button(top, "Pause", "II", 18, Theme.panelDeep)
+	pause.Font = Theme.fontHeavy
+	pause.Size = UDim2.fromOffset(46, 46)
+	pause.Position = UDim2.new(1, -46, 0, 0)
+	Widgets.corner(pause, 23)
 
 	-- bottom controls --------------------------------------------------------------------------------
 	local bottom = Widgets.frame(root, "Bottom")
 	bottom.Size = UDim2.new(1, -16, 0, 128)
 	bottom.Position = UDim2.new(0, 8, 1, -134)
-	local left = Widgets.button(bottom, "Left", "후퇴", 15)
+	local function moveButton(name: string, text: string, size: number): TextButton
+		local b = Widgets.button(bottom, name, text, size, Theme.panelDeep)
+		b.BackgroundTransparency = 0.15
+		Widgets.corner(b, 24)
+		return b
+	end
+	local left = moveButton("Left", "◀\n후퇴", 14)
 	left.Size = UDim2.fromOffset(64, 64)
 	left.Position = UDim2.new(0, 0, 1, -64)
-	local right = Widgets.button(bottom, "Right", "전진", 15)
+	local right = moveButton("Right", "전진\n▶", 14)
 	right.Size = UDim2.fromOffset(64, 64)
 	right.Position = UDim2.new(0, 70, 1, -64)
-	local strafeLeft = Widgets.button(bottom, "StrafeLeft", "좌", 20)
-	local strafeRight = Widgets.button(bottom, "StrafeRight", "우", 20)
+	local strafeLeft = moveButton("StrafeLeft", "▲", 20)
+	local strafeRight = moveButton("StrafeRight", "▼", 20)
 	local foodBar, setFood = Widgets.bar(bottom, "Food", Theme.food)
 	foodBar.Size = UDim2.new(1, -380, 0, 16)
 	foodBar.Position = UDim2.fromOffset(142, 0)
@@ -61,6 +152,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	units.AutomaticCanvasSize = Enum.AutomaticSize.X
 	units.CanvasSize = UDim2.fromOffset(0, 0)
 	units.ScrollBarThickness = 4
+	units.ScrollBarImageColor3 = Theme.border
 	units.ClipsDescendants = true
 	units.Parent = bottom
 	units.Size = UDim2.new(1, -380, 0, 100)
@@ -70,19 +162,21 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	unitLayout.Padding = UDim.new(0, 4)
 	unitLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	unitLayout.Parent = units
-	local weapons: { TextButton } = {}
+	local weapons: { SlotCard } = {}
 	for slot = 1, 3 do
-		local b = Widgets.button(bottom, "Mace" .. slot, "", 12, Theme.panelLight)
-		b.Size = UDim2.fromOffset(74, 100)
-		b.Position = UDim2.new(1, -230 + (slot - 1) * 78, 0, 22)
-		weapons[slot] = b
+		local c = slotCard(bottom, "Mace" .. slot, WEAPON_KEYS[slot], Theme.panelLight)
+		c.button.Size = UDim2.fromOffset(74, 100)
+		c.button.Position = UDim2.new(1, -230 + (slot - 1) * 78, 0, 22)
+		c.costText.TextColor3 = Theme.mana
+		c.key.Visible = showKeys
+		weapons[slot] = c
 	end
 
 	-- tower lane picker, toast, modals -------------------------------------------------------------
-	local lanePicker = Widgets.frame(root, "Lanes", Theme.panel, 8)
+	local lanePicker = Widgets.card(root, "Lanes", Theme.panelDeep, 10)
 	lanePicker.Size = UDim2.fromOffset(110, 230)
 	lanePicker.Position = UDim2.new(0, 8, 0.5, -130)
-	lanePicker.BackgroundTransparency = 0.25
+	lanePicker.BackgroundTransparency = 0.15
 	lanePicker.Visible = false
 	local pick: { [string]: any }? = nil
 	local lastUnit = 1 -- tower weapon buttons reuse the last unit chosen
@@ -100,14 +194,14 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			lanePicker.Visible = false
 		end)
 	end
-	local toast = Widgets.label(root, "Toast", "", 16, Theme.gold)
-	toast.Size = UDim2.new(1, 0, 0, 24)
-	toast.Position = UDim2.fromOffset(0, 56)
-	toast.TextStrokeTransparency = 0.3
+	local toast, setToast = Widgets.toast(root, "Toast")
+	toast.Size = UDim2.fromOffset(0, 28)
+	toast.Position = UDim2.new(0.5, 0, 0, 64)
+	toast.ZIndex = 30
 
 	local function modal(name: string): Frame
-		local shade = Widgets.frame(root, name, Color3.new(0, 0, 0))
-		shade.BackgroundTransparency = 0.45
+		local shade = Widgets.frame(root, name, Theme.shade)
+		shade.BackgroundTransparency = 0.4
 		shade.Size = UDim2.fromScale(1, 1)
 		shade.ZIndex = 40
 		shade.Active = true
@@ -115,47 +209,79 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		return shade
 	end
 	local function card(shade: Frame, width: number, height: number): Frame
-		local box = Widgets.frame(shade, "Card", Theme.panel, 12)
+		local box = Widgets.card(shade, "Card", Theme.panel, 14)
+		box.AnchorPoint = Vector2.new(0.5, 0.5)
 		box.Size = UDim2.fromOffset(width, height)
-		box.Position = UDim2.new(0.5, -width / 2, 0.5, -height / 2)
+		box.Position = UDim2.fromScale(0.5, 0.5)
 		box.ZIndex = 41
+		local limit = Instance.new("UISizeConstraint")
+		limit.MaxSize = Vector2.new(width, height)
+		limit.Parent = box
+		box.Size = UDim2.new(0.94, 0, 0, height)
 		return box
 	end
+	local function heading(box: Frame, text: string, color: Color3?): TextLabel
+		local t = Widgets.label(box, "Title", text, 20, color or Theme.gold)
+		t.Font = Theme.fontHeavy
+		t.Size = UDim2.new(1, -24, 0, 34)
+		t.Position = UDim2.fromOffset(12, 8)
+		t.ZIndex = 42
+		return t
+	end
+	-- show a modal with its entrance animation the first time it becomes visible
+	local function showModal(shade: Frame, box: Frame, visible: boolean)
+		if visible and not shade.Visible then
+			shade.Visible = true
+			Widgets.pop(shade, box)
+		elseif not visible then
+			shade.Visible = false
+		end
+	end
+
 	local levelUp = modal("LevelUp")
-	local levelCard = card(levelUp, 520, 220)
-	local levelTitle = Widgets.label(
-		levelCard,
-		"Title",
-		"레벨 업! 기술 하나를 고르세요",
-		18,
-		Theme.gold
-	)
-	levelTitle.Size = UDim2.new(1, 0, 0, 36)
-	local choices: { TextButton } = {}
+	local levelCard = card(levelUp, 560, 250)
+	heading(levelCard, "레벨 업!  기술 하나를 고르세요")
+	local choices: { { button: TextButton, name: TextLabel, rank: TextLabel, desc: TextLabel } } =
+		{}
 	for i = 1, 3 do
-		local b = Widgets.button(levelCard, "Choice" .. i, "", 14)
-		b.Size = UDim2.new(1 / 3, -12, 1, -56)
-		b.Position = UDim2.new((i - 1) / 3, 6, 0, 46)
+		local b = Widgets.button(levelCard, "Choice" .. i, "", 14, Theme.panelLight)
+		b.Size = UDim2.new(1 / 3, -12, 1, -64)
+		b.Position = UDim2.new((i - 1) / 3, 6, 0, 52)
 		b.ZIndex = 42
+		local name = Widgets.label(b, "Name", "", 16, Theme.gold)
+		name.Size = UDim2.new(1, -12, 0, 40)
+		name.Position = UDim2.fromOffset(6, 8)
+		name.ZIndex = 43
+		Widgets.fit(name, 16)
+		local rank = Widgets.label(b, "Rank", "", 13, Theme.good)
+		rank.Size = UDim2.new(1, -12, 0, 18)
+		rank.Position = UDim2.fromOffset(6, 48)
+		rank.ZIndex = 43
+		local desc = Widgets.label(b, "Desc", "", 12, Theme.muted)
+		desc.Font = Theme.fontBody
+		desc.Size = UDim2.new(1, -12, 1, -76)
+		desc.Position = UDim2.fromOffset(6, 70)
+		desc.TextYAlignment = Enum.TextYAlignment.Top
+		desc.ZIndex = 43
+		Widgets.fit(desc, 13)
 		b.Activated:Connect(function()
 			handlers.battle("PickSkill", { choice = i })
 		end)
-		choices[i] = b
+		choices[i] = { button = b, name = name, rank = rank, desc = desc }
 	end
+
 	local revive = modal("Revive")
-	local reviveCard = card(revive, 380, 170)
-	local reviveText = Widgets.label(
-		reviveCard,
-		"Text",
-		"영웅이 쓰러졌습니다.\n보석 20개로 다시 일어날까요?",
-		17
-	)
-	reviveText.Size = UDim2.new(1, 0, 0, 80)
+	local reviveCard = card(revive, 400, 190)
+	heading(reviveCard, "영웅이 쓰러졌습니다", Theme.bad)
+	local reviveText =
+		Widgets.label(reviveCard, "Text", "보석 20개로 다시 일어날까요?", 16, Theme.text)
+	reviveText.Size = UDim2.new(1, -24, 0, 50)
+	reviveText.Position = UDim2.fromOffset(12, 46)
+	reviveText.Font = Theme.fontBody
 	reviveText.ZIndex = 42
 	local reviveYes = Widgets.button(reviveCard, "Yes", "부활 (보석 20)", 15, Theme.gold)
 	reviveYes.Size = UDim2.new(0.5, -12, 0, 48)
 	reviveYes.Position = UDim2.new(0, 8, 1, -58)
-	reviveYes.TextColor3 = Theme.background
 	reviveYes.ZIndex = 42
 	reviveYes.Activated:Connect(function()
 		handlers.battle("Revive", nil)
@@ -167,17 +293,22 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	reviveNo.Activated:Connect(function()
 		handlers.battle("GiveUp", nil)
 	end)
+
 	local pauseShade = modal("PauseMenu")
-	local pauseCard = card(pauseShade, 360, 200)
+	local pauseCard = card(pauseShade, 380, 200)
+	heading(pauseCard, "일시정지")
 	local pauseText = Widgets.label(
 		pauseCard,
 		"Text",
-		"일시정지 화면입니다.\n서버 전투는 계속 진행됩니다.",
-		16
+		"메뉴를 보는 동안에도 서버 전투는 계속 진행됩니다.",
+		14,
+		Theme.muted
 	)
-	pauseText.Size = UDim2.new(1, 0, 0, 80)
+	pauseText.Size = UDim2.new(1, -24, 0, 50)
+	pauseText.Position = UDim2.fromOffset(12, 46)
+	pauseText.Font = Theme.fontBody
 	pauseText.ZIndex = 42
-	local resume = Widgets.button(pauseCard, "Resume", "계속하기", 15)
+	local resume = Widgets.button(pauseCard, "Resume", "계속하기", 15, Theme.gold)
 	resume.Size = UDim2.new(0.5, -12, 0, 48)
 	resume.Position = UDim2.new(0, 8, 1, -58)
 	resume.ZIndex = 42
@@ -186,35 +317,56 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	retreat.Position = UDim2.new(0.5, 4, 1, -58)
 	retreat.ZIndex = 42
 	pause.Activated:Connect(function()
-		pauseShade.Visible = true
+		showModal(pauseShade, pauseCard, true)
 	end)
 	resume.Activated:Connect(function()
-		pauseShade.Visible = false
+		showModal(pauseShade, pauseCard, false)
 	end)
 	retreat.Activated:Connect(function()
-		pauseShade.Visible = false
+		showModal(pauseShade, pauseCard, false)
 		handlers.battle("Retreat", nil)
 	end)
+
 	local result = modal("Result")
-	local resultCard = card(result, 460, 300)
-	local resultTitle = Widgets.label(resultCard, "Title", "", 26, Theme.gold)
-	resultTitle.Size = UDim2.new(1, 0, 0, 44)
-	resultTitle.ZIndex = 42
-	local resultBody = Widgets.label(resultCard, "Body", "", 15)
-	resultBody.Size = UDim2.new(1, -24, 1, -110)
-	resultBody.Position = UDim2.fromOffset(12, 48)
-	resultBody.TextXAlignment = Enum.TextXAlignment.Left
-	resultBody.TextYAlignment = Enum.TextYAlignment.Top
+	local resultCard = card(result, 460, 330)
+	local resultTitle = heading(resultCard, "")
+	resultTitle.TextSize = 30
+	resultTitle.Size = UDim2.new(1, -24, 0, 40)
+	local resultStars = Widgets.label(resultCard, "Stars", "", 30, Theme.gold)
+	resultStars.Size = UDim2.new(1, -24, 0, 34)
+	resultStars.Position = UDim2.fromOffset(12, 50)
+	resultStars.ZIndex = 42
+	local resultBody = Widgets.list(resultCard, "Body", 4)
+	resultBody.Size = UDim2.new(1, -40, 1, -156)
+	resultBody.Position = UDim2.fromOffset(20, 90)
 	resultBody.ZIndex = 42
 	local back = Widgets.button(resultCard, "ReturnToLobby", "돌아가기", 16, Theme.gold)
 	back.Size = UDim2.new(1, -24, 0, 48)
 	back.Position = UDim2.new(0, 12, 1, -58)
-	back.TextColor3 = Theme.background
 	back.ZIndex = 42
 	back.Activated:Connect(function()
 		handlers.returnToLobby()
 	end)
+	local resultKey = ""
+	-- one reward line: caption on the left, value on the right
+	local function rewardLine(order: number, caption: string, value: string, color: Color3?)
+		local line = Widgets.frame(resultBody, "Line" .. order, Theme.panelDeep, 6)
+		line.Size = UDim2.new(1, -6, 0, 26)
+		line.LayoutOrder = order
+		line.ZIndex = 42
+		local c = Widgets.label(line, "Caption", caption, 14, Theme.muted)
+		c.Size = UDim2.new(0.5, -10, 1, 0)
+		c.Position = UDim2.fromOffset(10, 0)
+		c.TextXAlignment = Enum.TextXAlignment.Left
+		c.ZIndex = 43
+		local v = Widgets.label(line, "Value", value, 15, color or Theme.text)
+		v.Size = UDim2.new(0.5, -10, 1, 0)
+		v.Position = UDim2.fromScale(0.5, 0)
+		v.TextXAlignment = Enum.TextXAlignment.Right
+		v.ZIndex = 43
+	end
 
+	local unitCards: { [number]: SlotCard } = {}
 	local unitButtons: { TextButton } = {}
 	local jump = Widgets.button(bottom, "Jump", "도약 (Space)", 22, Theme.mana)
 	jump.Size = UDim2.fromOffset(220, 76)
@@ -236,27 +388,29 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			b:Destroy()
 		end
 		table.clear(unitButtons)
+		table.clear(unitCards)
 		if battleView.mode == "Jump" then
 			return
 		end
 		if battleView.mode == "Destiny" then
 			for index = 1, 9 do
-				local b = Widgets.button(units, "Box" .. index, "", 12, Theme.panelLight)
-				b.Size = UDim2.new(1 / 9, -4, 1, 0)
-				b.LayoutOrder = index
-				b.Activated:Connect(function()
+				local c = slotCard(units, "Box" .. index, tostring(index), Theme.panelLight)
+				c.key.Visible = showKeys
+				c.button.LayoutOrder = index
+				c.button.Activated:Connect(function()
 					handlers.battle("Box", { index = index })
 				end)
-				unitButtons[index] = b
+				unitCards[index] = c
+				unitButtons[index] = c.button
 			end
 			return
 		end
 		for n = 1, 9 do
 			if slot.units[n] >= 1 then
-				local b = Widgets.button(units, "Summon" .. n, "", 12)
-				b.Size = UDim2.new(1 / 9, -4, 1, 0)
-				b.LayoutOrder = n
-				b.Activated:Connect(function()
+				local c = slotCard(units, "Summon" .. n, tostring(n), Theme.button)
+				c.key.Visible = showKeys
+				c.button.LayoutOrder = n
+				c.button.Activated:Connect(function()
 					lastUnit = n
 					if battleView.mode == "Tower" then
 						pick = { kind = "Summon", unit = n }
@@ -265,7 +419,8 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 						handlers.battle("Summon", { unit = n })
 					end
 				end)
-				unitButtons[n] = b
+				unitCards[n] = c
+				unitButtons[n] = c.button
 			end
 		end
 	end
@@ -297,15 +452,15 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		for _, button in unitButtons do
 			button.Size = UDim2.fromOffset(p.unitButtonWidth, p.unitHeight - 4)
 		end
-		for index, button in weapons do
-			button.Size = UDim2.fromOffset(p.weaponWidth, p.weaponHeight)
-			button.Position =
+		for index, c in weapons do
+			c.button.Size = UDim2.fromOffset(p.weaponWidth, p.weaponHeight)
+			c.button.Position =
 				UDim2.fromOffset(p.weaponX + (index - 1) * (p.weaponWidth + 4), p.weaponY)
 		end
 	end
 	-- Tower: button 1 needs a lane for its five units (D-TOWER-01); others fire directly.
 	for slot = 1, 3 do
-		weapons[slot].Activated:Connect(function()
+		weapons[slot].button.Activated:Connect(function()
 			if currentView and currentView.mode == "Tower" and slot == 2 then
 				pick = { kind = "Mace", slot = 2, unit = lastUnit }
 				lanePicker.Visible = true
@@ -313,6 +468,23 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				handlers.battle("Mace", { slot = slot, unit = lastUnit })
 			end
 		end)
+	end
+
+	local function setCard(
+		c: SlotCard,
+		ready: boolean,
+		on: boolean,
+		ratio: number,
+		waitText: string
+	)
+		c.auto.Visible = on
+		Widgets.paint(
+			c.button,
+			if on then Theme.buttonHot elseif ready then Theme.button else Theme.locked
+		)
+		c.title.TextColor3 = if on then Theme.ink elseif ready then Theme.text else Theme.muted
+		c.curtain.Size = UDim2.fromScale(1, math.clamp(ratio, 0, 1))
+		c.wait.Text = waitText
 	end
 
 	local function update(model: any)
@@ -337,8 +509,8 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		right.Visible = left.Visible
 		strafeLeft.Visible = left.Visible and view.spatial == true
 		strafeRight.Visible = strafeLeft.Visible
-		for _, button in weapons do
-			button.Visible = not jumping
+		for _, c in weapons do
+			c.button.Visible = not jumping
 		end
 		local hero = nil
 		local goal = nil
@@ -361,9 +533,11 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			)
 		end
 		local nextExp = view.level * view.level * 100
+		local prevExp = (view.level - 1) * (view.level - 1) * 100
+		levelBadgeText.Text = "Lv." .. view.level
+		setExp((view.exp - prevExp) / math.max(nextExp - prevExp, 1), nil)
 		levelLabel.Text = string.format(
-			"Lv.%d  EXP %s/%s  획득 %sG",
-			view.level,
+			"EXP %s / %s   ·   획득 %sG",
 			Text.number(view.exp),
 			Text.number(nextExp),
 			Text.number(view.gold)
@@ -401,7 +575,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				then "마차를 지켜 끝까지 보내세요"
 				elseif goal.kind == "Horse" then "목마가 도착하기 전에 파괴하세요"
 				elseif goal.kind == "Boss" then "보스를 쓰러뜨리세요"
-				else "적 성채"
+				else "적 성채를 무너뜨리세요"
 		end
 		setFood(
 			view.food / view.maxFood,
@@ -414,111 +588,146 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		rebuildUnits(slot, view)
 		applyLayout()
 		if view.mode == "Destiny" then
-			for index, b in unitButtons do
+			for index, c in unitCards do
 				local box = view.boxes[index]
+				c.cost.Visible = false
 				if box == "" then
-					b.Text, b.BackgroundColor3 = "빈 상자", Theme.locked
+					c.title.Text = "빈 상자"
+					setCard(c, false, false, 0, "")
+					Widgets.paint(c.button, Theme.locked)
 				else
 					local kind, id = string.match(box, "^(%a+):(%d+)$")
 					local n = tonumber(id) or 1
-					b.Text = if kind == "Unit"
+					c.title.Text = if kind == "Unit"
 						then Text.unitName(catalog, slot.heroKind, n)
 						else catalog.maces[n].name
-					b.BackgroundColor3 = if kind == "Unit" then Theme.button else Theme.mana
+					setCard(c, true, false, 0, "")
+					Widgets.paint(c.button, if kind == "Unit" then Theme.button else Theme.mana)
 				end
 			end
 		else
-			for n, b in unitButtons do
+			for n, c in unitCards do
 				local buttonView = Text.summonView(catalog, slot, view, n)
 				local wait = buttonView.wait
-				local on = model.auto and model.auto.summon[n]
-				b.Text = string.format(
-					"%s%s\n%s %d%s",
-					if on then "[오토] " else "",
-					buttonView.name,
-					buttonView.resource,
-					buttonView.cost,
-					if wait > 0 then string.format("\n%.1f초", wait) else ""
+				local total = if buttonView.resource == "식량"
+					then Text.cooldownLeft(catalog, slot.heroKind, n, slot.skills[13] or 0, 0)
+					else 0
+				local on = model.auto ~= nil and model.auto.summon[n] == true
+				local short = buttonView.resource == "식량" and view.food < buttonView.cost
+					or buttonView.resource == "마나" and view.mana < buttonView.cost
+				c.title.Text = buttonView.name
+				c.costText.Text = string.format("%s %d", buttonView.resource, buttonView.cost)
+				c.costText.TextColor3 = if short
+					then Theme.bad
+					elseif buttonView.resource == "마나" then Theme.mana
+					else Theme.food
+				setCard(
+					c,
+					buttonView.ready,
+					on,
+					if total > 0 then wait / total else 0,
+					if wait > 0 then string.format("%.1f", wait) else ""
 				)
-				b.BackgroundColor3 = if on
-					then Theme.buttonHot
-					elseif buttonView.ready then Theme.button
-					else Theme.locked
 			end
 		end
-		for index, b in weapons do
+		for index, c in weapons do
 			if view.mode == "Tower" then
-				b.Text = ({
-					"전 길 소환\n마나 90",
-					"한 길 5명\n마나 90",
-					"전체 회복\n마나 30",
-				})[index]
+				c.title.Text = ({ "전 길 소환", "한 길 5명", "전체 회복" })[index]
+				c.costText.Text = ({ "마나 90", "마나 90", "마나 30" })[index]
+				c.cost.Visible = true
+				c.auto.Visible = false
+				Widgets.paint(c.button, Theme.panelLight)
 			else
 				local code = slot.equip[index]
-				local on = model.auto and model.auto.weapon[index]
+				local on = model.auto ~= nil and model.auto.weapon[index] == true
+				c.auto.Visible = on
 				if code and code ~= 0 then
-					b.Text = (if on then "[오토] " else "")
-						.. Text.itemName(catalog, code)
-						.. "\n마나 "
-						.. Text.weaponCost(catalog, slot, code)
+					local cost = Text.weaponCost(catalog, slot, code)
+					local need = tonumber(cost)
+					c.title.Text = Text.itemName(catalog, code)
+					c.cost.Visible = true
+					c.costText.Text = if need then "마나 " .. cost else cost
+					c.costText.TextColor3 = if need == nil
+						then Theme.gold
+						elseif view.mana < need then Theme.bad
+						else Theme.mana
+					c.title.TextColor3 = if on then Theme.ink else Theme.text
 				else
-					b.Text = "비어 있음"
+					c.title.Text = "비어 있음"
+					c.title.TextColor3 = Theme.muted
+					c.cost.Visible = false
 				end
-				b.BackgroundColor3 = if on then Theme.buttonHot else Theme.panelLight
+				Widgets.paint(c.button, if on then Theme.buttonHot else Theme.panelLight)
 			end
 		end
-		levelUp.Visible = model.phase == "Running" and view.offer ~= nil
+		showModal(levelUp, levelCard, model.phase == "Running" and view.offer ~= nil)
 		if view.offer then
-			for i, b in choices do
+			for i, choice in choices do
 				local index = view.offer[i]
-				b.Visible = index ~= nil
+				choice.button.Visible = index ~= nil
 				if index then
 					local names = catalog.skillNames[slot.heroKind]
-					local desc = Text.skillDescription(catalog, slot.heroKind, index)
-					b.Text =
-						string.format("%s\n(Lv.%d)\n%s", names[index], slot.skills[index], desc)
+					local level = slot.skills[index]
+					choice.name.Text = names[index]
+					choice.rank.Text = string.format("Lv.%d  →  Lv.%d", level, level + 1)
+					choice.desc.Text = Text.skillDescription(catalog, slot.heroKind, index)
 				end
 			end
 		end
-		revive.Visible = model.phase == "Running" and view.reviveOffer == true
+		showModal(revive, reviveCard, model.phase == "Running" and view.reviveOffer == true)
 		local settled = model.phase == "Settled" or model.phase == "Settling"
-		result.Visible = settled
+		showModal(result, resultCard, settled)
 		if settled then
 			local outcome = view.outcome or (model.result and model.result.outcome)
 			resultTitle.Text = if outcome == "Victory"
 				then "승리!"
 				elseif view.mode == "Survival" then "원정 종료"
 				else "패배"
-			local lines = {}
+			resultTitle.TextColor3 = if outcome == "Victory"
+				then Theme.gold
+				elseif view.mode == "Survival" then Theme.text
+				else Theme.bad
 			local rewards = model.rewards
-			if model.settlementStatus ~= "Committed" or not rewards then
-				table.insert(lines, "결과를 저장하는 중...")
-			else
-				if rewards.wave then
-					table.insert(lines, "도달 웨이브: " .. rewards.wave)
+			local committed = model.settlementStatus == "Committed" and rewards ~= nil
+			local key = tostring(committed) .. tostring(outcome) .. tostring(model.profileRevision)
+			if key ~= resultKey then
+				resultKey = key
+				Widgets.clear(resultBody)
+				resultStars.Text = ""
+				if not committed then
+					rewardLine(1, "결과를 저장하는 중...", "")
 				else
-					local stars = rewards.stars or 0
-					table.insert(
-						lines,
-						"별: " .. string.rep("★", stars) .. string.rep("☆", 3 - stars)
-					)
-				end
-				if rewards.darkUnlock then
-					table.insert(lines, "새 영웅 해금: " .. catalog.heroNames.shadow)
-				end
-				table.insert(lines, "골드: " .. Text.number(rewards.awardedGold) .. "G")
-				table.insert(lines, "경험치: " .. Text.number(rewards.awardedXp))
-				if rewards.gems and rewards.gems > 0 then
-					table.insert(lines, "보석: " .. rewards.gems)
-				end
-				for _, code in rewards.items or {} do
-					table.insert(lines, "획득: " .. Text.itemName(catalog, code))
+					if rewards.wave then
+						resultStars.Text = "웨이브 " .. rewards.wave
+						resultStars.TextColor3 = Theme.gem
+					else
+						local stars = rewards.stars or 0
+						resultStars.Text = string.rep("★", stars) .. string.rep("☆", 3 - stars)
+						resultStars.TextColor3 = Theme.gold
+					end
+					local order = 1
+					if rewards.darkUnlock then
+						rewardLine(order, "새 영웅 해금", catalog.heroNames.shadow, Theme.good)
+						order += 1
+					end
+					rewardLine(order, "골드", Text.number(rewards.awardedGold) .. "G", Theme.gold)
+					rewardLine(order + 1, "경험치", Text.number(rewards.awardedXp), Theme.good)
+					order += 2
+					if rewards.gems and rewards.gems > 0 then
+						rewardLine(order, "보석", tostring(rewards.gems), Theme.gem)
+						order += 1
+					end
+					for _, code in rewards.items or {} do
+						rewardLine(order, "획득", Text.itemName(catalog, code), Theme.text)
+						order += 1
+					end
 				end
 			end
-			resultBody.Text = table.concat(lines, "\n")
 			back.Visible = model.settlementStatus == "Committed"
+		else
+			resultKey = ""
 		end
-		toast.Text = Text.reason(model.reason)
+		setToast(Text.reason(model.reason))
 	end
 
 	return {

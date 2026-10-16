@@ -41,15 +41,53 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		fit()
 	end
 	root.ZIndex = 30
-	local header = Widgets.frame(root, "Header", Theme.panel)
+	local backdrop = Instance.new("UIGradient")
+	backdrop.Color = ColorSequence.new(Theme.backgroundTop, Theme.background)
+	backdrop.Rotation = 90
+	backdrop.Parent = root
+	local header = Widgets.frame(root, "Header", Theme.panelDeep)
 	header.Size = UDim2.new(1, 0, 0, 48)
-	local title = Widgets.label(header, "Title", "등불 원정", 22, Theme.gold)
-	title.Size = UDim2.new(0, 160, 1, 0)
-	title.Position = UDim2.fromOffset(12, 0)
+	Widgets.sheen(header, 0.8)
+	local headerLine = Widgets.frame(header, "Accent", Theme.gold)
+	headerLine.Size = UDim2.new(1, 0, 0, 2)
+	headerLine.Position = UDim2.new(0, 0, 1, -2)
+	headerLine.BackgroundTransparency = 0.5
+	local title = Widgets.label(header, "Title", "등불 원정", 24, Theme.gold)
+	title.Font = Theme.fontHeavy
+	title.Size = UDim2.new(0, 150, 1, 0)
+	title.Position = UDim2.fromOffset(14, 0)
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	local info = Widgets.label(header, "Info", "", 14)
-	info.Size = UDim2.new(1, -320, 1, 0)
-	info.Position = UDim2.fromOffset(180, 0)
+	title.TextStrokeColor3, title.TextStrokeTransparency = Color3.fromRGB(90, 50, 10), 0.4
+	-- currency / hero chips, then connection status in small text
+	local chips = Widgets.frame(header, "Chips")
+	chips.Size = UDim2.new(1, -300, 0, 28)
+	chips.Position = UDim2.fromOffset(170, 10)
+	local chipLayout = Instance.new("UIListLayout")
+	chipLayout.FillDirection = Enum.FillDirection.Horizontal
+	chipLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	chipLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	chipLayout.Padding = UDim.new(0, 6)
+	chipLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	chipLayout.Parent = chips
+	local function chip(name: string, color: Color3, order: number): (Frame, TextLabel)
+		local back, text = Widgets.pill(chips, name, "", 14, Theme.panel, color)
+		back.Size = UDim2.fromOffset(0, 26)
+		back.AutomaticSize = Enum.AutomaticSize.X
+		back.LayoutOrder = order
+		Widgets.stroke(back, color, 1, 0.55)
+		local pad = Instance.new("UIPadding")
+		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 10), UDim.new(0, 10)
+		pad.Parent = back
+		text.AutomaticSize = Enum.AutomaticSize.X
+		text.Size = UDim2.fromScale(0, 1)
+		return back, text
+	end
+	local _, statusChip = chip("Status", Theme.muted, 1)
+	statusChip.Font = Theme.fontBody
+	statusChip.TextSize = 12
+	local heroBack, heroChip = chip("Hero", Theme.text, 2)
+	local goldBack, goldChip = chip("Gold", Theme.gold, 3)
+	local gemBack, gemChip = chip("Gems", Theme.gem, 4)
 	-- R8: back to the plaza (the dungeon entrance reopens this menu)
 	local close = Widgets.button(header, "ToPlaza", "광장으로", 14)
 	close.Size = UDim2.fromOffset(110, 36)
@@ -59,16 +97,16 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			handlers.close()
 		end
 	end)
-	info.TextXAlignment = Enum.TextXAlignment.Right
-	local nav = Widgets.frame(root, "Nav", Theme.panel)
+	local nav = Widgets.frame(root, "Nav", Theme.panelDeep)
+	nav.BackgroundTransparency = 0.2
 	nav.Size = UDim2.new(0, 132, 1, -56)
 	nav.Position = UDim2.fromOffset(0, 52)
 	local content = Widgets.frame(root, "Content")
 	content.Size = UDim2.new(1, -148, 1, -60)
 	content.Position = UDim2.fromOffset(140, 54)
-	local toast = Widgets.label(root, "Toast", "", 15, Theme.gold)
-	toast.Size = UDim2.new(1, -140, 0, 22)
-	toast.Position = UDim2.new(0, 140, 1, -26)
+	local toast, setToast = Widgets.toast(root, "Toast")
+	toast.Size = UDim2.fromOffset(0, 28)
+	toast.Position = UDim2.new(0.5, 66, 1, -36)
 	toast.ZIndex = 35
 
 	local ui: any = {
@@ -88,6 +126,11 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		local b = Widgets.button(nav, entry[1], entry[2], 15)
 		b.Size = UDim2.new(1, -12, 0, 44)
 		b.Position = UDim2.fromOffset(6, 6 + (index - 1) * 50)
+		-- gold marker on the open tab
+		local marker = Widgets.frame(b, "Marker", Theme.gold, 2)
+		marker.Size = UDim2.new(0, 4, 1, -14)
+		marker.Position = UDim2.fromOffset(4, 7)
+		marker.Visible = false
 		b.Activated:Connect(function()
 			ui.screen, ui.item, dirty = entry[1], nil, true
 		end)
@@ -95,10 +138,14 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	end
 
 	local function row(list: Instance, height: number, order: number): Frame
-		local item = Widgets.frame(list, "Row" .. order, Theme.panel, 8)
+		local item = Widgets.card(list, "Row" .. order, Theme.panel, 10)
 		item.Size = UDim2.new(1, -8, 0, height)
 		item.LayoutOrder = order
 		return item
+	end
+	-- money on hand decides whether a buy/upgrade button looks available
+	local function affordColor(enough: boolean): Color3
+		return if enough then Theme.button else Theme.locked
 	end
 	local function place(gui: GuiObject, x: number, y: number, w: number, h: number)
 		gui.Position = UDim2.fromOffset(x, y)
@@ -112,6 +159,20 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		for index = 1, 3 do
 			local slot = summary.slots[index]
 			local card = row(list, 120, index)
+			if index == summary.currentSlot then
+				Widgets.outline(card, Theme.gold, 2, 0.2)
+			end
+			local accent = Widgets.frame(
+				card,
+				"Accent",
+				if type(slot) ~= "table"
+					then Theme.locked
+					elseif slot.heroKind == "shadow" then Color3.fromRGB(160, 110, 255)
+					else Theme.gold,
+				3
+			)
+			accent.Size = UDim2.new(0, 4, 1, -16)
+			accent.Position = UDim2.fromOffset(3, 8)
 			local head = Widgets.label(
 				card,
 				"Head",
@@ -288,27 +349,45 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			local stage = (ui.chapter - 1) * 24 + i
 			local meta = Text.stageMeta(catalog, slot.heroKind, stage)
 			local star = slot.stars[stage]
-			local label = string.format(
-				"%s\n%s",
-				Text.stageLabel(stage),
-				if star < 0
-					then "잠김"
-					else string.rep("★", star) .. string.rep("☆", 3 - star)
-			)
-			local mode = Text.modeName(meta.mode)
-			if mode ~= "" then
-				label = label .. "\n" .. mode
-			end
+			local selected = stage == ui.stage and star >= 0
 			local b = Widgets.button(
 				grid,
 				"Stage" .. stage,
-				label,
+				"",
 				12,
 				if star < 0
 					then Theme.locked
-					elseif stage == ui.stage then Theme.buttonHot
+					elseif selected then Theme.buttonHot
+					elseif star > 0 then Theme.panelLight
 					else Theme.button
 			)
+			local ink = if selected then Theme.ink elseif star < 0 then Theme.muted else Theme.text
+			local number = Widgets.label(b, "Number", Text.stageLabel(stage), 15, ink)
+			number.Font = Theme.fontHeavy
+			number.Size = UDim2.new(1, 0, 0, 20)
+			number.Position = UDim2.fromOffset(0, 5)
+			local stars = Widgets.label(
+				b,
+				"Stars",
+				if star < 0
+					then "잠김"
+					else string.rep("★", star) .. string.rep("☆", 3 - star),
+				if star < 0 then 11 else 14,
+				if selected then Theme.ink elseif star < 0 then Theme.muted else Theme.gold
+			)
+			stars.Size = UDim2.new(1, 0, 0, 16)
+			stars.Position = UDim2.fromOffset(0, 24)
+			local mode = Text.modeName(meta.mode)
+			if mode ~= "" then
+				local tag =
+					Widgets.label(b, "Mode", mode, 10, if selected then Theme.ink else Theme.gem)
+				tag.Size = UDim2.new(1, -4, 0, 14)
+				tag.Position = UDim2.fromOffset(2, 41)
+				Widgets.fit(tag, 10)
+			end
+			if selected then
+				Widgets.outline(b, Theme.text, 2, 0)
+			end
 			b.LayoutOrder = i
 			b.Activated:Connect(function()
 				if star >= 0 then
@@ -396,12 +475,13 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 					if level == 0 then "고용" else "강화",
 					Text.number(r.levels.cost[level + 1])
 				)
+			local price = if level < 20 then r.levels.cost[level + 1] else 0
 			local b = Widgets.button(
 				card,
 				"Upgrade",
 				text,
 				13,
-				if level >= 20 or blocked then Theme.locked else Theme.button
+				if level >= 20 or blocked or slot.gold < price then Theme.locked else Theme.gold
 			)
 			place(b, 400, 6, 120, 52)
 			b.Activated:Connect(function()
@@ -499,7 +579,12 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 								Text.number(price),
 								if currency == "gold" then "G" else " 보석"
 							),
-							12
+							12,
+							affordColor(
+								if currency == "gold"
+									then slot.gold >= price
+									else summary.gems >= price
+							)
 						)
 						b.Size = UDim2.new(1, -8, 0, 30)
 						b.LayoutOrder = order
@@ -519,7 +604,8 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 						catalog.text.gemShop[tostring(entry[1])],
 						entry[2]
 					),
-					13
+					13,
+					affordColor(summary.gems >= entry[2])
 				)
 				b.Size = UDim2.new(1, -8, 0, 36)
 				b.LayoutOrder = order
@@ -650,7 +736,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			place(desc, 210, 0, 300, 40)
 			desc.TextXAlignment = Enum.TextXAlignment.Left
 			if slot.freePoints > 0 and slot.skills[i] < maxes[i] then
-				local learn = Widgets.button(card, "Learn", "+", 18)
+				local learn = Widgets.button(card, "Learn", "+", 18, Theme.gold)
 				place(learn, 560, 4, 40, 32)
 				learn.Activated:Connect(function()
 					handlers.lobby("LearnSkill", { skill = i })
@@ -738,7 +824,13 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			ui.screen = "Records"
 		end
 		for name, b in navButtons do
-			b.BackgroundColor3 = if name == ui.screen then Theme.buttonHot else Theme.button
+			local open = name == ui.screen
+			b.BackgroundColor3 = if open then Theme.panelLight else Theme.button
+			b.TextColor3 = if open then Theme.gold else Theme.text
+			local marker = b:FindFirstChild("Marker")
+			if marker and marker:IsA("GuiObject") then
+				marker.Visible = open
+			end
 			b.Visible = slot ~= nil or name == "Records"
 		end
 		if ui.screen == "Records" then
@@ -766,28 +858,21 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		root.Visible = visible
 		local summary = model.summary
 		local slot = model.slot
-		info.Text = string.format(
-			"%s · %s%s",
-			model.storage or "",
-			model.network or "",
-			if summary
-				then string.format(
-					"  ·  보석 %d%s",
-					summary.gems,
-					if slot
-						then string.format(
-							"  ·  %s Lv.%d  %sG",
-							catalog.heroNames[slot.heroKind],
-							slot.level,
-							Text.number(slot.gold)
-						)
-						else ""
-				)
-				else ""
+		statusChip.Text = string.format("● %s · %s", model.storage or "", model.network or "")
+		statusChip.TextColor3 = if model.network == "연결됨" then Theme.good else Theme.bad
+		gemChip.Text = if summary then "◆ " .. Text.number(summary.gems) else ""
+		gemBack.Visible = summary ~= nil
+		goldChip.Text = if slot then Text.number(slot.gold) .. " G" else ""
+		goldBack.Visible = slot ~= nil
+		heroChip.Text = if slot
+			then string.format("%s  Lv.%d", catalog.heroNames[slot.heroKind], slot.level)
+			else ""
+		heroBack.Visible = slot ~= nil
+		setToast(
+			if model.phase == "Unavailable"
+				then Text.reason(model.reason or "StorageUnavailable")
+				else Text.reason(model.reason)
 		)
-		toast.Text = if model.phase == "Unavailable"
-			then Text.reason(model.reason or "StorageUnavailable")
-			else Text.reason(model.reason)
 		if not visible then
 			return
 		end

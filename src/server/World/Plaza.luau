@@ -27,7 +27,7 @@ local function label(parent: Instance, text: string, size: number, color: Color3
 	l.Text = text
 	l.TextSize = size
 	l.TextColor3 = color
-	l.Font = Enum.Font.GothamBold
+	l.Font = Enum.Font.BuilderSansBold
 	l.Parent = parent
 	return l
 end
@@ -144,8 +144,14 @@ local function new(parent: Instance)
 	sign.Face = Enum.NormalId.Back
 	sign.PixelsPerStud = 20
 	sign.Parent = root:FindFirstChild("GateTop")
-	local signText = label(sign, "던전 입구", 48, Color3.fromRGB(255, 220, 140))
+	sign.LightInfluence = 0
+	local signText = label(sign, "던전 입구", 52, Color3.fromRGB(255, 220, 140))
 	signText.Size = UDim2.fromScale(1, 1)
+	signText.Font = Enum.Font.BuilderSansExtraBold
+	signText.TextStrokeColor3, signText.TextStrokeTransparency = Color3.fromRGB(60, 20, 90), 0.2
+	local glow = Instance.new("PointLight")
+	glow.Color, glow.Range, glow.Brightness = Color3.fromRGB(170, 120, 255), 24, 2
+	glow.Parent = portal
 
 	-- leaderboard board on the left side, facing the centre
 	local boardAt = CENTER + Vector3.new(-SIZE / 2 + 8, 9, 0)
@@ -166,43 +172,86 @@ local function new(parent: Instance)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Right
 	gui.PixelsPerStud = 20
+	gui.LightInfluence = 0
 	gui.Parent = board
-	local title = label(gui, "랭킹 · 이 서버", 34, Color3.fromRGB(255, 205, 80))
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.fromScale(1, 1)
+	frame.BackgroundColor3 = Color3.fromRGB(26, 29, 44)
+	frame.BorderSizePixel = 0
+	frame.Parent = gui
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new(Color3.fromRGB(52, 48, 76), Color3.fromRGB(22, 24, 36))
+	gradient.Rotation = 90
+	gradient.Parent = frame
+	local title = label(frame, "랭킹 · 이 서버", 40, Color3.fromRGB(255, 205, 80))
 	title.Size = UDim2.fromScale(1, 0.12)
-	local header = label(
-		gui,
-		"순위   이름   최고 스테이지   서바이벌   레벨",
-		20,
-		Color3.fromRGB(180, 185, 200)
-	)
-	header.Size = UDim2.fromScale(1, 0.07)
-	header.Position = UDim2.fromScale(0, 0.12)
-	local lines: { TextLabel } = {}
-	for i = 1, PlazaBoard.BOARD_SIZE do
-		local line = label(gui, "", 24, Color3.new(1, 1, 1))
-		line.Name = "Row" .. i
-		line.Size = UDim2.new(1, -20, 0.08, 0)
-		line.Position = UDim2.new(0, 10, 0.19 + (i - 1) * 0.08, 0)
-		line.TextXAlignment = Enum.TextXAlignment.Left
-		lines[i] = line
+	title.Font = Enum.Font.BuilderSansExtraBold
+	-- columns: rank, name, stage, survival, level (x offset as a fraction, width)
+	local COLUMNS = {
+		{ name = "순위", x = 0.02, w = 0.1 },
+		{ name = "이름", x = 0.12, w = 0.36 },
+		{ name = "스테이지", x = 0.48, w = 0.18 },
+		{ name = "서바이벌", x = 0.66, w = 0.18 },
+		{ name = "레벨", x = 0.84, w = 0.14 },
+	}
+	local muted = Color3.fromRGB(170, 172, 190)
+	for _, column in COLUMNS do
+		local head = label(frame, column.name, 20, muted)
+		head.Size = UDim2.fromScale(column.w, 0.06)
+		head.Position = UDim2.fromScale(column.x, 0.125)
 	end
+	local RANK_COLORS = {
+		Color3.fromRGB(255, 205, 80),
+		Color3.fromRGB(210, 216, 230),
+		Color3.fromRGB(214, 150, 96),
+	}
+	local lines: { { TextLabel } } = {}
+	for i = 1, PlazaBoard.BOARD_SIZE do
+		local strip = Instance.new("Frame")
+		strip.Name = "Row" .. i
+		strip.Size = UDim2.fromScale(0.96, 0.07)
+		strip.Position = UDim2.fromScale(0.02, 0.19 + (i - 1) * 0.08)
+		strip.BackgroundColor3 = Color3.new(1, 1, 1)
+		strip.BackgroundTransparency = if i % 2 == 1 then 0.93 else 0.97
+		strip.BorderSizePixel = 0
+		strip.Parent = frame
+		local round = Instance.new("UICorner")
+		round.CornerRadius = UDim.new(0, 8)
+		round.Parent = strip
+		local cells: { TextLabel } = {}
+		for c, column in COLUMNS do
+			local cell = label(strip, "", 24, RANK_COLORS[i] or Color3.new(1, 1, 1))
+			cell.Size = UDim2.fromScale(column.w / 0.96, 1)
+			cell.Position = UDim2.fromScale((column.x - 0.02) / 0.96, 0)
+			cell.TextTruncate = Enum.TextTruncate.AtEnd
+			if c == 2 then
+				cell.TextXAlignment = Enum.TextXAlignment.Left
+			end
+			cells[c] = cell
+		end
+		lines[i] = cells
+	end
+	local empty = label(frame, "아직 기록이 없습니다", 24, muted)
+	empty.Size = UDim2.fromScale(1, 0.08)
+	empty.Position = UDim2.fromScale(0, 0.22)
 	root.Parent = parent
 
 	local function updateBoard(rows: { PlazaBoard.Row })
-		for i, line in lines do
+		empty.Visible = #rows == 0
+		for i, cells in lines do
 			local row = rows[i]
-			line.Text = if row
-				then string.format(
-					"%2d.  %s   %s   %s   Lv.%d",
-					i,
-					row.name,
-					PlazaBoard.stageLabel(row.stage),
-					if row.wave > 0 then "웨이브 " .. row.wave else "-",
-					row.level
-				)
-				else ""
+			local strip = cells[1].Parent :: Frame
+			strip.Visible = row ~= nil
+			if row then
+				cells[1].Text = if i <= 3 then ({ "1st", "2nd", "3rd" })[i] else tostring(i)
+				cells[2].Text = row.name
+				cells[3].Text = PlazaBoard.stageLabel(row.stage)
+				cells[4].Text = if row.wave > 0 then "W" .. row.wave else "-"
+				cells[5].Text = "Lv." .. row.level
+			end
 		end
 	end
+	updateBoard({})
 
 	-- "원정 중" tag over avatars whose owner is inside a battle
 	local function setExpedition(player: Player, inside: boolean)
@@ -215,11 +264,17 @@ local function new(parent: Instance)
 		if inside and not tag then
 			local created = Instance.new("BillboardGui")
 			created.Name = "ExpeditionTag"
-			created.Size = UDim2.fromOffset(120, 30)
+			created.Size = UDim2.fromOffset(96, 26)
 			created.StudsOffset = Vector3.new(0, 3, 0)
 			created.AlwaysOnTop = true
-			local text = label(created, "원정 중", 18, Color3.fromRGB(255, 205, 80))
+			created.MaxDistance = 120
+			local text = label(created, "원정 중", 16, Color3.fromRGB(34, 26, 14))
 			text.Size = UDim2.fromScale(1, 1)
+			text.BackgroundTransparency = 0.1
+			text.BackgroundColor3 = Color3.fromRGB(255, 205, 80)
+			local round = Instance.new("UICorner")
+			round.CornerRadius = UDim.new(0.5, 0)
+			round.Parent = text
 			created.Parent = head
 		elseif not inside and tag then
 			tag:Destroy()
