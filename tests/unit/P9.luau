@@ -101,8 +101,22 @@ return function(env: any, check: any)
 	a.frame()
 	check("e2e-profile-ready", "LobbyReady", a.match.phaseOf(1), a.tick)
 	local commandSeq = 0
-	-- Bot uses only client-legal commands: summon every slot and cast on a cadence; rejections are harmless.
+	-- Lobby growth between attempts, through the same remote path a player uses (bounded: caps/gold stop it).
+	local function grow()
+		for _ = 1, 8 do
+			local purchases: { { [string]: any } } = {
+				{ kind = "UpgradeUnit", unitId = "slinger" },
+				{ kind = "AllocatePoint", traitId = "provisions" },
+			}
+			for _, payload in purchases do
+				payload.expectedRevision = a.profiles.profileOf(1).revision
+				a.send(1, payload)
+				a.frame()
+			end
+		end
+	end
 	local function play(stageId: string): any
+		grow()
 		a.start(1, stageId)
 		if a.match.phaseOf(1) ~= "Running" then
 			return a.last(1)
@@ -164,6 +178,7 @@ return function(env: any, check: any)
 	check("e2e-s01-normal-play-victory", true, won.s01 == true, a.tick)
 	-- Unlock order is the invariant; s02/s03 balance is what this run measures, not a fixture.
 	check("e2e-s02-normal-play-victory", true, won.s02 == true, a.tick)
+	check("e2e-s03-victory-after-growth", true, won.s03 == true, a.tick)
 	if not won.s02 then
 		a.start(1, "s03")
 		check("e2e-s03-locked-without-s02", "LockedStage", a.last(1).reason, a.tick)
@@ -180,7 +195,7 @@ return function(env: any, check: any)
 	local expected = {
 		gold = saved.gold,
 		totalXp = saved.totalXp,
-		vanguard = saved.unitLevels.vanguard,
+		slinger = saved.unitLevels.slinger,
 		s01 = saved.stageProgress.s01.wins,
 		s02 = saved.stageProgress.s02.wins,
 		revision = saved.revision,
@@ -193,7 +208,8 @@ return function(env: any, check: any)
 	check("rejoin-ready", "LobbyReady", b.match.phaseOf(1), b.tick)
 	check("rejoin-gold", expected.gold, restored and restored.gold, b.tick)
 	check("rejoin-xp", expected.totalXp, restored and restored.totalXp, b.tick)
-	check("rejoin-unit-level", expected.vanguard, restored and restored.unitLevels.vanguard, b.tick)
+	check("rejoin-unit-level", expected.slinger, restored and restored.unitLevels.slinger, b.tick)
+	check("rejoin-growth-was-bought", true, expected.slinger > 1, b.tick)
 	check("rejoin-s01-wins", expected.s01, restored and restored.stageProgress.s01.wins, b.tick)
 	check("rejoin-s02-wins", expected.s02, restored and restored.stageProgress.s02.wins, b.tick)
 	check("rejoin-revision", expected.revision, restored and restored.revision, b.tick)

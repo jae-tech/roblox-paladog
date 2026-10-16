@@ -599,7 +599,7 @@
     "kind": "decision"
   },
   "s03.choices": {
-    "decisionId": "MVP-STAGE-01",
+    "decisionId": "MVP-STAGE-02",
     "kind": "decision"
   },
   "s03.coreHitRadius": {
@@ -628,11 +628,11 @@
     "transformId": "px-to-stud-v1"
   },
   "s03.fastMaxTicks": {
-    "decisionId": "MVP-STAGE-01",
+    "decisionId": "MVP-STAGE-02",
     "kind": "decision"
   },
   "s03.fastMinTicks": {
-    "decisionId": "MVP-STAGE-01",
+    "decisionId": "MVP-STAGE-02",
     "kind": "decision"
   },
   "s03.firstWinGold": {
@@ -658,11 +658,11 @@
     "kind": "decision"
   },
   "s03.slowMaxTicks": {
-    "decisionId": "MVP-STAGE-01",
+    "decisionId": "MVP-STAGE-02",
     "kind": "decision"
   },
   "s03.slowMinTicks": {
-    "decisionId": "MVP-STAGE-01",
+    "decisionId": "MVP-STAGE-02",
     "kind": "decision"
   },
   "s03.timeLimitTicks": {

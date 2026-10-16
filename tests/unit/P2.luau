@@ -286,7 +286,7 @@ return function(env: any, check: Check)
 	table.sort(summaryKeys)
 	check(
 		"bootstrap-summary-exact-keys",
-		"gold,heroLevel,heroTraits,stageProgress,totalXp,unitLevels,unspentPoints",
+		"gold,heroLevel,heroTraits,nextLevelXp,stageProgress,totalXp,unitLevels,unitUpgradeCosts,unlockedStages,unspentPoints", -- P7 lobby DTO (owner-only, derived)
 		table.concat(summaryKeys, ","),
 		0
 	)

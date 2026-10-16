@@ -1,5 +1,5 @@
 {
-  "balanceHash": "1575c6baae84eda23d82204542ee10ac70b75c680561d1046e732e5df34951fa",
+  "balanceHash": "934d173b853c1a69ce578894648ba1fba51ea42e2703657569f4c8ad31690393",
   "balanceVersion": "mvp-proto-001",
   "configSchemaVersion": 1,
   "enemies": {
@@ -77,7 +77,7 @@
     "enemyCap": 40,
     "projectileCap": 128
   },
-  "overlayFileSha256": "518526c7a3072cd5769ba572f0c3def213deffa5b97c7900bbfd3990f23e2f67",
+  "overlayFileSha256": "667271b0a8da0ab7511569d374816e665ab303fb73411fdc5c6a4257a2f76fa5",
   "progression": {
     "goldMax": 999999999,
     "heroLevelCap": 10,
@@ -210,7 +210,7 @@
       "choices": [
         {
           "enemyId": "scrapper",
-          "weight": 50
+          "weight": 60
         },
         {
           "enemyId": "spitter",
@@ -218,22 +218,22 @@
         },
         {
           "enemyId": "brute",
-          "weight": 20
+          "weight": 10
         }
       ],
       "coreHitRadius": 2.5,
       "coreMaxHp": 1400,
       "coreX": 90.4,
       "enemySpawnX": 102.4,
-      "fastMaxTicks": 40,
-      "fastMinTicks": 20,
+      "fastMaxTicks": 60,
+      "fastMinTicks": 40,
       "firstWinGold": 100,
       "heroStartX": 10,
       "id": "s03",
       "length": 102.4,
       "prerequisiteId": "s02",
-      "slowMaxTicks": 90,
-      "slowMinTicks": 70,
+      "slowMaxTicks": 120,
+      "slowMinTicks": 100,
       "timeLimitTicks": 12000,
       "winGold": 220,
       "winXp": 160

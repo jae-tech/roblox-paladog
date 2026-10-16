@@ -318,7 +318,8 @@ class DataModelsTableGolden(unittest.TestCase):
                   "timeLimitTicks": 12000, "firstWinGold": 100}
         expected = {"s01": (None, 600, (100, 120), (40, 60), 3, {"scrapper": 100}, (100, 60)),
                     "s02": ("s01", 900, (80, 100), (30, 50), 5, {"scrapper": 70, "spitter": 30}, (150, 100)),
-                    "s03": ("s02", 1400, (70, 90), (20, 40), 6, {"scrapper": 50, "spitter": 30, "brute": 20},
+                    # s03 intervals/weights: overlay MVP-STAGE-02 replaces DATA_MODELS §3.4 (70-90/20-40, 50/30/20).
+                    "s03": ("s02", 1400, (100, 120), (40, 60), 6, {"scrapper": 60, "spitter": 30, "brute": 10},
                             (220, 160))}
         for stage_id, (prereq, core, slow, fast, block, weights, win) in expected.items():
             s = BALANCE["stages"][stage_id]

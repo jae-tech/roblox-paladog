@@ -383,6 +383,8 @@ local function new(deps: Deps)
 				and now >= nextBootstrap
 				and (
 					state.phase == "ProfileLoading"
+					-- Server-side Unavailable can recover (e.g. lease wait on rejoin); a mismatch cannot.
+					or (state.phase == "Unavailable" and state.reason ~= "ProtocolMismatch")
 					or (state.profileRequest ~= nil and now - state.profileBusyAt >= 3)
 					or (state.phase == "Preparing" and now - preparingAt >= 1)
 					or (state.matchId ~= nil and now - matchStarted >= 1 and buffer.age(now) >= 1)

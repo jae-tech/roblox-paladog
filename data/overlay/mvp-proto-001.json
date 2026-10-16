@@ -12,6 +12,7 @@
     "MVP-PROJ-01": {"reason": "Projectile definitions are new; similar appendix numbers do not imply a mapping", "approvedBy": null},
     "MVP-RES-01": {"reason": "Battle resources start at 0 (matches E04 §1-2 behaviour, restated as new rule)", "approvedBy": null},
     "MVP-STAGE-01": {"reason": "Stages s01~s03 are new: spawn tables, core HP, rewards, time limit, DATA_MODELS §3.4", "approvedBy": null},
+    "MVP-STAGE-02": {"reason": "s03 DATA_MODELS §3.4 spawn rate (avg ~2.7s/enemy, fast 20-40 ticks) outpaces food regen 2/s; headless probe: 0 wins at unit L5 + all traits. s01-level intervals and brute weight 20->10 give L1 0/8, L3+provisions2 5/8 wins (slinger-first bot, 8 seeds)", "approvedBy": null},
     "MVP-GROWTH-01": {"reason": "Hero level curve 100*L^2, traits and caps are new, DATA_MODELS §5", "approvedBy": null},
     "MVP-LIMIT-01": {"reason": "Entity/projectile caps, DATA_MODELS §3.5", "approvedBy": null}
   },
@@ -40,7 +41,8 @@
     {"canonicalId": "resources", "decisionId": "MVP-RES-01", "fields": {"foodStartMilli": 0, "manaStartMilli": 0}},
     {"canonicalId": "s01", "decisionId": "MVP-STAGE-01", "fields": {"allySpawnX": 0, "coreMaxHp": 600, "slowMinTicks": 100, "slowMaxTicks": 120, "fastMinTicks": 40, "fastMaxTicks": 60, "blockCount": 3, "choices": [{"enemyId": "scrapper", "weight": 100}], "timeLimitTicks": 12000, "winGold": 100, "winXp": 60, "firstWinGold": 100}},
     {"canonicalId": "s02", "decisionId": "MVP-STAGE-01", "fields": {"prerequisiteId": "s01", "allySpawnX": 0, "coreMaxHp": 900, "slowMinTicks": 80, "slowMaxTicks": 100, "fastMinTicks": 30, "fastMaxTicks": 50, "blockCount": 5, "choices": [{"enemyId": "scrapper", "weight": 70}, {"enemyId": "spitter", "weight": 30}], "timeLimitTicks": 12000, "winGold": 150, "winXp": 100, "firstWinGold": 100}},
-    {"canonicalId": "s03", "decisionId": "MVP-STAGE-01", "fields": {"prerequisiteId": "s02", "allySpawnX": 0, "coreMaxHp": 1400, "slowMinTicks": 70, "slowMaxTicks": 90, "fastMinTicks": 20, "fastMaxTicks": 40, "blockCount": 6, "choices": [{"enemyId": "scrapper", "weight": 50}, {"enemyId": "spitter", "weight": 30}, {"enemyId": "brute", "weight": 20}], "timeLimitTicks": 12000, "winGold": 220, "winXp": 160, "firstWinGold": 100}},
+    {"canonicalId": "s03", "decisionId": "MVP-STAGE-01", "fields": {"prerequisiteId": "s02", "allySpawnX": 0, "coreMaxHp": 1400, "blockCount": 6, "timeLimitTicks": 12000, "winGold": 220, "winXp": 160, "firstWinGold": 100}},
+    {"canonicalId": "s03", "decisionId": "MVP-STAGE-02", "fields": {"slowMinTicks": 100, "slowMaxTicks": 120, "fastMinTicks": 40, "fastMaxTicks": 60, "choices": [{"enemyId": "scrapper", "weight": 60}, {"enemyId": "spitter", "weight": 30}, {"enemyId": "brute", "weight": 10}]}},
     {"canonicalId": "progression", "decisionId": "MVP-GROWTH-01", "fields": {"heroLevelCap": 10, "xpCurveBase": 100, "unitMaxLevel": 5, "startGold": 0, "goldMax": 999999999, "totalXpMax": 1000000000, "traits": {"vitality": {"maxPoints": 3, "heroMaxHpPerPoint": 200}, "provisions": {"maxPoints": 3, "foodRegenMilliPerSecPerPoint": 250}, "focus": {"maxPoints": 3, "manaRegenMilliPerSecPerPoint": 250}}}},
     {"canonicalId": "limits", "decisionId": "MVP-LIMIT-01", "fields": {"allyCap": 30, "enemyCap": 40, "projectileCap": 128}}
   ],
