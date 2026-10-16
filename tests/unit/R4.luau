@@ -320,4 +320,27 @@ return function(env: any, check: any)
 		check("text-reason", "식량이 부족합니다", Text.reason("InsufficientFood"), 0)
 		check("text-number", "1,234,567", Text.number(1234567), 0)
 	end
+	-- Regression: Studio portrait 390px produced a -6px summon strip and negative button widths.
+	check("hud-responsive-plan-present", true, env.HudLayout ~= nil, 0)
+	if env.HudLayout then
+		for _, width in { 320, 360, 390, 640, 844, 900, 1072 } do
+			local p = env.HudLayout.plan(width)
+			check("hud-unit-width-positive-" .. width, true, p.unitWidth > 0, 0)
+			check("hud-unit-button-minimum-" .. width, true, p.unitButtonWidth >= 48, 0)
+			check("hud-controls-separated-" .. width, true, p.weaponX >= p.moveSize * 2 + 8, 0)
+			check(
+				"hud-weapons-in-bounds-" .. width,
+				true,
+				p.weaponX + p.weaponWidth * 3 + 8 <= width - 16,
+				0
+			)
+			check(
+				"hud-strip-in-bounds-" .. width,
+				true,
+				p.unitX >= 0 and p.unitX + p.unitWidth <= width - 16,
+				0
+			)
+			check("hud-compact-" .. width, width < 900, p.compact, 0)
+		end
+	end
 end

@@ -36,6 +36,7 @@ return {
 				SnapshotBuffer = require(client.Net.SnapshotBuffer),
 				ActionRouter = require(client.Input.ActionRouter),
 				Text = require(client.Presentation.Text),
+				HudLayout = require(client.Presentation.HudLayout),
 				catalog = require(ReplicatedStorage.Shared.RemakeCatalog),
 			}, check)
 		end, suiteId)

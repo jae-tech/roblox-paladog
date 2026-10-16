@@ -4,6 +4,7 @@
 local Theme = require("./Theme")
 local Widgets = require("./Widgets")
 local Text = require("./Text")
+local HudLayout = require("./HudLayout")
 
 export type Handlers = {
 	battle: (string, { [string]: any }?) -> (),
@@ -51,7 +52,15 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	local manaBar, setMana = Widgets.bar(bottom, "Mana", Theme.mana)
 	manaBar.Size = UDim2.fromOffset(230, 16)
 	manaBar.Position = UDim2.new(1, -230, 0, 0)
-	local units = Widgets.frame(bottom, "Units")
+	local units = Instance.new("ScrollingFrame")
+	units.Name = "Units"
+	units.BackgroundTransparency, units.BorderSizePixel = 1, 0
+	units.ScrollingDirection = Enum.ScrollingDirection.X
+	units.AutomaticCanvasSize = Enum.AutomaticSize.X
+	units.CanvasSize = UDim2.fromOffset(0, 0)
+	units.ScrollBarThickness = 4
+	units.ClipsDescendants = true
+	units.Parent = bottom
 	units.Size = UDim2.new(1, -380, 0, 100)
 	units.Position = UDim2.fromOffset(142, 22)
 	local unitLayout = Instance.new("UIListLayout")
@@ -260,6 +269,35 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	end
 
 	local currentView: any = nil
+	local layoutWidth, layoutKey = -1, ""
+	local function applyLayout()
+		local width = root.AbsoluteSize.X
+		if width == layoutWidth and layoutKey == unitKey then
+			return
+		end
+		layoutWidth, layoutKey = width, unitKey
+		local p = HudLayout.plan(width)
+		bottom.Size = UDim2.new(1, -16, 0, p.bottomHeight)
+		bottom.Position = UDim2.new(0, 8, 1, -p.bottomHeight - 6)
+		left.Size, right.Size =
+			UDim2.fromOffset(p.moveSize, p.moveSize), UDim2.fromOffset(p.moveSize, p.moveSize)
+		left.Position, right.Position =
+			UDim2.fromOffset(0, p.moveY), UDim2.fromOffset(p.moveSize + 8, p.moveY)
+		units.Size = UDim2.fromOffset(p.unitWidth, p.unitHeight)
+		units.Position = UDim2.fromOffset(p.unitX, p.unitY)
+		foodBar.Size, foodBar.Position =
+			UDim2.fromOffset(p.foodWidth, 16), UDim2.fromOffset(p.foodX, 0)
+		manaBar.Size = UDim2.fromOffset(p.manaWidth, 16)
+		manaBar.Position = UDim2.new(1, -p.manaWidth, 0, 0)
+		for _, button in unitButtons do
+			button.Size = UDim2.fromOffset(p.unitButtonWidth, p.unitHeight - 4)
+		end
+		for index, button in weapons do
+			button.Size = UDim2.fromOffset(p.weaponWidth, p.weaponHeight)
+			button.Position =
+				UDim2.fromOffset(p.weaponX + (index - 1) * (p.weaponWidth + 4), p.weaponY)
+		end
+	end
 	-- Tower: button 1 needs a lane for its five units (D-TOWER-01); others fire directly.
 	for slot = 1, 3 do
 		weapons[slot].Activated:Connect(function()
@@ -356,6 +394,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			string.format("마나 %d / %d", math.floor(view.mana), view.maxMana)
 		)
 		rebuildUnits(slot, view)
+		applyLayout()
 		if view.mode == "Destiny" then
 			for index, b in unitButtons do
 				local box = view.boxes[index]
