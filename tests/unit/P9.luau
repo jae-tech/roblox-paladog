@@ -349,6 +349,39 @@ return function(env: any, check: any)
 		attacked.tick
 	)
 
+	-- ------------------------------------------------- 100 match create/end cycles return to baseline
+	local cyc = server(env.SessionStore.new(), "cycle")
+	cyc.gateway.playerAdded(1)
+	cyc.frame()
+	local cycles = 100
+	for _ = 1, cycles do
+		cyc.now += 1 -- human pacing: 10 matches/s would be (correctly) rate-dropped by the gateway
+		cyc.start(1, "s01")
+		local w = cyc.match.worldOf(1)
+		if not w then
+			break
+		end
+		w.entities[w.coreId].hp = 0 -- outcome fixture: this measures lifecycle cleanup, not gameplay
+		cyc.frame()
+		cyc.send(1, { kind = "ReturnToLobby", matchId = cyc.match.resultOf(1).matchId })
+		cyc.frame()
+	end
+	local after = cyc.profiles.profileOf(1)
+	check("cycles-all-committed", cycles, after.stageProgress.s01.wins, cyc.tick)
+	check("cycles-lobby", "LobbyReady", cyc.match.phaseOf(1), cyc.tick)
+	check("cycles-no-active-match", 0, cyc.match.activeMatches(), cyc.tick)
+	check("cycles-no-owned-match", 0, cyc.match.ownedMatchCount(), cyc.tick)
+	check("cycles-world-released", nil, cyc.match.worldOf(1), cyc.tick)
+	check("cycles-result-released", nil, cyc.match.resultOf(1), cyc.tick)
+	check("cycles-no-snapshot", nil, cyc.match.snapshot(1), cyc.tick)
+	check("cycles-run-closed", nil, after.activeRun, cyc.tick)
+	check(
+		"cycles-receipts-bounded",
+		true,
+		#after.recentOperations <= Protocol.LIMITS.receiptCap,
+		cyc.tick
+	)
+
 	-- ------------------------------------------------- P9.4 load: 4 matches at caps (headless fixture)
 	local worlds: { any } = {}
 	for index = 1, Protocol.LIMITS.maxMatches do
@@ -390,6 +423,11 @@ return function(env: any, check: any)
 		local started = os.clock()
 		for _, w in worlds do
 			World.step(w)
+			if t % 2 == 0 then -- 10 Hz owner snapshot build (engine serialization not included)
+				World.snapshotEntities(w)
+				World.snapshotProjectiles(w)
+				World.snapshotHeroAction(w)
+			end
 		end
 		table.insert(durations, os.clock() - started)
 		for _, w in worlds do

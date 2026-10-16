@@ -492,6 +492,13 @@ local function new(deps: Deps)
 			return if session then session.world else nil -- server diagnostics/tests only; never replicated
 		end,
 		activeMatches = activeMatches,
+		ownedMatchCount = function(): number -- diagnostics/tests: must return to 0 after matches end
+			local count = 0
+			for _ in owners do
+				count += 1
+			end
+			return count
+		end,
 		resultOf = function(userId: number): ServerTypes.MatchResult?
 			local session = sessions[userId]
 			return if session then session.result else nil
