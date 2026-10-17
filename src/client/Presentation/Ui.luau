@@ -16,6 +16,8 @@ export type Handlers = {
 	returnToLobby: () -> (),
 	closeMenu: (() -> ())?,
 	openMenu: (() -> ())?,
+	purchase: ((number) -> ())?, -- Robux store (D-PAY-01)
+	speed: ((number) -> ())?, -- battle speed pass
 }
 
 local BATTLE_PHASES = { Running = true, Settling = true, Settled = true }
@@ -47,13 +49,18 @@ local function new(playerGui: PlayerGui, catalog: any, handlers: Handlers)
 	backdrop.Size = UDim2.fromScale(1, 1)
 	backdrop.Visible = false
 	local field = Field.new(gui, catalog)
-	local hud =
-		Hud.new(gui, catalog, { battle = handlers.battle, returnToLobby = handlers.returnToLobby })
-	local lobby = Lobby.new(
-		gui,
-		catalog,
-		{ lobby = handlers.lobby, start = handlers.start, close = handlers.closeMenu }
-	)
+	local hud = Hud.new(gui, catalog, {
+		battle = handlers.battle,
+		returnToLobby = handlers.returnToLobby,
+		purchase = handlers.purchase,
+		speed = handlers.speed,
+	})
+	local lobby = Lobby.new(gui, catalog, {
+		lobby = handlers.lobby,
+		start = handlers.start,
+		close = handlers.closeMenu,
+		purchase = handlers.purchase,
+	})
 	-- plaza player card: hero, level, difficulty and progress, money, EXP
 	local guide = Widgets.card(gui, "PlazaGuide", Theme.panelDeep, 14)
 	guide.BackgroundTransparency = 0.12

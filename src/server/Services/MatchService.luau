@@ -5,6 +5,7 @@ local ProfileService = require("./ProfileService")
 local ProfileSchema = require("./ProfileSchema")
 local Economy = require("./Economy")
 local Quests = require("./Quests")
+local Store = require("./Store")
 local ServerTypes = require("../ServerTypes")
 local Battle = require("../Battle/Battle")
 
@@ -47,6 +48,10 @@ type Session = {
 	battle: any?,
 	finalView: any?,
 	result: ServerTypes.MatchResult?,
+	passes: { [string]: boolean }, -- owned game passes (D-PAY-01), set by the market binding
+	speed: number, -- battle steps per server tick: 1, or 2 with the speed pass
+	holdUntil: number, -- tick until which a revive offer waits for an open purchase prompt
+	purchaseRequest: string?, -- the Purchase request whose prompt is open
 }
 
 export type Deps = {
@@ -62,6 +67,9 @@ export type Deps = {
 	spatial: boolean?,
 	-- R8 avatar combat: battle-unit (x, z) of the player's real character; the hero walks toward it.
 	follow: ((userId: number) -> (number?, number?))?,
+	-- D-PAY-01: opens the Robux prompt for Store item; returns a rejection reason (e.g. not configured)
+	prompt: ((userId: number, item: number) -> string?)?,
+	reviveForSale: (() -> boolean)?, -- the revive product is configured: offer revives without gems
 }
 
 -- Within this many battle units the hero stops chasing the character (no jitter around the target).
@@ -70,6 +78,8 @@ local FOLLOW_DEAD_ZONE = 4
 local ACTIVE: { [Phase]: boolean } =
 	{ Preparing = true, Running = true, Settling = true, Settled = true }
 local REVIVE_GEMS = 20
+local PROMPT_HOLD_TICKS = 90 * 30 -- a revive offer waits up to 90 s while its purchase prompt is open
+local RECEIPT_WAIT_TICKS = 15 * 30 -- after a successful prompt, up to 15 s for the receipt to commit
 
 -- Lobby kinds -> pure Economy transform (each re-checked against the stored document).
 local LOBBY: { [string]: (ServerTypes.ProfileV1, any) -> string? } = {
@@ -120,6 +130,7 @@ end
 local function new(deps: Deps)
 	local sessions: { [number]: Session } = {}
 	local owners: { [string]: number } = {} -- matchId -> owner userId
+	local passBook: { [number]: { [string]: boolean } } = {} -- D-PAY-01, may arrive before the session
 
 	local function reply(
 		userId: number,
@@ -172,6 +183,9 @@ local function new(deps: Deps)
 			moveTick = -math.huge,
 			pending = {},
 			snapshotSeq = 0,
+			passes = passBook[userId] or {},
+			speed = 1,
+			holdUntil = 0,
 		}
 		sessions[userId] = session
 		deps.profiles.load(userId, function(status)
@@ -196,6 +210,7 @@ local function new(deps: Deps)
 			leaveMatch(session)
 		end
 		sessions[userId] = nil
+		passBook[userId] = nil
 		deps.profiles.release(userId)
 	end
 
@@ -247,6 +262,19 @@ local function new(deps: Deps)
 			return
 		end
 		session.commandHigh = command.commandSeq
+		local profile = deps.profiles.profileOf(userId)
+		if command.kind == "Revive" and (not profile or profile.gems < REVIVE_GEMS) then
+			-- the offer may exist without gems when revives are for sale (D-PAY-01)
+			local message = reply(
+				userId,
+				command.requestId,
+				"Rejected",
+				"InsufficientGems",
+				{ matchId = session.matchId }
+			)
+			rememberAck(session, command.requestId, command.commandSeq, message)
+			return
+		end
 		table.insert(session.pending, {
 			kind = command.kind,
 			unit = command.unit,
@@ -333,9 +361,14 @@ local function new(deps: Deps)
 					loadout = ProfileSchema.loadoutOf(runSlot),
 					cleared = run.stage >= 1 and runSlot.stars[run.stage] >= 1,
 					goldAvailable = runSlot.gold,
-					revives = if profile.gems >= REVIVE_GEMS then 1 else 0,
+					revives = if profile.gems >= REVIVE_GEMS
+							or (deps.reviveForSale ~= nil and deps.reviveForSale())
+						then 1
+						else 0,
 					darkEvent = run.stage == 0 and not profile.darkUnlocked, -- D-SVV-05
+					rewardRate = if session.passes.goldExp then 2 else 1, -- D-PAY-01
 				})
+			battle.timeScale = session.speed
 			session.phase, session.matchId, session.stage, session.runOrdinal =
 				"Running", run.matchId, run.stage, run.ordinal
 			session.slot = run.slot
@@ -351,13 +384,61 @@ local function new(deps: Deps)
 		end)
 	end
 
+	-- D-PAY-01: the server opens the prompt so a revive offer can wait for it; the grant comes by receipt.
+	local function purchase(userId: number, session: Session, command: any)
+		local item = command.item
+		local battle = session.battle
+		local reason = if not deps.prompt
+			then "Locked"
+			elseif session.purchaseRequest then "Busy"
+			else Store.canOffer(deps.profiles.profileOf(userId), item, session.passes)
+		if not reason and item == Store.REVIVE and not (battle and battle.reviveOffer) then
+			reason = "WrongPhase" -- a revive is bought only while it is offered
+		end
+		if not reason and deps.prompt then
+			reason = deps.prompt(userId, item)
+		end
+		if reason then
+			reply(userId, command.requestId, "Rejected", reason)
+			return
+		end
+		session.purchaseRequest = command.requestId
+		if item == Store.REVIVE then
+			session.holdUntil = deps.tick() + PROMPT_HOLD_TICKS
+		end
+		reply(userId, command.requestId, "Pending")
+	end
+
+	local function setSpeed(userId: number, session: Session, command: any)
+		local reason = if not session.passes.speed and command.speed ~= 1
+			then "Locked"
+			else ownershipReason(userId, session, command.matchId)
+		if reason then
+			reply(userId, command.requestId, "Rejected", reason)
+			return
+		end
+		session.speed = command.speed
+		if session.battle then
+			session.battle.timeScale = command.speed
+		end
+		reply(userId, command.requestId, "Accepted", nil, { matchId = session.matchId })
+	end
+
 	local function handleCommand(userId: number, command: any)
 		local session = sessions[userId]
 		if not session then
 			return
 		end
 		local kind = command.kind
-		if command.commandSeq ~= nil then
+		if kind == "Purchase" then
+			if session.phase == "ProfileLoading" or session.phase == "Unavailable" then
+				reply(userId, command.requestId, "Rejected", "NotReady")
+			else
+				purchase(userId, session, command)
+			end
+		elseif kind == "SetSpeed" then
+			setSpeed(userId, session, command)
+		elseif command.commandSeq ~= nil then
 			battleCommand(userId, session, command)
 		elseif kind == "StartStage" then
 			startStage(userId, session, command)
@@ -435,6 +516,7 @@ local function new(deps: Deps)
 			balanceHash = deps.balanceHash,
 			inputAckSeq = session.moveSeq,
 			commandAckSeq = session.commandHigh,
+			speed = session.speed,
 			battle = view,
 			result = session.result,
 			profileRevision = if committedProfile then committedProfile.revision else nil,
@@ -501,9 +583,16 @@ local function new(deps: Deps)
 	local function stepAll()
 		for userId, session in sessions do
 			local battle = session.battle
-			if session.phase == "Running" and battle then
-				local commands = session.pending
-				session.pending = {}
+			local holding = battle ~= nil and battle.reviveOffer and session.holdUntil > deps.tick()
+			for step = 1, if holding then 0 else session.speed do
+				battle = session.battle
+				if session.phase ~= "Running" or not battle then
+					break
+				end
+				local commands = if step == 1 then session.pending else {}
+				if step == 1 then
+					session.pending = {}
+				end
 				local axis, strafe = effectiveAxis(userId), effectiveStrafe(userId)
 				local follow = deps.follow
 				if follow and battle.spatial and not battle.jump then
@@ -543,6 +632,58 @@ local function new(deps: Deps)
 		end
 	end
 
+	-- Market binding hooks (D-PAY-01).
+	local function setPasses(userId: number, passes: { [string]: boolean })
+		passBook[userId] = table.clone(passes)
+		local session = sessions[userId]
+		if session then
+			session.passes = table.clone(passes)
+			if not passes.speed and session.speed ~= 1 then
+				session.speed = 1
+				if session.battle then
+					session.battle.timeScale = 1
+				end
+			end
+		end
+	end
+	-- the prompt closed; a bought product still arrives through its receipt, so a revive keeps waiting a bit
+	local function purchaseClosed(userId: number, bought: boolean)
+		local session = sessions[userId]
+		if session then
+			session.holdUntil = if bought and session.holdUntil > 0
+				then deps.tick() + RECEIPT_WAIT_TICKS
+				else 0
+			local requestId = session.purchaseRequest
+			session.purchaseRequest = nil
+			if requestId then
+				reply(userId, requestId, "Accepted")
+			end
+		end
+	end
+	-- a receipt was committed: refresh the client, and a bought revive is used at once
+	local function granted(userId: number, item: number, profile: ServerTypes.ProfileV1)
+		local session = sessions[userId]
+		if not session then
+			return
+		end
+		local battle = session.battle
+		if
+			item == Store.REVIVE
+			and battle
+			and battle.reviveOffer
+			and session.phase == "Running"
+		then
+			table.insert(session.pending, { kind = "Revive", requestId = "store-revive" })
+		end
+		session.holdUntil = 0
+		local requestId = session.purchaseRequest or "store-grant"
+		session.purchaseRequest = nil
+		reply(userId, requestId, "Committed", nil, {
+			profileRevision = profile.revision,
+			profileSummary = ProfileSchema.summary(profile),
+		})
+	end
+
 	return table.freeze({
 		playerJoined = playerJoined,
 		playerLeft = playerLeft,
@@ -553,6 +694,13 @@ local function new(deps: Deps)
 		phaseOf = phaseOf,
 		snapshot = snapshot,
 		stepAll = stepAll,
+		setPasses = setPasses,
+		purchaseClosed = purchaseClosed,
+		granted = granted,
+		speedOf = function(userId: number): number
+			local session = sessions[userId]
+			return if session then session.speed else 1
+		end,
 		takePending = function(
 			userId: number
 		): { any } -- tests/diagnostics: drains queued battle commands

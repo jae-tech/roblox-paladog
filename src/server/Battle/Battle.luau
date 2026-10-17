@@ -151,6 +151,7 @@ export type Options = {
 	goldAvailable: number?, -- profile gold, for the gold weapon (E03 §3.1)
 	revives: number?, -- revive offers available (gems checked by the caller, D-REVIVE-01)
 	darkEvent: boolean?, -- survival: account lacks the shadow hero (D-SVV-05)
+	rewardRate: number?, -- kill gold/EXP multiplier from the gold/EXP game pass (D-PAY-01), default 1
 }
 
 local function modeOf(stage: number, shadow: boolean?): string
@@ -512,6 +513,7 @@ local function new(options: Options): any
 			then Rules.DIFFICULTY[1]
 			else Rules.DIFFICULTY[loadout.difficulty] or Rules.DIFFICULTY[1],
 		clearedMul = if options.cleared and not survival then 0.5 else 1,
+		rewardRate = options.rewardRate or 1,
 		rng = Rng.new(options.seed),
 		seed = options.seed,
 		entities = {},
@@ -675,9 +677,10 @@ local function reward(b: any, e: Entity)
 	local playTime = b.tick * DT
 	local survival = b.mode == "Survival"
 	local gold, exp
+	local fixed = false -- the 1-gold rules below are never multiplied
 	-- Boss-summoned minions and kills after 15 minutes outside survival pay 1 gold, 0 EXP (E04 §2-2).
 	if e.minion or (playTime >= FIFTEEN_MINUTES and not survival) then
-		gold, exp = 1, 0
+		gold, exp, fixed = 1, 0, true
 	elseif survival then
 		gold = e.rewardGold * b.difficulty.gold -- D-SVV-04
 		gold += b.stats.goldBonus * gold
@@ -689,9 +692,13 @@ local function reward(b: any, e: Entity)
 		exp = e.rewardExp * e.statMul * b.difficulty.exp * b.clearedMul
 		exp += b.stats.expBonus * exp
 		if e.oneGold then
-			gold = 1
+			gold, fixed = 1, true
 		end
 	end
+	if not fixed then
+		gold *= b.rewardRate -- D-PAY-01 gold/EXP pass
+	end
+	exp *= b.rewardRate
 	b.rewards.gold += math.floor(gold)
 	gainExp(b, math.floor(exp))
 	if survival and e.kind == "Boss" and e.n <= 10 then

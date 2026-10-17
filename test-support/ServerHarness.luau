@@ -55,6 +55,7 @@ local SUITES = {
 	["T-R6"] = true,
 	["T-R7"] = true,
 	["T-R8"] = true,
+	["T-R9"] = true,
 	["T-3D"] = true,
 }
 
@@ -157,6 +158,18 @@ function Harness.runSuite(suiteId: string, seed: number, options: { loadTicks: n
 				ArenaSpace = require(ReplicatedStorage.Shared.ArenaSpace),
 				GearLook = require(ReplicatedStorage.Shared.GearLook),
 				FigureLook = require(ReplicatedStorage.Shared.FigureLook),
+				Protocol = require(ReplicatedStorage.Shared.Protocol),
+				Battle = battle.Battle,
+				ProfileService = require(GameServer.Services.ProfileService),
+				MatchService = require(GameServer.Services.MatchService),
+				RemoteGateway = require(GameServer.Net.RemoteGateway),
+				SessionStore = require(GameServer.Services.SessionStore),
+			}, check)
+			return
+		elseif suiteId == "T-R9" then
+			require(tests.unit.R9)({
+				Store = require(GameServer.Services.Store),
+				Schema = require(GameServer.Services.ProfileSchema),
 				Protocol = require(ReplicatedStorage.Shared.Protocol),
 				Battle = battle.Battle,
 				ProfileService = require(GameServer.Services.ProfileService),

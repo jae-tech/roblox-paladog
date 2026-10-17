@@ -77,6 +77,8 @@ local FIELDS: { [string]: { string } } = {
 	Unequip = { "slot", "expectedRevision" },
 	Enchant = { "where", "index", "expectedRevision" },
 	GemShop = { "item", "expectedRevision" },
+	Purchase = { "item" }, -- Robux store (D-PAY-01): the server opens the purchase prompt
+	SetSpeed = { "matchId", "speed" }, -- battle speed game pass: 1 or 2
 }
 
 -- Integer ranges; a kind-specific entry overrides the default for that field.
@@ -94,6 +96,7 @@ local RANGE: { [string]: { number } } = {
 	category = { 1, 10 },
 	num = { 1, 11 },
 	item = { 1, 9 },
+	speed = { 1, 2 },
 }
 local KIND_RANGE: { [string]: { [string]: { number } } } = {
 	Mace = { unit = { 0, 9 } }, -- unit/lane only matter for tower buttons

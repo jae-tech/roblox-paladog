@@ -15,6 +15,7 @@ local Plaza = require("./World/Plaza")
 local Arena = require("./World/Arena")
 local PlazaBoard = require("./World/PlazaBoard")
 local AvatarGear = require("./World/AvatarGear")
+local MarketBinding = require("./Net/MarketBinding")
 
 local active: any = nil
 local function start(): any
@@ -48,6 +49,7 @@ local function start(): any
 		log = warn,
 	})
 	local arena: any = nil -- R8 avatar combat arenas, created with the plaza below
+	local prompt: ((number, number) -> string?)? = nil -- Robux store (D-PAY-01), bound after the match
 	local match = MatchService.new({
 		spatial = true,
 		follow = function(userId: number)
@@ -74,7 +76,12 @@ local function start(): any
 		maxMatches = protocol.LIMITS.maxMatches,
 		ackCacheSize = protocol.LIMITS.ackCacheSize,
 		moveTtlTicks = protocol.LIMITS.moveTtlTicks,
+		prompt = function(userId: number, item: number): string?
+			return if prompt then prompt(userId, item) else "NotReady"
+		end,
+		reviveForSale = MarketBinding.reviveForSale,
 	})
+	prompt = MarketBinding.bind(profiles, match)
 	local core = RemoteGateway.newCore({
 		protocol = protocol,
 		publicCatalog = { version = balanceHash, size = #catalog.stages },

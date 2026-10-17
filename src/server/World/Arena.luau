@@ -79,7 +79,10 @@ local function new(parent: Instance)
 	-- character still walks around it inside the leash; the battle hero does not follow it there.
 	local function walkSpeed(battle: any, _movable: boolean): number
 		local stats = battle.stats or {}
-		return ((stats.moveSpeed or 60) + (stats.moveSpeedRing or 0)) * Space.SCALE
+		-- the speed pass steps the battle twice per tick, so the character walks twice as fast (D-PAY-01)
+		return ((stats.moveSpeed or 60) + (stats.moveSpeedRing or 0))
+			* Space.SCALE
+			* (battle.timeScale or 1)
 	end
 
 	local function enter(player: Player, battle: any, movable: boolean): boolean

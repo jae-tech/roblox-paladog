@@ -102,6 +102,12 @@ local function start(): any
 		lobby = function(kind, fields)
 			controller.lobby(kind, fields, os.clock())
 		end,
+		purchase = function(item)
+			controller.purchase(item, os.clock())
+		end,
+		speed = function(speed)
+			controller.setSpeed(speed, os.clock())
+		end,
 		start = function(stage)
 			controller.start(stage, os.clock())
 		end,

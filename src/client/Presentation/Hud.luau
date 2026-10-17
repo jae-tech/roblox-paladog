@@ -3,6 +3,8 @@
 -- buttons bottom-right, food/mana bars, objective on top). Buttons only raise intents; the server decides.
 -- Summon/weapon buttons are cards: name, cost tag, hotkey, AUTO tag and a cooldown curtain.
 local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require("./Theme")
 local Widgets = require("./Widgets")
 local Text = require("./Text")
@@ -11,6 +13,8 @@ local HudLayout = require("./HudLayout")
 export type Handlers = {
 	battle: (string, { [string]: any }?) -> (),
 	returnToLobby: () -> (),
+	purchase: ((number) -> ())?, -- Robux store (D-PAY-01): 6 = revive
+	speed: ((number) -> ())?, -- battle speed pass
 }
 
 type SlotCard = {
@@ -163,6 +167,19 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	pause.Size = UDim2.fromOffset(46, 46)
 	pause.Position = UDim2.new(1, -46, 0, 0)
 	Widgets.corner(pause, 23)
+	-- battle speed pass (D-PAY-01): 1x / 2x toggle next to pause, shown only to owners
+	local speedButton = Widgets.button(top, "Speed", "1x", 16, Theme.panelDeep)
+	speedButton.Font = Theme.fontHeavy
+	speedButton.Size = UDim2.fromOffset(46, 46)
+	speedButton.Position = UDim2.new(1, -98, 0, 0)
+	speedButton.Visible = false
+	Widgets.corner(speedButton, 23)
+	local currentSpeed = 1
+	speedButton.Activated:Connect(function()
+		if handlers.speed then
+			handlers.speed(if currentSpeed == 2 then 1 else 2)
+		end
+	end)
 
 	-- bottom controls --------------------------------------------------------------------------------
 	local bottom = Widgets.frame(root, "Bottom")
@@ -335,6 +352,17 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	reviveNo.ZIndex = 42
 	reviveNo.Activated:Connect(function()
 		handlers.battle("GiveUp", nil)
+	end)
+	-- without 20 gems the revive can be bought with Robux (D-PAY-01, item 6)
+	local reviveBuy = Widgets.button(reviveCard, "Buy", "R$ 부활", 15, Theme.gold)
+	reviveBuy.Size = UDim2.new(0.5, -12, 0, 48)
+	reviveBuy.Position = UDim2.new(0, 8, 1, -58)
+	reviveBuy.ZIndex = 42
+	reviveBuy.Visible = false
+	reviveBuy.Activated:Connect(function()
+		if handlers.purchase then
+			handlers.purchase(6)
+		end
 	end)
 
 	local retreated = false -- the server reports a retreat as Defeat; the title says what the player did
@@ -736,6 +764,23 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			end
 		end
 		showModal(revive, reviveCard, model.phase == "Running" and view.reviveOffer == true)
+		local gems = if model.summary then model.summary.gems or 0 else 0
+		local store = ReplicatedStorage:FindFirstChild("Store")
+		local revivePrice = if store then store:GetAttribute("Price6") else nil
+		local canBuy = gems < 20 and type(revivePrice) == "number" and revivePrice > 0
+		reviveYes.Visible = not canBuy
+		reviveBuy.Visible = canBuy
+		if canBuy then
+			reviveBuy.Text = string.format("부활 (R$ %d)", revivePrice :: number)
+			reviveText.Text = "보석이 모자랍니다. Robux로 바로 다시 일어날까요?"
+		else
+			reviveText.Text = "보석 20개로 다시 일어날까요?"
+		end
+		currentSpeed = model.speed or 1
+		speedButton.Visible = Players.LocalPlayer:GetAttribute("PassSpeed") == true
+			and model.phase == "Running"
+		speedButton.Text = currentSpeed .. "x"
+		speedButton.BackgroundColor3 = if currentSpeed == 2 then Theme.gold else Theme.panelDeep
 		local settled = model.phase == "Settled" or model.phase == "Settling"
 		showModal(result, resultCard, settled)
 		if settled then

@@ -10,11 +10,44 @@ local HudLayout = require("./HudLayout")
 local PlazaState = require("./PlazaState")
 local ItemPreview = require("./ItemPreview")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Robux store (D-PAY-01): item index -> name, short description, owned-pass attribute
+local ROBUX_ITEMS: { { item: number, name: string, desc: string, pass: string? } } = {
+	{ item = 1, name = "보석 50", desc = "보석 50개" },
+	{ item = 2, name = "보석 120", desc = "보석 120개" },
+	{ item = 3, name = "보석 300", desc = "보석 300개" },
+	{ item = 4, name = "보석 800", desc = "보석 800개" },
+	{
+		item = 5,
+		name = "첫 구매 패키지",
+		desc = "보석 100 + 골드 50,000 + 황금 무기 (1회)",
+	},
+	{
+		item = 7,
+		name = "골드·경험치 2배",
+		desc = "전투 처치 골드·경험치 영구 2배",
+		pass = "PassGoldExp",
+	},
+	{
+		item = 8,
+		name = "전투 2배속",
+		desc = "전투 중 1x/2x 전환 버튼",
+		pass = "PassSpeed",
+	},
+	{
+		item = 9,
+		name = "VIP",
+		desc = "매일 보석 15개, 머리 위 VIP 표시",
+		pass = "PassVip",
+	},
+}
 
 export type Handlers = {
 	lobby: (string, { [string]: any }?) -> (),
 	start: (number) -> (),
 	close: (() -> ())?,
+	purchase: ((number) -> ())?, -- Robux store (D-PAY-01)
 }
 
 local NAV = {
@@ -136,6 +169,19 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	}
 	local navButtons: { [string]: TextButton } = {}
 	local dirty = true
+	-- pass ownership and prices arrive as attributes; redraw when they change
+	Players.LocalPlayer.AttributeChanged:Connect(function()
+		dirty = true
+	end)
+	task.spawn(function()
+		local store = ReplicatedStorage:WaitForChild("Store", 30)
+		if store then
+			store.AttributeChanged:Connect(function()
+				dirty = true
+			end)
+			dirty = true
+		end
+	end)
 	local lastKey = ""
 	for index, entry in NAV do
 		local b = Widgets.button(nav, entry[1], entry[2], 15)
@@ -963,6 +1009,37 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 					handlers.lobby("GemShop", { item = entry[1] })
 				end)
 			end
+			-- Robux: gem packs, the one-time pack and game passes (D-PAY-01)
+			local robuxHeader = Widgets.label(list, "RobuxHeader", "Robux 상점", 15, Theme.gold)
+			robuxHeader.Font = Theme.fontHeavy
+			robuxHeader.Size = UDim2.new(1, -8, 0, 30)
+			robuxHeader.LayoutOrder = 100
+			local store = ReplicatedStorage:FindFirstChild("Store")
+			for order, entry in ROBUX_ITEMS do
+				local price = if store then store:GetAttribute("Price" .. entry.item) else nil
+				local ready = type(price) == "number" and price > 0
+				local owned = entry.pass ~= nil
+					and Players.LocalPlayer:GetAttribute(entry.pass) == true
+				local done = owned or (entry.item == 5 and summary.starterBought == true)
+				local tag = if done
+					then (if owned then "보유 중" else "구매 완료")
+					elseif ready then string.format("R$ %d", price :: number)
+					else "준비 중"
+				local b = Widgets.button(
+					list,
+					"Robux" .. entry.item,
+					string.format("%s  ·  %s\n%s", entry.name, tag, entry.desc),
+					13,
+					if ready and not done then Theme.gold else Theme.locked
+				)
+				b.Size = UDim2.new(1, -8, 0, 52)
+				b.LayoutOrder = 100 + order
+				b.Activated:Connect(function()
+					if ready and not done and handlers.purchase then
+						handlers.purchase(entry.item)
+					end
+				end)
+			end
 			local look = Widgets.card(content, "ItemLook", Theme.panelDeep, 10)
 			place(look, 390, 42, 372, 200)
 			local gems =
@@ -972,7 +1049,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			local tip = Widgets.label(
 				detail,
 				"Tip",
-				"보석은 업적과 서바이벌에서 얻습니다. 반지 3번 칸, 골드, 황금 무기, 기술 초기화를 살 수 있습니다.",
+				"보석은 업적과 서바이벌에서 얻거나 아래 Robux 상점에서 삽니다. 반지 3번 칸, 골드, 황금 무기, 기술 초기화, 부활에 씁니다.",
 				13,
 				Theme.muted
 			)

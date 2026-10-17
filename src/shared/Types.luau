@@ -33,6 +33,8 @@ export type CommandKind =
 	| "Unequip"
 	| "Enchant"
 	| "GemShop"
+	| "Purchase"
+	| "SetSpeed"
 
 export type Reason =
 	"NotReady"

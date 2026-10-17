@@ -23,6 +23,7 @@ type Job = {
 	mutate: (ProfileV1) -> string?,
 	done: Done,
 	result: ServerTypes.MatchResult?,
+	anyRevision: boolean?, -- server-side grants (store receipts) are not tied to a client's view
 }
 
 type State = {
@@ -159,7 +160,7 @@ local function new(deps: Deps)
 					return profile, nil -- already committed: idempotent replay, no second effect
 				end
 			end
-			if profile.revision ~= job.expectedRevision then
+			if not job.anyRevision and profile.revision ~= job.expectedRevision then
 				return nil, "StaleRevision"
 			end
 			local reason = job.mutate(profile)
@@ -447,6 +448,7 @@ local function new(deps: Deps)
 		-- Cheap memory pre-checks spare store budget; the transform re-checks against the stored document.
 		if
 			state.profile
+			and not job.anyRevision
 			and state.profile.revision ~= job.expectedRevision
 			and not hasReceipt(state.profile, job.requestId)
 		then
@@ -519,6 +521,22 @@ local function new(deps: Deps)
 			kind = op.kind,
 			requestId = op.requestId,
 			expectedRevision = op.expectedRevision,
+			done = done,
+			mutate = op.mutate,
+		})
+	end
+
+	-- Server-side grant (store receipt, VIP gift): applied to the current document whatever its revision.
+	local function grant(
+		userId: number,
+		op: { kind: string, requestId: string, mutate: (ProfileV1) -> string? },
+		done: Done
+	)
+		enqueue(userId, {
+			kind = op.kind,
+			requestId = op.requestId,
+			expectedRevision = 0,
+			anyRevision = true,
 			done = done,
 			mutate = op.mutate,
 		})
@@ -632,6 +650,7 @@ local function new(deps: Deps)
 		profileOf = profileOf,
 		startRun = startRun,
 		transact = transact,
+		grant = grant,
 		finishRun = finishRun,
 		poll = poll,
 		shutdown = shutdown,

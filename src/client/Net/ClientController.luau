@@ -204,9 +204,29 @@ local function new(deps: Deps)
 		sendCommand(payload, now, false)
 		return true
 	end
+	-- Robux store (D-PAY-01): the server opens the prompt; the grant arrives as a profile update.
+	local function purchase(item: number, now: number): boolean
+		if destroyed or state.phase == "ProfileLoading" or state.phase == "Unavailable" then
+			return false
+		end
+		sendCommand({ kind = "Purchase", item = item }, now, false)
+		return true
+	end
+	-- battle speed game pass: 1 or 2
+	local function setSpeed(speed: number, now: number): boolean
+		if destroyed or state.phase ~= "Running" or not state.matchId then
+			return false
+		end
+		sendCommand({ kind = "SetSpeed", matchId = state.matchId, speed = speed }, now, false)
+		return true
+	end
 	local function receiveMessage(message: any, now: number): boolean
 		if destroyed or type(message) ~= "table" then
 			return false
+		end
+		if message.requestId == "store-grant" then
+			applyProfile(message.profileRevision, message.profileSummary) -- a Robux receipt (D-PAY-01)
+			return true
 		end
 		local command = pending[message.requestId]
 		if
@@ -293,6 +313,7 @@ local function new(deps: Deps)
 			matchId = state.matchId,
 			stage = latest and latest.stage,
 			battle = latest and latest.battle,
+			speed = latest and latest.speed or 1,
 			result = latest and latest.result,
 			rewards = latest and latest.rewards,
 			settlementStatus = latest and latest.settlementStatus,
@@ -360,6 +381,8 @@ local function new(deps: Deps)
 		receiveMessage = receiveMessage,
 		move = move,
 		lobby = lobby,
+		purchase = purchase,
+		setSpeed = setSpeed,
 		start = start,
 		battle = battle,
 		returnToLobby = returnToLobby,

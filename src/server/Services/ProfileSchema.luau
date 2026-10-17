@@ -392,6 +392,24 @@ local function validate(value: any, receiptCap: number?): (boolean, string?)
 	then
 		return false, "lease"
 	end
+	-- optional store fields (D-PAY-01): recent receipt ids, the one-time pack, the last VIP gift day
+	local purchases = p.purchases
+	if purchases ~= nil then
+		if not isArray(purchases) or #purchases > 50 then
+			return false, "purchases"
+		end
+		for _, id in purchases do
+			if type(id) ~= "string" or #id < 1 or #id > 64 then
+				return false, "purchase id"
+			end
+		end
+	end
+	if p.starterBought ~= nil and type(p.starterBought) ~= "boolean" then
+		return false, "starterBought"
+	end
+	if p.vipDay ~= nil and not isInt(p.vipDay, 0, 2 ^ 31) then
+		return false, "vipDay"
+	end
 	if type(p.recentOperations) ~= "table" or #p.recentOperations > (receiptCap or 64) then
 		return false, "recentOperations"
 	end
@@ -466,6 +484,7 @@ local function summary(profile: Profile)
 		achievements = table.clone(profile.achievements),
 		darkUnlocked = profile.darkUnlocked,
 		ringSlotUnlocked = profile.ringSlotUnlocked,
+		starterBought = (profile :: any).starterBought == true,
 		currentSlot = profile.currentSlot,
 		slots = slots,
 		lastRunResult = if profile.lastRunResult then deepClone(profile.lastRunResult) else nil,

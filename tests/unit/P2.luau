@@ -320,7 +320,7 @@ return function(env: any, check: Check)
 	table.sort(summaryKeys)
 	check(
 		"bootstrap-summary-exact-keys",
-		"achievements,currentSlot,darkUnlocked,gems,ringSlotUnlocked,slots", -- v2 lobby DTO (owner-only)
+		"achievements,currentSlot,darkUnlocked,gems,ringSlotUnlocked,slots,starterBought", -- v2 lobby DTO (owner-only; starterBought D-PAY-01)
 		table.concat(summaryKeys, ","),
 		0
 	)
