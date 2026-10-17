@@ -130,6 +130,9 @@ local function start(): any
 				if model.battle and model.battle.mode == "Jump" then
 					controller.battle("Jump", nil, now)
 				end
+			elseif summon and model.battle and model.battle.mode == "Destiny" then
+				-- destiny has no summon buttons: number keys open the matching fate box
+				controller.battle("Box", { index = summon }, now)
 			elseif summon then
 				lastUnit = summon
 				-- Keyboard summons in the tower use the middle lane; the lane picker covers touch.
