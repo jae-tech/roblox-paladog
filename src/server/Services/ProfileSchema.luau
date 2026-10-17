@@ -140,6 +140,10 @@ end
 
 -- Weapon/ring grade cap: 5 + 5 per cleared 12th stage, up to 50 (E03 §2.3).
 local function gradeLimit(slot: Slot): number
+	-- D-DIFF-01: a slot that finished a whole difficulty keeps the full cap after its stars reset
+	if ((slot :: any).clearedDifficulty or 0) > 0 then
+		return 50
+	end
 	local limit = 5
 	for k = 1, 9 do
 		if (slot.stars[k * 12] or -1) >= 1 then
@@ -283,6 +287,11 @@ local function validateSlot(slot: any): string?
 	end
 	if not isInt(slot.survivalBest, 0, 2 ^ 31) then
 		return "survivalBest"
+	end
+	-- optional (D-DIFF-01): difficulties fully cleared, counted as the highest cleared tier + 1
+	local cleared = (slot :: any).clearedDifficulty
+	if cleared ~= nil and not isInt(cleared, 0, 4) then
+		return "clearedDifficulty"
 	end
 	return nil
 end

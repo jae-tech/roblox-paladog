@@ -790,11 +790,12 @@ local function new(parent: Instance)
 	title.Font = Enum.Font.BuilderSansExtraBold
 	-- columns: rank, name, stage, survival, level (x offset as a fraction, width)
 	local COLUMNS = {
-		{ name = "순위", x = 0.02, w = 0.1 },
-		{ name = "이름", x = 0.12, w = 0.36 },
-		{ name = "스테이지", x = 0.48, w = 0.18 },
-		{ name = "서바이벌", x = 0.66, w = 0.18 },
-		{ name = "레벨", x = 0.84, w = 0.14 },
+		{ name = "순위", x = 0.02, w = 0.09 },
+		{ name = "이름", x = 0.11, w = 0.3 },
+		{ name = "난이도", x = 0.41, w = 0.15 },
+		{ name = "스테이지", x = 0.56, w = 0.15 },
+		{ name = "서바이벌", x = 0.71, w = 0.15 },
+		{ name = "레벨", x = 0.86, w = 0.12 },
 	}
 	local muted = Color3.fromRGB(170, 172, 190)
 	for _, column in COLUMNS do
@@ -847,9 +848,10 @@ local function new(parent: Instance)
 			if row then
 				cells[1].Text = if i <= 3 then ({ "1st", "2nd", "3rd" })[i] else tostring(i)
 				cells[2].Text = row.name
-				cells[3].Text = PlazaBoard.stageLabel(row.stage)
-				cells[4].Text = if row.wave > 0 then "W" .. row.wave else "-"
-				cells[5].Text = if row.level > 0 then "Lv." .. row.level else "-"
+				cells[3].Text = PlazaBoard.difficultyLabel(row.difficulty)
+				cells[4].Text = PlazaBoard.stageLabel(row.stage)
+				cells[5].Text = if row.wave > 0 then "W" .. row.wave else "-"
+				cells[6].Text = if row.level > 0 then "Lv." .. row.level else "-"
 			end
 		end
 	end

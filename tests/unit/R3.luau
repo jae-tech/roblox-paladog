@@ -713,4 +713,74 @@ return function(env: any, check: any)
 		)
 		check("cycles-profile-valid", true, (Schema.validate(after)), cyc.tick)
 	end
+
+	-- D-DIFF-01: clearing every campaign stage moves the slot to the next difficulty from stage 1
+	do
+		local function cleared(difficulty: number, open120: boolean): any
+			local p = Schema.newProfile()
+			local fresh = Schema.newSlot("light", difficulty)
+			for i = 1, Schema.STAGES do
+				fresh.stars[i] = if i == Schema.STAGES then (if open120 then 0 else -1) else 1
+				fresh.bestSec[i] = if fresh.stars[i] >= 1 then 60 else 0
+			end
+			if not open120 then
+				fresh.stars[Schema.STAGES - 1] = 0
+				fresh.bestSec[Schema.STAGES - 1] = 0
+			end
+			p.slots[1], p.currentSlot = fresh, 1
+			p.runCounter = 1
+			p.activeRun = {
+				ordinal = 1,
+				matchId = "diff",
+				slot = 1,
+				stage = if open120 then Schema.STAGES else Schema.STAGES - 1,
+				balanceHash = "remake-db-1",
+				startOperationId = "d",
+			}
+			return p
+		end
+		local function win(p: any): any
+			return Settlement.reduce(p, {
+				matchId = "diff",
+				runOrdinal = 1,
+				slot = 1,
+				stage = p.activeRun.stage,
+				balanceHash = "remake-db-1",
+				seed = 1,
+				outcome = "Victory",
+				elapsedTicks = 900,
+				gold = 0,
+				goldSpent = 0,
+				exp = 0,
+				levelUps = 0,
+				picks = {},
+				drops = 0,
+				revives = 0,
+				killTotal = 1,
+				quests = { true, false, false },
+			})
+		end
+		local up = win(cleared(1, true))
+		local upSlot = up and up.slots[1]
+		check("diff-advances", 2, upSlot and upSlot.difficulty, 0)
+		check("diff-stage1-open", 0, upSlot and upSlot.stars[1], 0)
+		check("diff-stages-reset", -1, upSlot and upSlot.stars[2], 0)
+		check("diff-best-reset", 0, upSlot and upSlot.bestSec[Schema.STAGES], 0)
+		check("diff-cleared-tier", 2, upSlot and upSlot.clearedDifficulty, 0)
+		check("diff-result-flag", 2, up and up.lastRunResult.difficultyUp, 0)
+		check("diff-grade-cap-kept", 50, up and Schema.summary(up).slots[1].gradeLimit, 0)
+		check("diff-profile-valid", true, up ~= nil and (Schema.validate(up)), 0)
+		local hell = win(cleared(3, true))
+		check("diff-hell-stays", 3, hell and hell.slots[1].difficulty, 0)
+		check("diff-hell-keeps-stars", 1, hell and hell.slots[1].stars[Schema.STAGES], 0)
+		check("diff-hell-no-flag", nil, hell and hell.lastRunResult.difficultyUp, 0)
+		check("diff-hell-cleared", 4, hell and hell.slots[1].clearedDifficulty, 0)
+		local partial = win(cleared(0, false))
+		check("diff-partial-stays", 0, partial and partial.slots[1].difficulty, 0)
+		check("diff-partial-opens-next", 0, partial and partial.slots[1].stars[Schema.STAGES], 0)
+		local bad = Schema.deepClone(Schema.newProfile())
+		bad.slots[1], bad.currentSlot = Schema.newSlot("light", 0), 1
+		bad.slots[1].clearedDifficulty = 9
+		check("diff-schema-rejects-bad-tier", false, (Schema.validate(bad)), 0)
+	end
 end

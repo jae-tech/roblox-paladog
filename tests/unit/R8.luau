@@ -25,12 +25,19 @@ return function(env: any, check: any)
 
 	local rows = {}
 	for i = 1, 14 do
-		table.insert(
-			rows,
-			{ userId = 100 + i, name = "p" .. i, level = i, stage = i % 5, wave = 0 }
-		)
+		table.insert(rows, {
+			userId = 100 + i,
+			name = "p" .. i,
+			level = i,
+			stage = i % 5,
+			wave = 0,
+			difficulty = 0,
+		})
 	end
-	table.insert(rows, { userId = 1, name = "wave", level = 1, stage = 4, wave = 9 })
+	table.insert(
+		rows,
+		{ userId = 1, name = "wave", level = 1, stage = 4, wave = 9, difficulty = 0 }
+	)
 	local ranked = Board.rank(rows)
 	check("board-capped", Board.BOARD_SIZE, #ranked, 0)
 	check("board-top-stage", 4, ranked[1].stage, 0)
@@ -44,6 +51,16 @@ return function(env: any, check: any)
 	end
 	check("board-descending", true, ordered, 0)
 	check("board-input-untouched", 15, #rows, 0)
+	-- D-DIFF-01: a higher difficulty outranks any stage on a lower one, and the board names it
+	local hard = Board.rank({
+		{ userId = 7, name = "normal-120", level = 50, stage = 120, wave = 0, difficulty = 1 },
+		{ userId = 8, name = "hard-1", level = 50, stage = 1, wave = 0, difficulty = 2 },
+	})
+	check("board-difficulty-first", "hard-1", hard[1].name, 0)
+	check("board-difficulty-label", "어려움", Board.difficultyLabel(2), 0)
+	check("board-difficulty-none", "-", Board.difficultyLabel(-1), 0)
+	check("board-stats-difficulty", 1, s.difficulty, 0)
+	check("board-no-slot-difficulty", -1, empty.difficulty, 0)
 
 	-- D-PLAZA-03 avatar combat: the hero chases the real character at its own speed, server side.
 	local Space = env.ArenaSpace

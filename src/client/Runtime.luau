@@ -243,6 +243,24 @@ local function start(): any
 					end
 				end
 			end
+			-- D-DIFF-01: no record screen; the first record is picked or made (쉬움) automatically
+			if model.phase == "LobbyReady" and model.summary and not model.slot then
+				local pick = 0
+				for index, slot in model.summary.slots do
+					if slot and pick == 0 then
+						pick = index
+					end
+				end
+				if pick > 0 then
+					controller.lobby("SelectSlot", { slot = pick }, now)
+				else
+					controller.lobby(
+						"CreateSlot",
+						{ slot = 1, heroKind = "light", difficulty = 0 },
+						now
+					)
+				end
+			end
 			if now - hudAt >= 0.1 then
 				model.auto = auto.state()
 				ui.update(model)

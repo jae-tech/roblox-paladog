@@ -182,6 +182,9 @@ local function start(): any
 		end
 		local created = Instance.new("Folder")
 		created.Name = "leaderstats"
+		local difficulty = Instance.new("StringValue")
+		difficulty.Name = "난이도"
+		difficulty.Parent = created
 		for _, name in { "스테이지", "서바이벌", "레벨" } do
 			local value = Instance.new("IntValue")
 			value.Name = name
@@ -217,13 +220,16 @@ local function start(): any
 				local folder = leaderstats(player);
 				(folder:FindFirstChild("스테이지") :: IntValue).Value = stats.stage;
 				(folder:FindFirstChild("서바이벌") :: IntValue).Value = stats.wave;
-				(folder:FindFirstChild("레벨") :: IntValue).Value = stats.level
+				(folder:FindFirstChild("레벨") :: IntValue).Value = stats.level;
+				(folder:FindFirstChild("난이도") :: StringValue).Value =
+					PlazaBoard.difficultyLabel(stats.difficulty)
 				table.insert(rows, {
 					userId = player.UserId,
 					name = player.DisplayName,
 					level = stats.level,
 					stage = stats.stage,
 					wave = stats.wave,
+					difficulty = stats.difficulty,
 				})
 				local phase = match.phaseOf(player.UserId)
 				plaza.setExpedition(

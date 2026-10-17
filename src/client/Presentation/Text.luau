@@ -378,4 +378,27 @@ function Text.reason(reason: string?): string
 	return REASONS[reason] or reason
 end
 
+-- Unit hire order: the unit that must be hired first (0 = none), per hero (E05 B2).
+local UNIT_BEFORE: { [string]: { number } } = {
+	light = { 0, 1, 2, 3, 6, 4, 5, 7, 8 },
+	shadow = { 0, 1, 2, 3, 4, 5, 6, 7, 8 },
+}
+Text.UNIT_BEFORE = UNIT_BEFORE
+
+-- How many mercenaries the slot's gold already pays the next hire/upgrade for (plaza menu badge).
+function Text.affordableUnits(catalog: any, slot: any): number
+	local unitRows = if slot.heroKind == "shadow" then catalog.totems else catalog.units
+	local before = UNIT_BEFORE[slot.heroKind] or UNIT_BEFORE.light
+	local count = 0
+	for n = 1, 9 do
+		local level = slot.units[n]
+		local need = before[n]
+		local blocked = level == 0 and need > 0 and slot.units[need] < 1
+		if level < 20 and not blocked and unitRows[n].levels.cost[level + 1] <= slot.gold then
+			count += 1
+		end
+	end
+	return count
+end
+
 return table.freeze(Text)

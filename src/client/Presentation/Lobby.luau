@@ -21,7 +21,7 @@ local NAV = {
 	{ "Equipment", "장비·상점" },
 	{ "Skills", "기술" },
 	{ "Achievements", "업적" },
-	{ "Records", "기록" },
+	{ "Heroes", "영웅" },
 }
 
 local function new(parent: Instance, catalog: any, handlers: Handlers)
@@ -124,15 +124,12 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	toast.ZIndex = 35
 
 	local ui: any = {
-		screen = "Records",
+		screen = "Units",
 		mode = "town", -- "dungeon": the entrance menu (expeditions only); "town": the plaza menu
 		chapter = 1,
 		stage = 1,
 		tab = "Bag",
 		item = nil,
-		hero = "light",
-		difficulty = 1,
-		confirmDelete = 0,
 	}
 	local navButtons: { [string]: TextButton } = {}
 	local dirty = true
@@ -167,133 +164,129 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		gui.Size = UDim2.fromOffset(w, h)
 	end
 
-	-- Records ---------------------------------------------------------------------------------------
-	local function records(summary: any)
-		local list = Widgets.list(content, "Records", 8)
-		list.Size = UDim2.fromScale(1, 1)
+	-- Heroes (D-DIFF-01: no record screen) ---------------------------------------------------------
+	-- highest cleared stage and how many of the 120 are cleared on the slot's current difficulty
+	local function progressOf(slot: any): (number, number)
+		local best, count = 0, 0
+		for index, star in slot.stars do
+			if star >= 1 then
+				count += 1
+				best = math.max(best, index)
+			end
+		end
+		return best, count
+	end
+	local function heroes(summary: any)
+		local free = 0
 		for index = 1, 3 do
-			local slot = summary.slots[index]
-			local card = row(list, 120, index)
-			if index == summary.currentSlot then
-				Widgets.outline(card, Theme.gold, 2, 0.2)
+			if summary.slots[index] == false and free == 0 then
+				free = index
 			end
-			local accent = Widgets.frame(
-				card,
-				"Accent",
-				if type(slot) ~= "table"
-					then Theme.locked
-					elseif slot.heroKind == "shadow" then Color3.fromRGB(160, 110, 255)
-					else Theme.gold,
-				3
-			)
-			accent.Size = UDim2.new(0, 4, 1, -16)
-			accent.Position = UDim2.fromOffset(3, 8)
-			local head = Widgets.label(
-				card,
-				"Head",
-				"",
-				17,
-				if index == summary.currentSlot then Theme.gold else Theme.text
-			)
-			place(head, 12, 6, 400, 26)
-			head.TextXAlignment = Enum.TextXAlignment.Left
-			if type(slot) == "table" then
-				local stars = 0
-				for _, star in slot.stars do
-					stars += math.max(star, 0)
-				end
-				head.Text = string.format(
-					"기록 %d · %s · %s",
-					index,
-					catalog.heroNames[slot.heroKind],
-					catalog.text.difficulty[slot.difficulty + 1]
-				)
-				local body = Widgets.label(
-					card,
-					"Body",
-					string.format(
-						"Lv.%d · %sG · 별 %d",
-						slot.level,
-						Text.number(slot.gold),
-						stars
-					),
-					14,
-					Theme.muted
-				)
-				place(body, 12, 34, 400, 22)
-				body.TextXAlignment = Enum.TextXAlignment.Left
-				local pick = Widgets.button(
-					card,
-					"Select",
-					if index == summary.currentSlot then "선택됨" else "이 기록으로",
-					15
-				)
-				place(pick, 12, 66, 150, 44)
-				pick.Activated:Connect(function()
-					handlers.lobby("SelectSlot", { slot = index })
-					ui.screen, dirty = if ui.mode == "dungeon" then "Stages" else "Units", true
-				end)
-				local delete = Widgets.button(
-					card,
-					"Delete",
-					if ui.confirmDelete == index then "정말 삭제" else "삭제",
-					14,
-					if ui.confirmDelete == index then Theme.bad else Theme.button
-				)
-				place(delete, 172, 66, 120, 44)
-				delete.Activated:Connect(function()
-					if ui.confirmDelete == index then
-						handlers.lobby("DeleteSlot", { slot = index })
-						ui.confirmDelete = 0
-					else
-						ui.confirmDelete = index
+		end
+		for column, kind in { "light", "shadow" } do
+			-- the hero's record: the current one, else its highest level
+			local found, foundLevel = 0, -1
+			for index = 1, 3 do
+				local slot = summary.slots[index]
+				if type(slot) == "table" and slot.heroKind == kind then
+					local score = if index == summary.currentSlot then math.huge else slot.level
+					if score > foundLevel then
+						found, foundLevel = index, score
 					end
-					dirty = true
-				end)
-			else
-				head.Text = string.format("기록 %d · 비어 있음", index)
-				local x = 12
-				for _, kind in { "light", "shadow" } do
-					local locked = kind == "shadow" and not summary.darkUnlocked
-					local b = Widgets.button(
-						card,
-						"Hero" .. kind,
-						catalog.heroNames[kind] .. (if locked then " (잠김)" else ""),
-						13,
-						if ui.hero == kind then Theme.buttonHot else Theme.button
-					)
-					place(b, x, 36, 150, 30)
-					b.Activated:Connect(function()
-						if not locked then
-							ui.hero, dirty = kind, true
-						end
-					end)
-					x += 156
 				end
-				for d = 0, 3 do
-					local b = Widgets.button(
-						card,
-						"Difficulty" .. d,
-						catalog.text.difficulty[d + 1],
-						13,
-						if ui.difficulty == d then Theme.buttonHot else Theme.button
-					)
-					place(b, 12 + d * 86, 74, 80, 34)
-					b.Activated:Connect(function()
-						ui.difficulty, dirty = d, true
-					end)
-				end
-				local create = Widgets.button(card, "Create", "새로 시작", 15, Theme.gold)
-				create.TextColor3 = Theme.background
-				place(create, 372, 74, 120, 34)
-				create.Activated:Connect(function()
-					handlers.lobby(
-						"CreateSlot",
-						{ slot = index, heroKind = ui.hero, difficulty = ui.difficulty }
-					)
-					ui.screen, dirty = if ui.mode == "dungeon" then "Stages" else "Units", true
-				end)
 			end
+			local slot = if found > 0 then summary.slots[found] else nil
+			local current = found > 0 and found == summary.currentSlot
+			local color = if kind == "shadow" then Color3.fromRGB(160, 110, 255) else Theme.gold
+			local card = Widgets.card(content, "Hero" .. kind, Theme.panel, 14)
+			place(card, (column - 1) * 378, 0, 368, 300)
+			Widgets.outline(
+				card,
+				if current then color else Theme.stroke,
+				if current then 2 else 1,
+				0.2
+			)
+			local band = Widgets.frame(card, "Band", color, 12)
+			band.Size = UDim2.new(1, -16, 0, 6)
+			band.Position = UDim2.fromOffset(8, 8)
+			local name = Widgets.label(card, "Name", catalog.heroNames[kind], 22, color)
+			name.Font = Theme.fontHeavy
+			place(name, 18, 24, 330, 32)
+			name.TextXAlignment = Enum.TextXAlignment.Left
+			local locked = kind == "shadow" and not summary.darkUnlocked
+			local lines: { string } = {}
+			if slot then
+				local best, count = progressOf(slot)
+				local difficulty = catalog.text.difficulty[slot.difficulty + 1]
+				table.insert(
+					lines,
+					string.format("Lv.%d · %sG", slot.level, Text.number(slot.gold))
+				)
+				table.insert(
+					lines,
+					string.format(
+						"난이도 %s · 최고 %s",
+						difficulty,
+						if best > 0 then Text.stageLabel(best) else "-"
+					)
+				)
+				table.insert(lines, string.format("스테이지 %d / 120 클리어", count))
+				local nextDifficulty = catalog.text.difficulty[slot.difficulty + 2]
+				table.insert(
+					lines,
+					if nextDifficulty
+						then "모두 깨면 " .. nextDifficulty .. " 난이도로"
+						else "최고 난이도"
+				)
+			elseif locked then
+				table.insert(lines, "아직 잠겨 있습니다")
+				table.insert(lines, "서바이벌 특별 이벤트나")
+				table.insert(lines, "보석 상점에서 해금")
+			else
+				table.insert(lines, "새 원정을 쉬움 난이도로")
+				table.insert(lines, "시작합니다")
+			end
+			for i, line in lines do
+				local l = Widgets.label(
+					card,
+					"Line" .. i,
+					line,
+					15,
+					if i == 1 then Theme.text else Theme.muted
+				)
+				l.Font = Theme.fontBody
+				place(l, 18, 64 + (i - 1) * 26, 330, 24)
+				l.TextXAlignment = Enum.TextXAlignment.Left
+			end
+			local label = if current
+				then "함께하는 중"
+				elseif slot then "이 영웅으로"
+				elseif locked then "잠김"
+				elseif free == 0 then "자리 없음"
+				else "시작하기"
+			local enabled = not current and not locked and (slot ~= nil or free > 0)
+			local pick = Widgets.button(
+				card,
+				"Pick",
+				label,
+				17,
+				if current then Theme.panelLight elseif enabled then Theme.gold else Theme.locked
+			)
+			if enabled then
+				pick.TextColor3 = Theme.background
+			end
+			place(pick, 18, 232, 332, 52)
+			pick.Activated:Connect(function()
+				if not enabled then
+					return
+				end
+				if slot then
+					handlers.lobby("SelectSlot", { slot = found })
+				else
+					handlers.lobby("CreateSlot", { slot = free, heroKind = kind, difficulty = 0 })
+				end
+				ui.screen, dirty = if ui.mode == "dungeon" then "Stages" else "Units", true
+			end)
 		end
 	end
 
@@ -410,6 +403,50 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				end
 			end)
 		end
+		-- D-DIFF-01: where this difficulty stands and what clearing it unlocks
+		local _, cleared = progressOf(slot)
+		local tier = Widgets.card(content, "Difficulty", Theme.panel, 12)
+		place(tier, 552, 42, 208, 150)
+		Widgets.outline(tier, Theme.gold, 1, 0.5)
+		local tierHead = Widgets.label(tier, "Head", "현재 난이도", 13, Theme.muted)
+		place(tierHead, 14, 10, 180, 18)
+		tierHead.TextXAlignment = Enum.TextXAlignment.Left
+		local tierName = Widgets.label(
+			tier,
+			"Name",
+			catalog.text.difficulty[slot.difficulty + 1],
+			26,
+			Theme.gold
+		)
+		tierName.Font = Theme.fontHeavy
+		place(tierName, 14, 28, 180, 32)
+		tierName.TextXAlignment = Enum.TextXAlignment.Left
+		local barBack, setBar = Widgets.bar(tier, "Progress", Theme.gold)
+		place(barBack, 14, 70, 180, 10)
+		setBar(cleared / 120)
+		local count = Widgets.label(
+			tier,
+			"Count",
+			string.format("%d / 120 클리어", cleared),
+			13,
+			Theme.text
+		)
+		place(count, 14, 84, 180, 20)
+		count.TextXAlignment = Enum.TextXAlignment.Left
+		local nextName = catalog.text.difficulty[slot.difficulty + 2]
+		local hint = Widgets.label(
+			tier,
+			"Hint",
+			if nextName
+				then "모두 깨면 " .. nextName .. " 난이도로 넘어갑니다"
+				else "최고 난이도입니다",
+			12,
+			Theme.muted
+		)
+		hint.TextWrapped = true
+		place(hint, 14, 106, 180, 36)
+		hint.TextXAlignment = Enum.TextXAlignment.Left
+		hint.TextYAlignment = Enum.TextYAlignment.Top
 		local detail = Widgets.frame(content, "Detail", Theme.panel, 8)
 		place(detail, 0, 310, 540, 150)
 		local meta = Text.stageMeta(catalog, slot.heroKind, ui.stage)
@@ -452,9 +489,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		local list = Widgets.list(content, "Units", 6)
 		list.Size = UDim2.fromScale(1, 1)
 		local rows = if slot.heroKind == "shadow" then catalog.totems else catalog.units
-		local before = if slot.heroKind == "shadow"
-			then { 0, 1, 2, 3, 4, 5, 6, 7, 8 }
-			else { 0, 1, 2, 3, 6, 4, 5, 7, 8 }
+		local before = Text.UNIT_BEFORE[slot.heroKind] or Text.UNIT_BEFORE.light
 		for n = 1, 9 do
 			local r = rows[n]
 			local level = slot.units[n]
@@ -966,8 +1001,8 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			end
 			b.Visible = table.find(allowed, name) ~= nil
 		end
-		if screen == "Records" then
-			records(summary)
+		if screen == "Heroes" then
+			heroes(summary)
 		elseif screen == "Stages" then
 			stages(slot)
 		elseif screen == "Units" then
@@ -1010,18 +1045,15 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			return
 		end
 		local key = string.format(
-			"%s|%s|%s|%d|%d|%d|%s|%s|%s|%s|%d",
+			"%s|%s|%s|%d|%d|%s|%s|%s",
 			tostring(model.profileRevision),
 			ui.mode,
 			ui.screen,
 			ui.chapter,
 			ui.stage,
-			ui.difficulty,
-			ui.hero,
 			ui.tab,
 			tostring(ui.item),
-			tostring(model.summary ~= nil),
-			ui.confirmDelete
+			tostring(model.summary ~= nil)
 		)
 		if dirty or key ~= lastKey then
 			dirty, lastKey = false, key
@@ -1034,7 +1066,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		update = update,
 		-- which menu opens: the dungeon entrance or a plaza menu button (with its tab)
 		open = function(mode: string, screen: string?)
-			ui.mode, ui.item, ui.confirmDelete, dirty = mode, nil, 0, true
+			ui.mode, ui.item, dirty = mode, nil, true
 			ui.screen = screen or (if mode == "dungeon" then "Stages" else "Units")
 		end,
 		inspect = function(): any

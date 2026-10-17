@@ -720,6 +720,16 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 						rewardLine(order, "새 영웅 해금", catalog.heroNames.shadow, Theme.good)
 						order += 1
 					end
+					if rewards.difficultyUp then
+						-- D-DIFF-01: every stage cleared, the next difficulty starts from 1-1
+						rewardLine(
+							order,
+							"난이도 상승",
+							catalog.text.difficulty[rewards.difficultyUp + 1] or "",
+							Theme.good
+						)
+						order += 1
+					end
 					rewardLine(order, "골드", Text.number(rewards.awardedGold) .. "G", Theme.gold)
 					rewardLine(order + 1, "경험치", Text.number(rewards.awardedXp), Theme.good)
 					order += 2

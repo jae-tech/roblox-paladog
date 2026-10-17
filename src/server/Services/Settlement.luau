@@ -113,6 +113,8 @@ local function reduce(profile: Profile, result: Result): (Profile?, string?)
 	local survivalGems = 0
 	local abandoned = outcome == "Abandoned"
 	local goldDelta, expGain = 0, 0
+	local advance = false
+	local difficultyUp: number? = nil
 	local items: { number } = {}
 	local stars = 0
 	if not abandoned then
@@ -185,6 +187,14 @@ local function reduce(profile: Profile, result: Result): (Profile?, string?)
 			if stage < Schema.STAGES and slot.stars[stage + 1] < 0 then
 				slot.stars[stage + 1] = 0 -- next stage opens (E04 §5)
 			end
+			-- D-DIFF-01: every campaign stage cleared -> the next difficulty (applied after achievements)
+			advance = true
+			for i = 1, Schema.STAGES do
+				if slot.stars[i] < 1 then
+					advance = false
+					break
+				end
+			end
 		end
 	end
 	local gems = Achievements.evaluate(nextProfile, slot, {
@@ -194,6 +204,18 @@ local function reduce(profile: Profile, result: Result): (Profile?, string?)
 		levelUps = result.levelUps,
 		kills = result.killTotal,
 	})
+	if advance then
+		local view = slot :: any
+		view.clearedDifficulty = math.max(view.clearedDifficulty or 0, slot.difficulty + 1)
+		if slot.difficulty < 3 then
+			slot.difficulty += 1
+			difficultyUp = slot.difficulty
+			for i = 1, Schema.STAGES do
+				slot.stars[i] = if i == 1 then 0 else -1
+				slot.bestSec[i] = 0
+			end
+		end
+	end
 	nextProfile.lastClosedRunOrdinal = result.runOrdinal
 	nextProfile.lastRunResult = {
 		ordinal = result.runOrdinal,
@@ -206,6 +228,7 @@ local function reduce(profile: Profile, result: Result): (Profile?, string?)
 		gems = gems + survivalGems,
 		wave = if survival and not abandoned then result.wave else nil,
 		darkUnlock = if survival and not abandoned and result.darkUnlock then true else nil,
+		difficultyUp = difficultyUp,
 	}
 	nextProfile.activeRun = nil
 	return nextProfile, nil
