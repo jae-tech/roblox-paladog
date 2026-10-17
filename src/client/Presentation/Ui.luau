@@ -13,9 +13,18 @@ export type Handlers = {
 	start: (number) -> (),
 	returnToLobby: () -> (),
 	closeMenu: (() -> ())?,
+	openMenu: (() -> ())?,
 }
 
 local BATTLE_PHASES = { Running = true, Settling = true, Settled = true }
+-- plaza menu buttons: everything except expeditions, which start at the dungeon entrance
+local PLAZA_MENU = {
+	{ "Units", "용병" },
+	{ "Equipment", "장비·상점" },
+	{ "Skills", "기술" },
+	{ "Achievements", "업적" },
+	{ "Records", "기록" },
+}
 
 local function new(playerGui: PlayerGui, catalog: any, handlers: Handlers)
 	local gui = Instance.new("ScreenGui")
@@ -55,16 +64,40 @@ local function new(playerGui: PlayerGui, catalog: any, handlers: Handlers)
 	guideTitle.TextXAlignment = Enum.TextXAlignment.Left
 	local guideBody = Widgets.label(guide, "Body", "", 13, Theme.text)
 	guideBody.Font = Theme.fontBody
-	guideBody.Size = UDim2.new(1, -20, 0, 32)
+	guideBody.Size = UDim2.new(1, -20, 1, -34)
 	guideBody.Position = UDim2.fromOffset(10, 28)
 	guideBody.TextXAlignment = Enum.TextXAlignment.Left
 	guideBody.TextYAlignment = Enum.TextYAlignment.Top
+	-- plaza menu: a column on the right, clear of the touch jump button at the bottom
+	local menuBar = Widgets.card(gui, "PlazaMenu", Theme.panelDeep, 12)
+	menuBar.BackgroundTransparency = 0.2
+	menuBar.Size = UDim2.fromOffset(124, 12 + #PLAZA_MENU * 42)
+	menuBar.Position = UDim2.new(1, -134, 0, 10)
+	menuBar.Visible = false
+	local function openTown(screen: string)
+		lobby.open("town", screen)
+		if handlers.openMenu then
+			handlers.openMenu()
+		end
+	end
+	for i, entry in PLAZA_MENU do
+		local b = Widgets.button(menuBar, entry[1], entry[2], 15)
+		b.Size = UDim2.new(1, -12, 0, 36)
+		b.Position = UDim2.fromOffset(6, 6 + (i - 1) * 42)
+		b.Activated:Connect(function()
+			openTown(entry[1])
+		end)
+	end
 	local phase = "ProfileLoading"
 	local stage = 1
 
 	return {
 		gui = gui,
 		moveButtons = hud.moveButtons,
+		-- the dungeon entrance opens the expedition menu only
+		openDungeon = function()
+			lobby.open("dungeon", "Stages")
+		end,
 		update = function(model: any)
 			phase = model.phase
 			stage = model.stage or stage
@@ -74,6 +107,7 @@ local function new(playerGui: PlayerGui, catalog: any, handlers: Handlers)
 			end
 			local walking = model.menuVisible == false and not BATTLE_PHASES[phase]
 			guide.Visible = walking
+			menuBar.Visible = walking
 			if walking then
 				local slot = model.slot
 				guideBody.Text = (
@@ -85,8 +119,9 @@ local function new(playerGui: PlayerGui, catalog: any, handlers: Handlers)
 							Text.number(slot.gold)
 						)
 						else ""
-				) .. "보라색 던전 입구에서 원정을 시작하세요"
-				guide.Size = UDim2.fromOffset(260, if slot then 78 else 64)
+				)
+					.. "원정은 보라색 던전 입구에서,\n용병·장비·기술은 오른쪽 메뉴에서"
+				guide.Size = UDim2.fromOffset(260, if slot then 96 else 80)
 			end
 			hud.update(model)
 			lobby.update(model)

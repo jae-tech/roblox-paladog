@@ -7,6 +7,7 @@ local Theme = require("./Theme")
 local Widgets = require("./Widgets")
 local Text = require("./Text")
 local HudLayout = require("./HudLayout")
+local PlazaState = require("./PlazaState")
 
 export type Handlers = {
 	lobby: (string, { [string]: any }?) -> (),
@@ -124,6 +125,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 
 	local ui: any = {
 		screen = "Records",
+		mode = "town", -- "dungeon": the entrance menu (expeditions only); "town": the plaza menu
 		chapter = 1,
 		stage = 1,
 		tab = "Bag",
@@ -229,7 +231,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				place(pick, 12, 66, 150, 44)
 				pick.Activated:Connect(function()
 					handlers.lobby("SelectSlot", { slot = index })
-					ui.screen, dirty = "Stages", true
+					ui.screen, dirty = if ui.mode == "dungeon" then "Stages" else "Units", true
 				end)
 				local delete = Widgets.button(
 					card,
@@ -289,7 +291,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 						"CreateSlot",
 						{ slot = index, heroKind = ui.hero, difficulty = ui.difficulty }
 					)
-					ui.screen, dirty = "Stages", true
+					ui.screen, dirty = if ui.mode == "dungeon" then "Stages" else "Units", true
 				end)
 			end
 		end
@@ -951,7 +953,9 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		end
 		local slot = model.slot
 		-- without a record only "기록" works; keep the chosen tab so creating a record lands on it
-		local screen = if slot then ui.screen else "Records"
+		local screen = PlazaState.landing(ui.mode, slot ~= nil, ui.screen)
+		local allowed = PlazaState.tabs(ui.mode, slot ~= nil)
+		title.Text = if ui.mode == "dungeon" then "던전 입구" else "광장 메뉴"
 		for name, b in navButtons do
 			local open = name == screen
 			b.BackgroundColor3 = if open then Theme.panelLight else Theme.button
@@ -960,7 +964,7 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			if marker and marker:IsA("GuiObject") then
 				marker.Visible = open
 			end
-			b.Visible = slot ~= nil or name == "Records"
+			b.Visible = table.find(allowed, name) ~= nil
 		end
 		if screen == "Records" then
 			records(summary)
@@ -1006,8 +1010,9 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			return
 		end
 		local key = string.format(
-			"%s|%s|%d|%d|%d|%s|%s|%s|%s|%d",
+			"%s|%s|%s|%d|%d|%d|%s|%s|%s|%s|%d",
 			tostring(model.profileRevision),
+			ui.mode,
 			ui.screen,
 			ui.chapter,
 			ui.stage,
@@ -1027,8 +1032,19 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	return {
 		root = root,
 		update = update,
+		-- which menu opens: the dungeon entrance or a plaza menu button (with its tab)
+		open = function(mode: string, screen: string?)
+			ui.mode, ui.item, ui.confirmDelete, dirty = mode, nil, 0, true
+			ui.screen = screen or (if mode == "dungeon" then "Stages" else "Units")
+		end,
 		inspect = function(): any
-			return { screen = ui.screen, chapter = ui.chapter, stage = ui.stage, tab = ui.tab }
+			return {
+				screen = ui.screen,
+				mode = ui.mode,
+				chapter = ui.chapter,
+				stage = ui.stage,
+				tab = ui.tab,
+			}
 		end,
 		destroy = function()
 			root:Destroy()

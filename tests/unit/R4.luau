@@ -478,6 +478,15 @@ return function(env: any, check: any)
 		-- D-PLAZA-03: in an arena the real character walks during the battle, not on the result screen
 		check("plaza-avatar-battle-walks", true, P.view("Running", false, true).controlsEnabled, 0)
 		check("plaza-avatar-still-battle", true, P.view("Running", false, true).inBattle, 0)
+		-- the dungeon entrance is expeditions only; everything else opens from the plaza menu
+		check("menu-dungeon-only-stages", "Stages", table.concat(P.tabs("dungeon", true), ","), 0)
+		check("menu-town-no-stages", nil, table.find(P.tabs("town", true), "Stages"), 0)
+		check("menu-town-has-upgrades", true, table.find(P.tabs("town", true), "Units") ~= nil, 0)
+		check("menu-town-has-shop", true, table.find(P.tabs("town", true), "Equipment") ~= nil, 0)
+		check("menu-no-record-records", "Records", P.landing("dungeon", false, "Stages"), 0)
+		check("menu-town-keeps-tab", "Skills", P.landing("town", true, "Skills"), 0)
+		check("menu-town-refuses-stages", "Units", P.landing("town", true, "Stages"), 0)
+		check("menu-dungeon-refuses-units", "Stages", P.landing("dungeon", true, "Units"), 0)
 		check(
 			"plaza-avatar-result-locked",
 			false,

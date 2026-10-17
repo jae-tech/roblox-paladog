@@ -43,7 +43,7 @@ local function start(): any
 	end
 	local controller = makeController()
 	local lastUnit = 1
-	local menuOpen = false -- R8: the dungeon entrance in the plaza opens the expedition menu
+	local menuOpen = false -- R8: the dungeon entrance (expeditions) or a plaza menu button (the rest)
 	-- Avatar movement: locked (0) while the menu or a non-avatar battle owns input; inside an arena the
 	-- server-chosen ArenaWalkSpeed matches the hero; otherwise the place defaults. The client owns its
 	-- character physics, so the local Humanoid values are what count (the server leashes the result).
@@ -110,6 +110,9 @@ local function start(): any
 		end,
 		closeMenu = function()
 			menuOpen = false
+		end,
+		openMenu = function()
+			menuOpen = true
 		end,
 	})
 	local router = ActionRouter.new({
@@ -283,6 +286,7 @@ local function start(): any
 		connections,
 		ProximityPromptService.PromptTriggered:Connect(function(prompt)
 			if prompt:GetAttribute("DungeonEntrance") == true then
+				ui.openDungeon()
 				menuOpen = true
 			end
 		end)

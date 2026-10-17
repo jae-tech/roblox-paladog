@@ -24,4 +24,26 @@ local function view(phase: string?, menuOpen: boolean, avatarCombat: boolean?): 
 	}
 end
 
-return table.freeze({ view = view })
+-- The dungeon entrance only starts expeditions; upgrades, gear, skills, achievements and records open
+-- from the plaza menu. Without a record either menu shows only "Records" so a record can be made first.
+local TOWN = table.freeze({ "Units", "Equipment", "Skills", "Achievements", "Records" })
+local DUNGEON = table.freeze({ "Stages" })
+local NO_RECORD = table.freeze({ "Records" })
+
+local function tabs(mode: string?, hasSlot: boolean): { string }
+	if not hasSlot then
+		return NO_RECORD
+	end
+	return if mode == "dungeon" then DUNGEON else TOWN
+end
+
+-- the tab to show: the wanted one when that menu has it, else the menu's first tab
+local function landing(mode: string?, hasSlot: boolean, wanted: string?): string
+	local list = tabs(mode, hasSlot)
+	if wanted and table.find(list, wanted) then
+		return wanted
+	end
+	return list[1]
+end
+
+return table.freeze({ view = view, tabs = tabs, landing = landing })
