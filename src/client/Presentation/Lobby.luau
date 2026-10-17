@@ -8,6 +8,8 @@ local Widgets = require("./Widgets")
 local Text = require("./Text")
 local HudLayout = require("./HudLayout")
 local PlazaState = require("./PlazaState")
+local ItemPreview = require("./ItemPreview")
+local RunService = game:GetService("RunService")
 
 export type Handlers = {
 	lobby: (string, { [string]: any }?) -> (),
@@ -18,7 +20,8 @@ export type Handlers = {
 local NAV = {
 	{ "Stages", "원정" },
 	{ "Units", "용병" },
-	{ "Equipment", "장비·상점" },
+	{ "Equipment", "장비" },
+	{ "Shop", "상점" },
 	{ "Skills", "기술" },
 	{ "Achievements", "업적" },
 	{ "Heroes", "영웅" },
@@ -544,10 +547,20 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	-- Avatar preview: a copy of the player's real character with the gear the server put on it (D-GEAR-01).
 	-- It refreshes when the server finishes re-dressing the character (GearKey attribute).
 	local previewConn: RBXScriptConnection? = nil
+	local itemSpin: RBXScriptConnection? = nil
+	local itemShown: ItemPreview.Preview? = nil
 	local function stopPreview()
 		if previewConn then
 			previewConn:Disconnect()
 			previewConn = nil
+		end
+		if itemSpin then
+			itemSpin:Disconnect()
+			itemSpin = nil
+		end
+		if itemShown then
+			itemShown.destroy()
+			itemShown = nil
 		end
 	end
 	local function avatarPreview(panel: Frame)
@@ -626,6 +639,109 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	end
 
 	-- Equipment / shop ------------------------------------------------------------------------------------
+	-- Item look and numbers (D-GEAR-01): the 3D piece turning in a viewport, what it does now, what the
+	-- next enchant gives, and (in the shop) what the same kind of equipped item does.
+	local CATEGORY_NAMES = {
+		light = { "무기", "반지", "투구", "갑옷", "탈것" },
+		shadow = { "검", "부적", "투구", "갑옷", "신발" },
+	}
+	local function categoryName(kind: string, category: number): string
+		return CATEGORY_NAMES[kind][((category - 1) % 5) + 1] or "?"
+	end
+	local function itemView(
+		panel: Instance,
+		code: number,
+		x: number,
+		y: number,
+		w: number,
+		h: number
+	)
+		local frame = Widgets.card(panel, "ItemLook", Theme.panelDeep, 10)
+		place(frame, x, y, w, h)
+		local view = Instance.new("ViewportFrame")
+		view.Name = "View"
+		view.Size = UDim2.new(1, -8, 1, -8)
+		view.Position = UDim2.fromOffset(4, 4)
+		view.BackgroundTransparency = 1
+		view.Ambient = Color3.fromRGB(170, 170, 185)
+		view.LightColor = Color3.new(1, 1, 1)
+		view.LightDirection = Vector3.new(-0.4, -1, -0.6)
+		view.Parent = frame
+		local grade = code % 1000
+		if grade > 0 then
+			local badge, _ = Widgets.pill(frame, "Grade", "+" .. grade, 13, Theme.gold, Theme.ink)
+			badge.Size = UDim2.fromOffset(44, 22)
+			badge.Position = UDim2.new(1, -52, 0, 8)
+		end
+		if itemSpin then
+			itemSpin:Disconnect()
+		end
+		if itemShown then
+			itemShown.destroy()
+		end
+		local shown = ItemPreview.show(view, code)
+		itemShown = shown
+		itemSpin = RunService.RenderStepped:Connect(function(dt)
+			shown.step(dt)
+		end)
+	end
+	-- name, kind, effect and enchant lines for an item; returns the next free y
+	local function itemLines(
+		panel: Instance,
+		kind: string,
+		code: number,
+		x: number,
+		y: number,
+		w: number
+	): number
+		local category = code // 100000
+		local name = Widgets.label(panel, "Name", Text.itemName(catalog, code), 17, Theme.gold)
+		name.Font = Theme.fontHeavy
+		place(name, x, y, w, 24)
+		name.TextXAlignment = Enum.TextXAlignment.Left
+		local kindText = Widgets.label(panel, "Kind", categoryName(kind, category), 12, Theme.muted)
+		place(kindText, x, y + 24, w, 18)
+		kindText.TextXAlignment = Enum.TextXAlignment.Left
+		local effect =
+			Widgets.label(panel, "Effect", Text.itemDescription(catalog, code), 14, Theme.text)
+		effect.Font = Theme.fontBody
+		effect.TextWrapped = true
+		place(effect, x, y + 44, w, 36)
+		effect.TextXAlignment = Enum.TextXAlignment.Left
+		effect.TextYAlignment = Enum.TextYAlignment.Top
+		local nextY = y + 82
+		if Text.canEnchant(code) then
+			local upgrade = Widgets.label(
+				panel,
+				"Next",
+				"다음 강화(+"
+					.. (code % 1000 + 1)
+					.. "): "
+					.. Text.itemDescription(catalog, code + 1),
+				12,
+				Theme.good
+			)
+			upgrade.Font = Theme.fontBody
+			upgrade.TextWrapped = true
+			place(upgrade, x, nextY, w, 32)
+			upgrade.TextXAlignment = Enum.TextXAlignment.Left
+			upgrade.TextYAlignment = Enum.TextYAlignment.Top
+			nextY += 34
+		end
+		return nextY
+	end
+	-- the equipped item of the same category (first matching slot), for comparison in the shop
+	local function equippedOfCategory(slot: any, category: number): number
+		for i = 1, 9 do
+			local code = slot.equip[i]
+			if code ~= 0 and code // 100000 == category then
+				return code
+			end
+		end
+		return 0
+	end
+
+	-- Equipment: equipped slots, the bag, the avatar wearing it, and the selected item
 	local function equipment(slot: any, summary: any)
 		local kind = slot.heroKind
 		local eq = Widgets.grid(content, "Equipped", UDim2.fromOffset(118, 54), 6)
@@ -661,117 +777,46 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				end
 			end)
 		end
-		for index, tab in { { "Bag", "가방" }, { "Shop", "상점" }, { "Gems", "보석 상점" } } do
-			local b = Widgets.button(
-				content,
-				"Tab" .. tab[1],
-				tab[2],
-				14,
-				if ui.tab == tab[1] then Theme.buttonHot else Theme.button
-			)
-			place(b, 390 + (index - 1) * 96, 0, 92, 34)
-			b.Activated:Connect(function()
-				ui.tab, ui.item, dirty = tab[1], nil, true
-			end)
-		end
-		local list = Widgets.list(content, "List", 4)
-		place(list, 566, 40, 196, 300)
-		local preview = Widgets.card(content, "Preview", Theme.panel, 10)
-		place(preview, 390, 40, 168, 300)
-		avatarPreview(preview)
-		if ui.tab == "Bag" then
-			local sub = Widgets.label(
-				list,
-				"Count",
-				string.format("가방 %d / 100", #slot.inventory),
+		local bagHead = Widgets.label(
+			content,
+			"BagHead",
+			string.format("가방 %d / 100", #slot.inventory),
+			14,
+			Theme.muted
+		)
+		place(bagHead, 0, 196, 380, 22)
+		bagHead.TextXAlignment = Enum.TextXAlignment.Left
+		local bag = Widgets.grid(content, "Bag", UDim2.fromOffset(186, 40), 6)
+		place(bag, 0, 220, 380, 250)
+		if #slot.inventory == 0 then
+			local none = Widgets.label(
+				bag,
+				"Empty",
+				"가방이 비었습니다. 상점에서 장비를 사 보세요.",
 				13,
 				Theme.muted
 			)
-			sub.Size = UDim2.new(1, 0, 0, 20)
-			if #slot.inventory == 0 then
-				local none = Widgets.label(
-					list,
-					"Empty",
-					"가방이 비었습니다. 상점에서 장비를 사 보세요.",
-					13,
-					Theme.muted
-				)
-				none.Size = UDim2.new(1, -8, 0, 40)
-				none.LayoutOrder = 1
-			end
-			for index, code in slot.inventory do
-				local b = Widgets.button(
-					list,
-					"Item" .. index,
-					Text.itemName(catalog, code),
-					13,
-					if ui.item == "inv:" .. index then Theme.buttonHot else Theme.panelLight
-				)
-				b.Size = UDim2.new(1, -8, 0, 32)
-				b.LayoutOrder = index + 1
-				b.Activated:Connect(function()
-					ui.item, dirty = "inv:" .. index, true
-				end)
-			end
-		elseif ui.tab == "Shop" then
-			local categories: { number } = if kind == "shadow"
-				then { 6, 7, 8, 9, 10 }
-				else { 1, 2, 3, 4, 5 }
-			local order = 0
-			for _, category in categories do
-				local count = ({ 10, 10, 10, 5, 5, 10, 10, 10, 5, 5 })[category]
-				for num = 1, count do
-					local price, currency = Text.buyPrice(catalog, category, num)
-					if price then
-						order += 1
-						local code = Text.encode(category, num, 0)
-						local b = Widgets.button(
-							list,
-							"Buy" .. code,
-							string.format(
-								"%s  %s%s",
-								Text.itemName(catalog, code),
-								Text.number(price),
-								if currency == "gold" then "G" else " 보석"
-							),
-							12,
-							affordColor(
-								if currency == "gold"
-									then slot.gold >= price
-									else summary.gems >= price
-							)
-						)
-						b.Size = UDim2.new(1, -8, 0, 30)
-						b.LayoutOrder = order
-						b.Activated:Connect(function()
-							handlers.lobby("BuyItem", { category = category, num = num })
-						end)
-					end
-				end
-			end
-		else
-			for order, entry in { { 1, 1000 }, { 2, 1000 }, { 3, 1 }, { 9, 1000 } } do
-				local b = Widgets.button(
-					list,
-					"Gem" .. entry[1],
-					string.format(
-						"%s  보석 %d",
-						catalog.text.gemShop[tostring(entry[1])],
-						entry[2]
-					),
-					13,
-					affordColor(summary.gems >= entry[2])
-				)
-				b.Size = UDim2.new(1, -8, 0, 36)
-				b.LayoutOrder = order
-				b.Activated:Connect(function()
-					handlers.lobby("GemShop", { item = entry[1] })
-				end)
-			end
+			none.Size = UDim2.fromOffset(370, 40)
 		end
-		-- selected item actions
-		local detail = Widgets.frame(content, "ItemDetail", Theme.panel, 8)
-		place(detail, 0, 200, 380, 140)
+		for index, code in slot.inventory do
+			local b = Widgets.button(
+				bag,
+				"Item" .. index,
+				Text.itemName(catalog, code),
+				13,
+				if ui.item == "inv:" .. index then Theme.buttonHot else Theme.panelLight
+			)
+			b.LayoutOrder = index
+			b.Activated:Connect(function()
+				ui.item, dirty = "inv:" .. index, true
+			end)
+		end
+		local preview = Widgets.card(content, "Preview", Theme.panel, 10)
+		place(preview, 390, 0, 168, 230)
+		avatarPreview(preview)
+		-- selected item: look, numbers and actions
+		local detail = Widgets.card(content, "ItemDetail", Theme.panel, 10)
+		place(detail, 390, 238, 372, 232)
 		local where, index = nil, nil
 		if ui.item then
 			where, index = string.match(ui.item, "^(%a+):(%d+)$")
@@ -782,21 +827,17 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			elseif where == "inv" and idx then slot.inventory[idx]
 			else nil
 		if code and code ~= 0 and idx then
-			local name = Widgets.label(detail, "Name", Text.itemName(catalog, code), 15, Theme.gold)
-			place(name, 10, 4, 360, 22)
-			name.TextXAlignment = Enum.TextXAlignment.Left
-			local desc = Widgets.label(detail, "Desc", Text.itemDescription(catalog, code), 13)
-			place(desc, 10, 28, 360, 40)
-			desc.TextXAlignment = Enum.TextXAlignment.Left
-			local x = 10
-			local function action(label: string, fn: () -> ())
-				local b = Widgets.button(detail, label, label, 13)
-				place(b, x, 84, 112, 44)
+			itemView(content, code, 566, 0, 196, 230)
+			local y = itemLines(detail, kind, code, 12, 8, 348)
+			local x = 12
+			local function action(label: string, color: Color3?, fn: () -> ())
+				local b = Widgets.button(detail, label, label, 13, color)
+				place(b, x, math.max(y + 4, 176), 110, 44)
 				b.Activated:Connect(fn)
-				x += 118
+				x += 116
 			end
 			if where == "inv" then
-				action("장착", function()
+				action("장착", Theme.gold, function()
 					local category = code // 100000
 					local targets = {}
 					for slotIndex = 1, 9 do
@@ -823,23 +864,38 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				end)
 				action(
 					string.format("판매 %sG", Text.number(Text.saleValue(catalog, code))),
+					nil,
 					function()
 						handlers.lobby("SellItem", { index = idx })
 						ui.item = nil
 					end
 				)
 			else
-				action("해제", function()
+				action("해제", nil, function()
 					handlers.lobby("Unequip", { slot = idx })
 					ui.item = nil
 				end)
 			end
 			if Text.canEnchant(code) then
-				action(string.format("강화 (보석 %d)", Text.enchantCost(code)), function()
-					handlers.lobby("Enchant", { where = where, index = idx })
-				end)
+				action(
+					string.format("강화 (보석 %d)", Text.enchantCost(code)),
+					affordColor(summary.gems >= Text.enchantCost(code)),
+					function()
+						handlers.lobby("Enchant", { where = where, index = idx })
+					end
+				)
 			end
 		else
+			local empty = Widgets.card(content, "ItemLook", Theme.panelDeep, 10)
+			place(empty, 566, 0, 196, 230)
+			local pick = Widgets.label(
+				empty,
+				"Pick",
+				"아이템을 고르면\n모습이 보입니다",
+				13,
+				Theme.muted
+			)
+			pick.Size = UDim2.fromScale(1, 1)
 			local hint = Widgets.label(
 				detail,
 				"Hint",
@@ -847,18 +903,222 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 				14,
 				Theme.muted
 			)
-			place(hint, 10, 10, 360, 24)
+			place(hint, 12, 10, 348, 24)
 			hint.TextXAlignment = Enum.TextXAlignment.Left
 			local tip = Widgets.label(
 				detail,
 				"Tip",
-				"장비 칸이나 가방의 아이템을 누르면 장착·판매·강화할 수 있습니다.",
+				"장비 칸이나 가방의 아이템을 누르면 모습과 능력치를 보고 장착·판매·강화할 수 있습니다. 새 장비는 상점에서 삽니다.",
 				13,
 				Theme.muted
 			)
-			place(tip, 10, 40, 360, 40)
+			tip.TextWrapped = true
+			place(tip, 12, 40, 348, 60)
 			tip.TextXAlignment = Enum.TextXAlignment.Left
+			tip.TextYAlignment = Enum.TextYAlignment.Top
 			tip.Font = Theme.fontBody
+		end
+	end
+
+	-- Shop: categories, items with price, and the selected item's look, numbers and comparison
+	local GEM_SHOP = { { 1, 1000 }, { 2, 1000 }, { 3, 1 }, { 9, 1000 } }
+	local function shop(slot: any, summary: any)
+		local kind = slot.heroKind
+		local base = if kind == "shadow" then 5 else 0
+		ui.shopCategory = ui.shopCategory or 1
+		for c = 1, 6 do
+			local label = if c == 6 then "보석 상점" else categoryName(kind, base + c)
+			local b = Widgets.button(
+				content,
+				"Category" .. c,
+				label,
+				14,
+				if ui.shopCategory == c then Theme.buttonHot else Theme.button
+			)
+			place(b, (c - 1) * 127, 0, 121, 34)
+			b.Activated:Connect(function()
+				ui.shopCategory, ui.item, dirty = c, nil, true
+			end)
+		end
+		local list = Widgets.list(content, "List", 4)
+		place(list, 0, 42, 380, 428)
+		local detail = Widgets.card(content, "ItemDetail", Theme.panel, 10)
+		place(detail, 390, 250, 372, 220)
+		if ui.shopCategory == 6 then
+			for order, entry in GEM_SHOP do
+				local b = Widgets.button(
+					list,
+					"Gem" .. entry[1],
+					string.format(
+						"%s  ·  보석 %d",
+						catalog.text.gemShop[tostring(entry[1])],
+						entry[2]
+					),
+					14,
+					affordColor(summary.gems >= entry[2])
+				)
+				b.Size = UDim2.new(1, -8, 0, 44)
+				b.LayoutOrder = order
+				b.Activated:Connect(function()
+					handlers.lobby("GemShop", { item = entry[1] })
+				end)
+			end
+			local look = Widgets.card(content, "ItemLook", Theme.panelDeep, 10)
+			place(look, 390, 42, 372, 200)
+			local gems =
+				Widgets.label(look, "Gems", "◆ " .. Text.number(summary.gems), 30, Theme.gem)
+			gems.Font = Theme.fontHeavy
+			gems.Size = UDim2.fromScale(1, 1)
+			local tip = Widgets.label(
+				detail,
+				"Tip",
+				"보석은 업적과 서바이벌에서 얻습니다. 반지 3번 칸, 골드, 황금 무기, 기술 초기화를 살 수 있습니다.",
+				13,
+				Theme.muted
+			)
+			tip.TextWrapped = true
+			place(tip, 12, 12, 348, 80)
+			tip.TextXAlignment = Enum.TextXAlignment.Left
+			tip.TextYAlignment = Enum.TextYAlignment.Top
+			return
+		end
+		local category = base + ui.shopCategory
+		local count = ({ 11, 10, 10, 5, 5, 11, 10, 10, 5, 5 })[category]
+		local order = 0
+		for num = 1, count do
+			local price, currency = Text.buyPrice(catalog, category, num)
+			if price then
+				order += 1
+				local code = Text.encode(category, num, 0)
+				local enough = if currency == "gold"
+					then slot.gold >= price
+					else summary.gems >= price
+				local selected = ui.item == "shop:" .. code
+				local card = Widgets.button(
+					list,
+					"Buy" .. code,
+					"",
+					12,
+					if selected then Theme.buttonHot else Theme.panelLight
+				)
+				card.Size = UDim2.new(1, -8, 0, 52)
+				card.LayoutOrder = order
+				local ink = if selected then Theme.ink else Theme.text
+				local name = Widgets.label(card, "Name", Text.itemName(catalog, code), 14, ink)
+				place(name, 10, 4, 240, 22)
+				name.TextXAlignment = Enum.TextXAlignment.Left
+				local effect = Widgets.label(
+					card,
+					"Effect",
+					Text.itemDescription(catalog, code),
+					11,
+					if selected then Theme.ink else Theme.muted
+				)
+				effect.Font = Theme.fontBody
+				place(effect, 10, 26, 250, 20)
+				effect.TextXAlignment = Enum.TextXAlignment.Left
+				effect.TextTruncate = Enum.TextTruncate.AtEnd
+				local cost = Widgets.label(
+					card,
+					"Price",
+					Text.number(price) .. (if currency == "gold" then " G" else " ◆"),
+					14,
+					if selected
+						then Theme.ink
+						elseif not enough then Theme.bad
+						elseif currency == "gold" then Theme.gold
+						else Theme.gem
+				)
+				place(cost, 262, 0, 98, 52)
+				cost.TextXAlignment = Enum.TextXAlignment.Right
+				card.Activated:Connect(function()
+					ui.item, dirty = "shop:" .. code, true
+				end)
+			end
+		end
+		local chosen = if ui.item then tonumber(string.match(ui.item, "^shop:(%d+)$")) else nil
+		if chosen and chosen // 100000 == category then
+			itemView(content, chosen, 390, 42, 372, 200)
+			local y = itemLines(detail, kind, chosen, 12, 8, 348)
+			local worn = equippedOfCategory(slot, category)
+			local compare = Widgets.label(
+				detail,
+				"Compare",
+				if worn ~= 0
+					then "지금 장착: "
+						.. Text.itemName(catalog, worn)
+						.. " — "
+						.. Text.itemDescription(catalog, worn)
+					else "지금 장착한 같은 종류 장비가 없습니다",
+				12,
+				Theme.muted
+			)
+			compare.Font = Theme.fontBody
+			compare.TextWrapped = true
+			place(compare, 12, y, 348, 32)
+			compare.TextXAlignment = Enum.TextXAlignment.Left
+			compare.TextYAlignment = Enum.TextYAlignment.Top
+			local _, num = Text.decode(chosen)
+			local price, currency = Text.buyPrice(catalog, category, num)
+			local enough = price ~= nil
+				and (if currency == "gold" then slot.gold >= price else summary.gems >= price)
+			local buy = Widgets.button(
+				detail,
+				"Buy",
+				if price
+					then string.format(
+						"구매  %s%s",
+						Text.number(price),
+						if currency == "gold" then " G" else " ◆"
+					)
+					else "-",
+				15,
+				if enough then Theme.gold else Theme.locked
+			)
+			if enough then
+				buy.TextColor3 = Theme.background
+			end
+			place(buy, 12, 166, 348, 44)
+			buy.Activated:Connect(function()
+				if enough then
+					handlers.lobby("BuyItem", { category = category, num = num })
+				end
+			end)
+		else
+			local look = Widgets.card(content, "ItemLook", Theme.panelDeep, 10)
+			place(look, 390, 42, 372, 200)
+			local pick = Widgets.label(
+				look,
+				"Pick",
+				"왼쪽에서 아이템을 고르면\n모습과 능력치가 보입니다",
+				14,
+				Theme.muted
+			)
+			pick.Size = UDim2.fromScale(1, 1)
+			local money = Widgets.label(
+				detail,
+				"Money",
+				string.format(
+					"보유  %s G   ◆ %s",
+					Text.number(slot.gold),
+					Text.number(summary.gems)
+				),
+				15,
+				Theme.gold
+			)
+			place(money, 12, 12, 348, 24)
+			money.TextXAlignment = Enum.TextXAlignment.Left
+			local tip = Widgets.label(
+				detail,
+				"Tip",
+				"무기·반지는 골드, 투구·갑옷·탈것은 보석으로 삽니다. 산 장비는 장비 화면의 가방에 들어갑니다.",
+				13,
+				Theme.muted
+			)
+			tip.TextWrapped = true
+			place(tip, 12, 44, 348, 60)
+			tip.TextXAlignment = Enum.TextXAlignment.Left
+			tip.TextYAlignment = Enum.TextYAlignment.Top
 		end
 	end
 
@@ -1009,6 +1269,8 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			unitsScreen(slot)
 		elseif screen == "Equipment" then
 			equipment(slot, summary)
+		elseif screen == "Shop" then
+			shop(slot, summary)
 		elseif screen == "Skills" then
 			skills(slot)
 		elseif screen == "Achievements" then

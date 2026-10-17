@@ -2581,6 +2581,20 @@ local function snapshot(b: any): any
 		darkEvent = if b.darkBossId ~= 0 then true else nil,
 		points = b.points,
 		boxes = boxes,
+		-- destiny: seconds until the next box (view only)
+		boxNext = if b.mode == "Destiny" and b.destinyMace
+			then math.max(
+				0,
+				math.ceil(
+					(
+						b.destinyMace.s11
+							* (if b.loadout.difficulty == 3 then 2 / 3 else 1)
+							* 30
+						- b.boxTimer
+					) / 30
+				)
+			)
+			else nil,
 		offer = if b.offer then table.clone(b.offer) else nil,
 		reviveOffer = b.reviveOffer,
 		outcome = b.outcome,

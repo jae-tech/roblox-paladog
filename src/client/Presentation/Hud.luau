@@ -115,6 +115,49 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 	goalBar.Size = UDim2.new(1, -16, 0, 20)
 	goalBar.Position = UDim2.fromOffset(8, 25)
 
+	-- rules of special stages, shown for the first seconds of a battle (destiny boxes, lanes, ...)
+	local MODE_RULES: { [string]: { string } } = {
+		Destiny = {
+			"운명 스테이지",
+			"몇 초마다 운명 상자가 생깁니다. 상자를 눌러 무작위 용병이나 주문을 식량·마나 없이 쓰세요. 영웅은 제자리에서 싸웁니다.",
+		},
+		Tower = {
+			"점령 스테이지",
+			"다섯 줄로 오는 적을 막으세요. 용병 버튼을 누른 뒤 보낼 줄을 고릅니다. 영웅은 제자리에서 싸웁니다.",
+		},
+		Wagon = {
+			"호위 스테이지",
+			"보급 마차가 끝까지 가도록 지키세요. 마차가 부서지면 패배합니다.",
+		},
+		Boss = { "보스 스테이지", "보스를 쓰러뜨리면 승리합니다." },
+		Horse = { "공성 목마", "목마가 성문에 도착하기 전에 파괴하세요." },
+		Dungeon = {
+			"던전 스테이지",
+			"적 60마리를 처치하면 승리합니다. 영웅은 제자리에서 싸웁니다.",
+		},
+		Jump = { "달리기 스테이지", "코인을 모으며 결승선까지 달리세요." },
+		Survival = {
+			"서바이벌",
+			"끝없이 오는 웨이브를 최대한 오래 버티세요.",
+		},
+	}
+	local rules = Widgets.card(root, "ModeRules", Theme.panelDeep, 12)
+	rules.AnchorPoint = Vector2.new(0.5, 0)
+	rules.Size = UDim2.fromOffset(420, 74)
+	rules.Position = UDim2.new(0.5, 0, 0, 62)
+	rules.BackgroundTransparency = 0.1
+	rules.Visible = false
+	Widgets.outline(rules, Theme.gold, 1, 0.3)
+	local rulesTitle = Widgets.label(rules, "Title", "", 16, Theme.gold)
+	rulesTitle.Font = Theme.fontHeavy
+	rulesTitle.Size = UDim2.new(1, -20, 0, 22)
+	rulesTitle.Position = UDim2.fromOffset(10, 6)
+	local rulesBody = Widgets.label(rules, "Body", "", 13, Theme.text)
+	rulesBody.Font = Theme.fontBody
+	rulesBody.TextWrapped = true
+	rulesBody.Size = UDim2.new(1, -20, 0, 40)
+	rulesBody.Position = UDim2.fromOffset(10, 28)
+
 	local pause = Widgets.button(top, "Pause", "II", 18, Theme.panelDeep)
 	pause.Font = Theme.fontHeavy
 	pause.Size = UDim2.fromOffset(46, 46)
@@ -504,6 +547,11 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 			return
 		end
 		currentView = view
+		local rule = MODE_RULES[view.mode]
+		rules.Visible = rule ~= nil and model.phase == "Running" and (view.tick or 0) < 8 * 30
+		if rule then
+			rulesTitle.Text, rulesBody.Text = rule[1], rule[2]
+		end
 		local jumping = view.mode == "Jump"
 		jump.Visible = jumping
 		units.Visible, foodBar.Visible, manaBar.Visible = not jumping, not jumping, not jumping
@@ -597,11 +645,15 @@ local function new(parent: Instance, catalog: any, handlers: Handlers)
 		reserveRight = if model.avatarCombat and UserInputService.TouchEnabled then 110 else 0
 		applyLayout()
 		if view.mode == "Destiny" then
+			-- one shared timer fills the first empty box
+			local firstEmpty = table.find(view.boxes, "")
 			for index, c in unitCards do
 				local box = view.boxes[index]
 				c.cost.Visible = false
 				if box == "" then
-					c.title.Text = "빈 상자"
+					c.title.Text = if view.boxNext and index == firstEmpty
+						then string.format("다음 상자\n%d초", view.boxNext)
+						else "빈 상자"
 					setCard(c, false, false, 0, "")
 					Widgets.paint(c.button, Theme.locked)
 				else

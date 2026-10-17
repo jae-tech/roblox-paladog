@@ -22,7 +22,8 @@ local BATTLE_PHASES = { Running = true, Settling = true, Settled = true }
 -- plaza menu buttons: everything except expeditions, which start at the dungeon entrance
 local PLAZA_MENU = {
 	{ "Units", "용병", "⚔" },
-	{ "Equipment", "장비·상점", "🛡" },
+	{ "Equipment", "장비", "🛡" },
+	{ "Shop", "상점", "🛒" },
 	{ "Skills", "기술", "📜" },
 	{ "Achievements", "업적", "🏆" },
 	{ "Heroes", "영웅", "👤" },

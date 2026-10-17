@@ -75,11 +75,9 @@ local function new(parent: Instance)
 		return Vector3.new(x, 3, z)
 	end
 
-	-- speed in studs/s that matches the hero (0 where the hero cannot move: destiny/tower/dungeon modes)
-	local function walkSpeed(battle: any, movable: boolean): number
-		if not movable then
-			return 0
-		end
+	-- speed in studs/s that matches the hero. Where the hero stands still (destiny/tower/dungeon) the
+	-- character still walks around it inside the leash; the battle hero does not follow it there.
+	local function walkSpeed(battle: any, _movable: boolean): number
 		local stats = battle.stats or {}
 		return ((stats.moveSpeed or 60) + (stats.moveSpeedRing or 0)) * Space.SCALE
 	end
@@ -132,11 +130,16 @@ local function new(parent: Instance)
 		end
 		player:SetAttribute("ArenaWalkSpeed", walkSpeed(battle, entry.movable))
 		local flat = Vector3.new(part.Position.X, at.Y, part.Position.Z)
-		if (flat - at).Magnitude > LEASH_STUDS or part.Position.Y < -20 then
-			local character = player.Character
+		local offset = flat - at
+		local character = player.Character
+		if part.Position.Y < -20 then
 			if character then
 				character:PivotTo(CFrame.new(at) * part.CFrame.Rotation)
 			end
+		elseif offset.Magnitude > LEASH_STUDS and character then
+			-- a soft leash: back onto the circle edge, not a jump onto the hero
+			local edge = at + offset.Unit * (LEASH_STUDS - 0.5)
+			character:PivotTo(CFrame.new(edge) * part.CFrame.Rotation)
 		end
 	end
 

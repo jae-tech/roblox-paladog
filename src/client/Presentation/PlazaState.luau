@@ -26,7 +26,7 @@ end
 
 -- The dungeon entrance only starts expeditions; upgrades, gear, skills, achievements and heroes open
 -- from the plaza menu. Without a record (made automatically, D-DIFF-01) either menu shows only "Heroes".
-local TOWN = table.freeze({ "Units", "Equipment", "Skills", "Achievements", "Heroes" })
+local TOWN = table.freeze({ "Units", "Equipment", "Shop", "Skills", "Achievements", "Heroes" })
 local DUNGEON = table.freeze({ "Stages" })
 local NO_RECORD = table.freeze({ "Heroes" })
 
